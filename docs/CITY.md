@@ -1026,8 +1026,10 @@ that **some** calm is reachable.
 **On day 1 the tutorial park's branch is the tutorial route.** `RouteTree.for_day()` takes the
 day's tutorial route as a required argument, null on every day but the one whose spec walks it
 (`DaySpec.walks_the_tutorial()`). It adopts the route as the tutorial park's branch before any other
-grows, the shortest way from the park to the doorstep's street over the route's own ground, and
-grows every other branch on a graph without the route's kept ground (`TutorialRoute.kept_ground()`:
+grows, the shortest way from the park to the doorstep's street along the route's line
+(`TutorialRoute.line_ground()`: the sidewalk she is meant to walk along each lesson street and the
+junction boxes), so the sidewalk the tree walks is the line's and the far one is where a lesson's
+row stands (`docs/EVENTS.md`, "Day 1's lessons on the tutorial route"), and grows every other branch on a graph without the route's kept ground (`TutorialRoute.kept_ground()`:
 the lesson streets, their junction boxes past the first, the half of each side street nearest the
 route and the park). The doorstep's street, the route's first block, stays open to every branch, so
 the day's other routes start there (gentle-owl #1253). The route is worked out once from the city
@@ -1680,7 +1682,8 @@ barrier left out only adds ground she can reach.
 tree has no other branch there ("How the corridor is built"), so every side street off the route
 past its first block is one this pass seals, and it seals each **at its mouth on the route** rather
 than mid-street, so a step into it meets the seal at once: a soft pair, never the delivery van,
-which blocks her sidewalk for the first crossing lesson, and never thinned; across a precinct side
+which blocks her sidewalk for the first crossing lesson, nor the market stall, the noise she passes
+wide, and never thinned; across a precinct side
 street, whose paved middle no sidewalk pair closes, the burst water main, since a seal need not be
 a soft one where a soft pair cannot close the street. The seal stands the first tile in from the
 junction box that keeps its bodies, and hers beside them, out of the box, past any street tree.

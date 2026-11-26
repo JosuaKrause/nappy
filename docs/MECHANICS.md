@@ -1316,6 +1316,12 @@ weight of 1.4. The hint says nothing again for the rest of the run: it is the le
 commentary on the mechanic, so every later pursuit — a second dog the same day, `alley_robbery`
 from day 8 — telegraphs in silence.
 
+**Day 1 teaches the same way, at its own scale.** The day is named by its spec
+(`DaySpec.walks_the_tutorial()`), its lessons are placed at dawn outside the bags on the way to the
+tutorial park (`DawnTutorial`), the director's handouts are held on that route until she has stood
+in the park, but for the dog walker of the third lesson, and a retried day 1 replays them.
+`docs/EVENTS.md`, "Day 1's lessons on the tutorial route", has the lessons and their rows.
+
 ## Tearing a poster down
 
 **She tears a poster down by pushing against its wall**, and there is no button for it. Her

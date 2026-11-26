@@ -353,7 +353,8 @@ dog walker at a tile.
   bark) on every street. Where it is created is the edge of the view, nearer her walking north than
   south and furthest walking east or west, so a bark fixed by that distance would price it by the way
   the street runs. The loose dog's beat is fixed instead, at the loud of it on her, which is what its
-  own line in that table prices.
+  own line in that table prices. **On day 1's tutorial route it is the one handout before the park**
+  ("Day 1's lessons on the tutorial route", below).
 - **The police patrol** is sent down the carriageway lane that drives toward her
   (`_toward_her_on_the_road()`, above), created at once and standing, in its lane just out of sight
   up the road (`PendingWarning.in_its_lane()`, against the camera's whole view, its caret and the
@@ -1520,6 +1521,51 @@ then 1,024px of her paths from where she reads the chalk mark (inbox #1185 in ge
    if it finds none.
 
 The city's fixed parts have their own phases, above.
+
+### Day 1's lessons on the tutorial route
+
+**On the day whose spec walks the tutorial route (`DaySpec.walks_the_tutorial()`, day 1), its
+lessons are placed at dawn on the way to the tutorial park, and placement off the route is ordinary**
+(gentle-owl #1253). `DawnTutorial` runs after the fixed parts and day 13's roadblocks and before
+the scripted rows, handed the route in the dawn's context (`DawnContext.tutorial_route()`, from
+`DayStreets.tutorial_route()`). The progression is the player's: (1) get to the park, (2) a noise
+source she can pass wide, (3) one with less room, (4) crossing the road with no cars about, (5)
+crossing the road with cars, (6) timing the yeller, then the park (gentle-owl #1253; minty-dolphin
+#834 puts the yeller last).
+
+- **The line.** `TutorialRoute` lays the sidewalk she walks along each lesson street, and the day's
+  tree grows the park's branch along it (`TutorialRoute.line_ground()`), so the sidewalk the tree
+  walks, which no body may take (`RouteSidewalkRule`), is the line's, and the far one is where a
+  lesson's row may stand. At lesson (4)'s junction the line changes side across that street; at
+  lesson (5)'s, the far end of lesson (4)'s street, it crosses a carriageway again.
+- **The streets count back from the park's.** The last lesson street runs along the tutorial park,
+  and no field may reach calm ground she has not used (`UnusedCalmRule`), so it carries no lesson:
+  the yeller paces the line's sidewalk of the street before it, the delivery van shuts the far
+  sidewalk just past the box at the start of the street before his, the dog walker comes on the
+  street before that, and the market stall stands on the far sidewalk of the street before that. A
+  route of six lesson streets leaves its first one empty.
+- **The rows.** (2) is the market stall on the far sidewalk: free on the line, a loud wall on its own
+  sidewalk. A noise whose cost reaches across the carriageway, as the leaf blower's does (165px),
+  would take her line, which the day's rules refuse on any route (`RouteLineRule`). (4) is the
+  delivery van, silent, so the lesson is the crossing. (6) is the yeller, his beat on her sidewalk,
+  timed rather than walked round. (3)'s dog walker is sent by the director (below). *Proposed, not
+  asked for:* the rows and the streets (gentle-owl #1253, the orchestrator's sketch, which the
+  player answered by lesson number).
+- **Judged as every phase's rows are.** Each row is offered its slot tile by tile on its own ground
+  for the day and asked of the day's rules; a slot no tile of which they allow stands nothing, and
+  the run log says so. `tests/probes/grassy_beaver_lessons.gd` counts how often each lesson stands.
+- **Nothing else on the route.** Every other location of the route's units past the first block,
+  its lesson streets and their junction boxes, is drawn empty at dawn. *Proposed, not asked for:*
+  the orchestrator's reading (gentle-owl #1253), open to the player's correction.
+- **The director holds its bag on the route before the park.** While she is on the route and has not
+  yet stood in the tutorial park, `EventDirector` hands out nothing but lesson (3)'s dog walker, sent
+  toward her the moment she is on its street; it is the first of day one's two rigged dog walkers
+  (PLAYTEST-05 6), and the second is the first handout once she has stood in the park, on her walk
+  home. Off the route the bag runs at its ordinary pace with what is left of the rig at its head.
+  *Proposed, not asked for:* the player's words name dawn placement only.
+- **Outside the bags, one day of fourteen**, the exception `DawnLesson` makes for the run lesson,
+  made honestly: a lesson that comes only when the draw agrees is not a lesson. Nothing is drawn on
+  a stream, so a retried day 1 replays the same lessons.
 
 ### Where the code differs from the design
 

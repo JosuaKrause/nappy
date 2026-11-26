@@ -24,7 +24,7 @@ commonest day-1 mistake, "(I think)", as "figuring out the controls and getting 
 that record says so. **Read as:** the car-free start lets a new player learn the controls before
 any car can reach her, and the crossing bubble teaches the crossings meanwhile.
 
-**What ends it.** Sketching day 1's tutorial route (`hand-crafted-day-one.md`), the player first
+**What ends it.** Sketching day 1's tutorial route (the record grassy-beaver-silky-wombat), the player first
 said "no cars on the first block", then "cars only spawn on the second crossing tutorial or if she
 leaves the tutorial route"; read back that cars start at once if she steps off the route before the
 crossing-with-cars lesson, "one full block away", "so she can turn around"; and read back that if
@@ -33,7 +33,7 @@ she wanders off before that lesson and comes back, cars keep spawning, "yes that
 lesson, the crossing with cars, or until she is one full block away from the tutorial route,
 whichever comes first, so a player who steps off and turns back at the bubble meets no cars. That
 holds wherever she leaves the route, past its first block too, where she can leave it in the road
-round a soft seal (`hand-crafted-day-one.md`). Once
+round a soft seal (the record grassy-beaver-silky-wombat). Once
 the cars have started they keep spawning, also when she comes back to the route. The player's
 earlier "the first few blocks shouldn't have cars spawning in" (minty-dolphin #867) is answered
 by this as to what ends the stretch.

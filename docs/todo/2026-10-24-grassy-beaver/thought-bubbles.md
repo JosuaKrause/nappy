@@ -38,12 +38,12 @@ and like every lesson's bubble only a few times in all ("a few times for each ne
 curly-moose #819).
 
 **A bubble that points her back to day 1's tutorial route.** Of day 1's tutorial
-(`hand-crafted-day-one.md`): "every time she tries to leave the tutorial route there is a thought
+(the records grassy-beaver-silky-wombat and grassy-beaver-golden-puffin): "every time she tries to leave the tutorial route there is a thought
 bubble that guides her back to the tutorial route. she can choose to ignore it" (gentle-owl #1253).
 **Read as:** each time she starts to leave the tutorial route, a bubble points her back to it; it
 shows every time, unlike the few-times rule of the other bubbles, and she may walk on regardless.
 It shows wherever she leaves the route: past the first block the side streets carry soft seals,
-which leave the carriageway open, so she can still leave there in the road (`hand-crafted-day-one.md`).
+which leave the carriageway open, so she can still leave there in the road (the record grassy-beaver-silky-wombat).
 
 *Proposed, not asked for:* the bubble looks unlike the danger exclamation mark already drawn over
 her, since **cues** keeps that vocabulary short; "a few times" starts at three per lesson per run,
