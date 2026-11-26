@@ -145,6 +145,45 @@ class ReleaseNotesTests(unittest.TestCase):
         self.assertNotIn("docs only (#2)", out)
         self.assertIn("compare/v0.1.0...v1.0.0", out)
 
+    def test_a_candidate_covers_since_the_previous_release_never_since_a_candidate(self) -> None:
+        self.commit("src/a.gd", "root game commit (#1)")
+        self.tag("v0.1.0")
+        self.commit("src/b.gd", "first candidate's commit (#2)")
+        self.tag("v0.2.0-rc.1")
+        self.commit("tools/c.py", "second candidate's commit (#3)")
+        self.tag("v0.2.0-rc.2")
+
+        out = self.notes("v0.2.0-rc.2", repo="owner/repo")
+        self.assertIn("first candidate's commit (#2)", out, "the range must reach back past rc.1")
+        self.assertIn("second candidate's commit (#3)", out)
+        self.assertIn("compare/v0.1.0...v0.2.0-rc.2", out)
+
+    def test_a_release_after_its_candidates_has_the_notes_it_would_have_had_without_them(self) -> None:
+        self.commit("src/a.gd", "root game commit (#1)")
+        self.tag("v0.1.0")
+        self.commit("src/b.gd", "candidate's commit (#2)")
+        self.tag("v0.2.0-rc.1")
+        self.commit("docs/c.md", "after the candidate (#3)")
+        self.tag("v0.2.0")
+
+        out = self.notes("v0.2.0", repo="owner/repo")
+        self.assertIn("candidate's commit (#2)", out)
+        self.assertIn("after the candidate (#3)", out)
+        self.assertIn("compare/v0.1.0...v0.2.0", out, "a candidate is never the previous tag")
+
+    def test_a_patch_candidate_takes_a_patch_range(self) -> None:
+        self.commit("src/a.gd", "root game commit (#1)")
+        self.tag("v0.1.0")
+        self.commit("src/b.gd", "patch (#2)")
+        self.tag("v0.1.1")
+        self.commit("src/c.gd", "candidate for the next patch (#3)")
+        self.tag("v0.1.2-rc.1")
+
+        out = self.notes("v0.1.2-rc.1", repo="owner/repo")
+        self.assertIn("candidate for the next patch (#3)", out)
+        self.assertNotIn("patch (#2)", out)
+        self.assertIn("compare/v0.1.1...v0.1.2-rc.1", out)
+
     def test_commit_override_previews_a_tag_that_does_not_exist_yet(self) -> None:
         self.commit("src/a.gd", "root game commit (#1)")
         self.tag("v0.0.0")

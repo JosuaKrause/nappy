@@ -91,28 +91,31 @@ func run(t: TestRunner) -> void:
 	_test_an_escape_section_is_counted_as_a_day_of_its_own(t)
 	_test_every_event_opts_out_of_sessions(t)
 	_test_day_one_milestones_are_sent_once_an_attempt_and_only_on_day_one(t)
+	_test_a_release_candidates_page_counts_nothing(t)
 
-## The gate's truth table: `may_ever_send()` is the three inputs that never change (on the web, a
-## release build, `?debug=1` unasked); the fourth, `window.goatcounter.count` being present, is
-## `send()`'s `present`, which counts at once when true and queues when false. All four are
-## required; missing any one of them sends nothing.
+## The gate's truth table: `may_ever_send()` is the four inputs that never change (on the web, a
+## release build, `?debug=1` unasked, a version that names no release candidate); the fifth,
+## `window.goatcounter.count` being present, is `send()`'s `present`, which counts at once when
+## true and queues when false. All five are required; missing any one of them sends nothing.
 func _test_should_send_truth_table(t: TestRunner) -> void:
 	var scripts: Array[String] = []
 	var outbox := GoatCounterOutbox.new(func(script: String) -> void: scripts.append(script))
-	t.check(GoatCounterOutbox.may_ever_send(true, false, false),
+	t.check(GoatCounterOutbox.may_ever_send(true, false, false, "v0.30.0"),
 		"web, a release build and no ?debug=1 may send")
 	outbox.send("probe", true)
 	t.check(scripts.size() == 1, "and with goatcounter present it counts (%s)" % [scripts])
-	t.check(not GoatCounterOutbox.may_ever_send(false, false, false),
+	t.check(not GoatCounterOutbox.may_ever_send(false, false, false, "v0.30.0"),
 		"off the web, nothing is sent no matter what else is true")
-	t.check(not GoatCounterOutbox.may_ever_send(true, true, false),
+	t.check(not GoatCounterOutbox.may_ever_send(true, true, false, "v0.30.0"),
 		"a debug build sends nothing, on the web or off it")
-	t.check(not GoatCounterOutbox.may_ever_send(true, false, true),
+	t.check(not GoatCounterOutbox.may_ever_send(true, false, true, "v0.30.0"),
 		"?debug=1 (RunConfig.asks_for_the_readout()) sends nothing even on a release web build")
+	t.check(not GoatCounterOutbox.may_ever_send(true, false, false, "v0.31.0-rc.1"),
+		"a release candidate's build sends nothing even as a release web build without ?debug=1")
 	scripts.clear()
 	outbox.send("early", false)
 	t.check(scripts.is_empty(), "a missing or blocked window.goatcounter sends nothing")
-	t.check(not GoatCounterOutbox.may_ever_send(false, true, true),
+	t.check(not GoatCounterOutbox.may_ever_send(false, true, true, "v0.31.0-rc.1"),
 		"every reason to refuse at once still refuses")
 	# The real counter's own gate over all sixteen inputs, handed each platform and page query:
 	# counted only when the three fixed inputs allow it and the page has goatcounter.
@@ -649,9 +652,9 @@ func _test_send_event_never_queues_when_it_may_never_send(t: TestRunner) -> void
 	t.check(scripts.size() == 1 and scripts[0].contains("\"path\":\"probe\""),
 		"off the web, an event is refused outright rather than queued forever unsent (%s)"
 		% [scripts])
-	t.check(not GoatCounterOutbox.may_ever_send(true, true, false)
-			and not GoatCounterOutbox.may_ever_send(true, false, true)
-			and GoatCounterOutbox.may_ever_send(true, false, false),
+	t.check(not GoatCounterOutbox.may_ever_send(true, true, false, "v0.30.0")
+			and not GoatCounterOutbox.may_ever_send(true, false, true, "v0.30.0")
+			and GoatCounterOutbox.may_ever_send(true, false, false, "v0.30.0"),
 		"a debug build and ?debug=1 are refused for good, a release web page is not")
 	bus.free()
 	counter.free()
@@ -1136,3 +1139,27 @@ func _test_an_escape_section_is_counted_as_a_day_of_its_own(t: TestRunner) -> vo
 			"the building and the city are counted as days %d and %d (%s)"
 			% [building, city, counter.sent])
 	_done(counter)
+
+
+## **A release candidate counts nothing**, the gate's second refusal beside its export leaving
+## `count.js` off the page: a candidate's build served where the counter has loaded, on the web,
+## as a release build with no `?debug=1`, still sends nothing, where the same page on a release's
+## version counts.
+func _test_a_release_candidates_page_counts_nothing(t: TestRunner) -> void:
+	for version: String in ["v0.30.0", "v0.31.0-rc.1"]:
+		var page := RecordingPage.new()
+		var counter := VisitCounter.new()
+		var run := RunState.new()
+		run.start_run(1)
+		counter.configure(RunConfig.parse(PackedStringArray(), "", false), run)
+		counter.send_through(page.outbox(),
+				GoatCounterPlatform.new(true, false, func() -> bool: return true, version))
+		var bus: EVENT_BUS_SCRIPT = EVENT_BUS_SCRIPT.new()
+		counter.listen(bus)
+		bus.controls_chosen.emit(true, false)
+		var candidate := BuildInfo.names_a_release_candidate(version)
+		t.check(page.names().is_empty() == candidate,
+			"a page on %s %s (%s)" % [version, "counts nothing" if candidate else "counts",
+					page.names()])
+		bus.free()
+		counter.free()

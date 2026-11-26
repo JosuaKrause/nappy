@@ -75,6 +75,15 @@ static func _commit_text() -> String:
 		return from_git
 	return ProjectSettings.get_setting("application/config/source_commit", "unknown")
 
+## Whether `version` names a release candidate: exactly `vX.Y.Z-rc.N`, the tag a candidate's export
+## bakes as its version (`tools/export-web.sh`; `tools/lib_release_tags.py` holds the same grammar
+## for the tools). A candidate is served beside the release, at the site's `/rc/`, and is told apart
+## by this alone: it counts nothing (`GoatCounterOutbox.may_ever_send()`) and keeps a save of its
+## own (`GameSave.player_path()`). A working tree's `git describe` past a candidate's tag
+## (`v0.31.0-rc.1-3-gab12cd3`, or one ending `-dirty`) is not one: that is a developer's tree.
+static func names_a_release_candidate(version: String) -> bool:
+	return RegEx.create_from_string("^v\\d+\\.\\d+\\.\\d+-rc\\.\\d+$").search(version) != null
+
 ## What the debug furniture and the files a run writes say the build is — `v0.10.3 (875609a5)` on
 ## a release, `v0.10.3-2-gab12cd3-dirty (ab12cd3)` on a working tree — the `git describe` form and
 ## the commit together, since describe alone collapses to the tag on every release. *(2026-09-13,

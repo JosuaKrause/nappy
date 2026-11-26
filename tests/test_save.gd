@@ -29,6 +29,7 @@ func run(t: TestRunner) -> void:
 
 	_test_uses_save_is_false_under_the_headless_runner(t)
 	_test_debug_run_uses_save_policy(t)
+	_test_a_release_candidate_keeps_a_save_of_its_own(t)
 	_test_no_save_query_parsing(t)
 	_test_web_debug_flag_used_query_parsing(t)
 	_test_gated_write_and_resume_touch_nothing_under_the_headless_runner(t)
@@ -176,6 +177,19 @@ func _test_uses_save_is_false_under_the_headless_runner(t: TestRunner) -> void:
 	t.check(not _a_write_lands(), "nor does a headless release run, flags or no flags")
 	_save.configure(null)
 	t.check(not _a_write_lands(), "nor does a run nothing has configured yet")
+
+## **A release candidate keeps a save of its own** (`GameSave.player_path()`): it is served beside
+## the release on the same site, whose `user://` both pages share, so a candidate's file is never
+## the release's. A working tree past a candidate's tag is no candidate and keeps the release's.
+func _test_a_release_candidate_keeps_a_save_of_its_own(t: TestRunner) -> void:
+	var release := GameSave.player_path("v0.30.0")
+	t.check(GameSave.player_path("v0.31.0-rc.1") != release,
+		"a release candidate's save is not the release's (%s, %s)"
+		% [GameSave.player_path("v0.31.0-rc.1"), release])
+	t.check(GameSave.player_path("v0.31.0-rc.2") == GameSave.player_path("v0.31.0-rc.1"),
+		"every candidate keeps the same one, so the next candidate resumes the last one's day")
+	t.check(GameSave.player_path("v0.31.0-rc.1-3-gab12cd3-dirty") == release,
+		"a working tree past a candidate's tag keeps the release's save")
 
 ## The debug build's policy on whether a run saves, read off whether a write lands.
 func _test_debug_run_uses_save_policy(t: TestRunner) -> void:

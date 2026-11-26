@@ -13,6 +13,10 @@
 # RELEASE_TAG=<tag> tools/export-web.sh   # names build/web/<tag>/, default "dev", and is the
 #                                         # version baked into the export
 #
+# A release candidate's tag (`vX.Y.Z-rc.N`, as `tools/release-tags.py kind` reads it) also takes
+# GoatCounter's `count.js` off the page, so not even the visit to a candidate is counted
+# (docs/TELEMETRY.md, "The page counts visits"); the game's own gate refuses its events as well.
+#
 # index.js, index.wasm and index.pck move into build/web/$RELEASE_TAG/ after the export, and
 # index.html is rewritten to name them there — see the export-versioning step below for why.
 # .github/workflows/deploy.yml sets RELEASE_TAG to the pushed tag; a local export has none, so
@@ -38,6 +42,7 @@ Release requires tools/build-web-template.sh first; debug uses the stock templat
   tools/export-web.sh
   tools/export-web.sh debug
   RELEASE_TAG=v1.2.3 tools/export-web.sh
+  RELEASE_TAG=v1.3.0-rc.1 tools/export-web.sh   # a release candidate: no count.js on the page
 EOF
 }
 
@@ -194,6 +199,15 @@ fi
 RELEASE_TAG="${RELEASE_TAG:-dev}"
 VERSIONED_DIR="$OUT_DIR/$RELEASE_TAG"
 
+# Whether this export is a release candidate, asked of the one reader of tag names every tool
+# shares. A name that is no version tag at all ("dev", a check's name) is not a candidate; a
+# machine that cannot ask is refused, since guessing "no" would put the counter on a candidate.
+if ! command -v uv >/dev/null 2>&1; then
+    echo "FAILED: uv is not on PATH; it says whether $RELEASE_TAG is a release candidate" >&2
+    exit 1
+fi
+TAG_KIND="$(uv run --quiet python "$PROJECT_DIR/tools/release-tags.py" kind "$RELEASE_TAG" 2>/dev/null)"
+
 echo
 echo "== version index.js/.wasm/.pck under $RELEASE_TAG/ =="
 
@@ -213,10 +227,11 @@ done
 # Every anchor below is asserted to occur exactly once before it is touched, so a future Godot
 # shell change that moves or renames one of these fails the export loudly rather than shipping a
 # page that quietly points at the wrong place.
-python3 - "$OUT_DIR/index.html" "$RELEASE_TAG" <<'PY'
+python3 - "$OUT_DIR/index.html" "$RELEASE_TAG" "$TAG_KIND" <<'PY'
+import re
 import sys
 
-path, tag = sys.argv[1], sys.argv[2]
+path, tag, kind = sys.argv[1], sys.argv[2], sys.argv[3]
 html = open(path, encoding="utf-8").read()
 
 
@@ -237,6 +252,17 @@ html = replace_once(html, '"index.wasm"', f'"{tag}/index.wasm"', 'fileSizes inde
 # gets the short one (docs/playtests/PLAYTEST-27.md finding 5). Removed here, from the shell's side,
 # rather than from head_include, since head_include's title is the one meant to survive.
 html = replace_once(html, '<title>Nappy</title>', '', 'Godot shell <title>Nappy</title>')
+
+# A release candidate counts nothing: html/head_include's GoatCounter script, the one element that
+# loads count.js, is taken off its page whole, and nothing naming GoatCounter may be left behind.
+if kind == "candidate":
+    counter = re.compile(r"<script>(?:(?!</script>).)*gc\.zgo\.at/count\.js(?:(?!</script>).)*</script>", re.S)
+    found = counter.findall(html)
+    if len(found) != 1:
+        sys.exit(f"FAILED: expected exactly one count.js script on the candidate's page, found {len(found)}")
+    html = counter.sub("", html)
+    if "goatcounter" in html:
+        sys.exit("FAILED: the candidate's page still names goatcounter after its script was removed")
 
 open(path, "w", encoding="utf-8").write(html)
 PY
@@ -267,4 +293,8 @@ if ! "$PROJECT_DIR/tools/audit-pck.sh" --fatal "$VERSIONED_DIR/index.pck"; then
 fi
 
 echo
-echo "OK: wrote $OUT_DIR ($RELEASE_TAG/index.js, $RELEASE_TAG/index.wasm, $RELEASE_TAG/index.pck)"
+if [[ "$TAG_KIND" == candidate ]]; then
+    echo "OK: wrote $OUT_DIR ($RELEASE_TAG/index.js, $RELEASE_TAG/index.wasm, $RELEASE_TAG/index.pck), a release candidate with no count.js"
+else
+    echo "OK: wrote $OUT_DIR ($RELEASE_TAG/index.js, $RELEASE_TAG/index.wasm, $RELEASE_TAG/index.pck)"
+fi

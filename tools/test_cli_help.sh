@@ -336,6 +336,10 @@ assert_exit "sound-lab.sh --bogus"    nonzero ./tools/sound-lab.sh --bogus
 assert_exit "sound-lab.sh --pass (there is one pass; the flag is gone)" nonzero ./tools/sound-lab.sh --pass pass-4
 assert_exit "sound-lab.sh (bad port)" nonzero ./tools/sound-lab.sh notaport
 assert_exit "release.sh --bogus"      nonzero ./tools/release.sh --bogus
+assert_exit "release.sh rc (missing part)" nonzero ./tools/release.sh rc
+assert_exit "release.sh rc bogus part" nonzero ./tools/release.sh rc micro
+assert_exit "release.sh rc stray word" nonzero ./tools/release.sh rc minor push extra
+assert_exit "release.sh rc rc (twice)" nonzero ./tools/release.sh rc rc minor
 assert_exit "run.sh --bogus"          nonzero ./tools/run.sh --bogus
 assert_exit "shot.sh --bogus"         nonzero ./tools/shot.sh "$work_dir/shot-out.png" 1 --bogus
 assert_exit "trailer.sh --bogus"      nonzero ./tools/trailer.sh --bogus
