@@ -24,7 +24,10 @@ extends RefCounted
 ## a seal. Whether nothing leaves that route past its first block is a question about all four
 ## together on the ground a real city has (absent streets, their leftover pavement, alleys, street
 ## trees), the cases where it has been found to fail, so the cases plan the day as the dawn does
-## (`_plan_day_one()`) on cities the generator made, over the city suites' seeds.
+## (`_plan_day_one()`) on cities the generator made, over the city suites' seeds. The pedestrian
+## streets' cases ask what a seal leaves open across a precinct the way the crowd and she meet it,
+## the footprint the crowd steers round (`EventSpawner.footprint_of()`) and the solid pieces that
+## hold her off (`WalkGround`), on the city whose precincts showed the gap.
 
 const Reach := preload("res://tests/seal_reach_rig.gd")
 const SEEDS := 6
@@ -71,6 +74,8 @@ func run(t: TestRunner) -> void:
 	_test_nothing_leaves_the_tutorial_route_past_its_first_block(t)
 	_test_the_car_accident_seals_from_day_two(t)
 	_test_day_two_leaves_day_ones_walk_open(t)
+	_test_no_soft_seal_stands_on_a_pedestrian_street(t)
+	_test_a_seal_closes_a_pedestrian_street_wall_to_wall(t)
 
 # ------------------------------------------------------------------------ setup ---
 
@@ -1065,8 +1070,9 @@ func _bodies_at_mouth(map: CityMap, seals: Array[EventPlan], segment: StreetNetw
 ## both its sidewalks blocked and the street open *(gentle-owl #1253, the player: "doesn't have to
 ## be a full hard seal -- street can be open -- just both sidewalks need to be blocked")*. Each
 ## side street's mouth on the route carries a whole soft pair (never thinned, never the delivery
-## van, lesson (4)'s row), or across a precinct the burst water main, standing far enough in that
-## no body, with her own beside it, reaches the route's junction box.
+## van, lesson (4)'s row, nor a pair reaching past one sidewalk lane across her line, such as the
+## café tables, which can refuse a lesson's tiles), or across a precinct the burst water main,
+## standing far enough in that no body, with her own beside it, reaches the route's junction box.
 func _test_day_one_seals_each_side_street_at_its_mouth(t: TestRunner) -> void:
 	var mouths := 0
 	for map in _maps:
@@ -1099,6 +1105,11 @@ func _test_day_one_seals_each_side_street_at_its_mouth(t: TestRunner) -> void:
 				t.check(plan.row_id() != "delivery_van",
 						"seed %d: no side street of the route is sealed with the delivery van (%s)"
 						% [map.city_seed(), segment.key()])
+				if not TutorialRoute.is_a_precinct(map, segment):
+					t.check(plan.line_reach() <= SealPlanner.TUTORIAL_MOUTH_MOST_REACH,
+							"seed %d: the %s at %s's mouth reaches %.0fpx across her line, no more "
+							% [map.city_seed(), plan.row_id(), segment.key(), plan.line_reach()]
+							+ "than a lane, so it cannot refuse a lesson's tiles")
 				var at := plan.body_at()
 				var nearest := Vector2(clampf(at.x, box.position.x, box.end.x),
 						clampf(at.y, box.position.y, box.end.y))
@@ -1409,3 +1420,136 @@ func _test_day_two_leaves_day_ones_walk_open(t: TestRunner) -> void:
 				"seed %d day %d: every other street off the tree is sealed (%d are not)"
 				% [map.city_seed(), day, missing])
 	t.check(opened > 0, "there were lesson streets off day 2's tree to leave open (%d)" % opened)
+
+# ------------------------------------------------------- the pedestrian streets ---
+
+## Every seal body standing on a pedestrian street in `planned`, grouped by street and by the
+## tile it stands at along it: each entry is the segment, the tile along it and its bodies.
+func _seals_on_precincts(map: CityMap, planned: Array[EventPlan]) -> Array[Array]:
+	var groups := {}
+	var found: Array[Array] = []
+	for plan in planned:
+		var segment := map.street_network().segment_containing(map.world_to_tile(
+				plan.placed_at()))
+		if segment == null or not TutorialRoute.is_a_precinct(map, segment):
+			continue
+		var along := _along(segment, map.world_to_tile(plan.placed_at()))
+		var key := "%s:%d" % [segment.key(), along]
+		if not groups.has(key):
+			var entry: Array = [segment, along, [] as Array[EventPlan]]
+			groups[key] = entry
+			found.append(entry)
+		var group: Array = groups[key]
+		var bodies: Array[EventPlan] = group[2]
+		bodies.append(plan)
+	return found
+
+## **No soft seal stands on a pedestrian street** *(tiny-lark #931, the player's "(c)")*: a
+## precinct has no traffic, so a soft pair's open middle lanes would be risked for nothing. Asked
+## of every seal body on a precinct, on every day of the suite's cities.
+func _test_no_soft_seal_stands_on_a_pedestrian_street(t: TestRunner) -> void:
+	var soft_rows := {}
+	for candidate in SealPlanner.candidates():
+		if candidate.strength == SealPlanner.Strength.SOFT:
+			for id in candidate.def_ids:
+				soft_rows[id] = candidate.id
+	var on_precincts := 0
+	for map in _maps:
+		for day in range(1, Tuning.RUN_LENGTH_DAYS + 1):
+			for group: Array in _seals_on_precincts(map, _seals_for(map, day)):
+				var segment: StreetNetwork.Segment = group[0]
+				var bodies: Array[EventPlan] = group[2]
+				on_precincts += 1
+				for body in bodies:
+					t.check(not soft_rows.has(body.row_id()),
+							"seed %d day %d: the pedestrian street %s carries no soft seal (%s of %s)"
+							% [map.city_seed(), day, segment.key(), body.row_id(),
+							soft_rows.get(body.row_id(), "")])
+	t.check(on_precincts > 0, "there were seals on pedestrian streets to ask (%d)" % on_precincts)
+
+## The city whose pedestrian streets carried a seal with a two-lane hole on these days.
+const _PRECINCT_GAP_SEED := 67
+const _PRECINCT_GAP_DAYS: Array[int] = [2, 3, 4, 5, 6, 7, 8, 10, 11, 12, 13]
+## How far either side of a seal's own tile a way past it is looked for, in tiles.
+const _PAST_A_SEAL := 3
+
+## **A seal on a pedestrian street closes it wall to wall** (the M64 record: a hard seal spans the
+## street frontage to frontage and nothing gets past it): on the city and days that showed a seal
+## with its middle two lanes open, no lane of a precinct is left open past a seal for a walker,
+## and no line along it for her. A walker's lane is open where no body's footprint
+## (`EventSpawner.footprint_of()`, what the crowd steers round) and no soft-sealed tile touches it
+## within `_PAST_A_SEAL` tiles; her line is open where her centre passes the same stretch with no
+## solid piece holding it off (`WalkGround.Solid.stops_her_at()`).
+func _test_a_seal_closes_a_pedestrian_street_wall_to_wall(t: TestRunner) -> void:
+	var map := CityGenerator.generate(_PRECINCT_GAP_SEED)
+	var asked := 0
+	for day in _PRECINCT_GAP_DAYS:
+		_repaint_for(map, day)
+		var planned := SealPlanner.plan_day(Shipped.rows(), map, DaySpec.for_day(day),
+				RouteTree.for_day(map, day, null), _seal_rng(map, day))
+		var footprint := {}
+		for plan in planned:
+			for tile in EventSpawner.footprint_of(BodyStance.of_plan(map, plan)):
+				footprint[tile] = true
+		var soft := map.soft_sealed_tiles()
+		var ground := WalkGround.new(map, planned)
+		for group: Array in _seals_on_precincts(map, planned):
+			var segment: StreetNetwork.Segment = group[0]
+			var along: int = group[1]
+			var bodies: Array[EventPlan] = group[2]
+			asked += 1
+			var lanes := _lanes_open_past(segment, along, footprint, soft)
+			t.check(lanes.is_empty(),
+					"seed %d day %d: the seal on the pedestrian street %s (%s) leaves no lane open "
+					% [_PRECINCT_GAP_SEED, day, segment.key(), _ids_of(bodies)]
+					+ "to walkers (open: %s)" % [lanes])
+			var line := _her_line_past(map, segment, along, ground, bodies)
+			t.check(line < 0.0,
+					"seed %d day %d: the seal on the pedestrian street %s (%s) leaves her no line "
+					% [_PRECINCT_GAP_SEED, day, segment.key(), _ids_of(bodies)]
+					+ "past it (one at %.0fpx across)" % line)
+	t.check(asked > 0, "there were seals on pedestrian streets to ask (%d)" % asked)
+
+## The lanes across `segment` that no footprint and no soft-sealed tile touches within
+## `_PAST_A_SEAL` tiles of `along`.
+func _lanes_open_past(segment: StreetNetwork.Segment, along: int, footprint: Dictionary,
+		soft: Dictionary) -> Array[int]:
+	var rect := segment.tile_rect()
+	var open: Array[int] = []
+	for lane in Tuning.STREET_WIDTH:
+		var clear := true
+		for step in range(-_PAST_A_SEAL, _PAST_A_SEAL + 1):
+			var tile := Vector2i(along + step, rect.position.y + lane) if segment.horizontal \
+					else Vector2i(rect.position.x + lane, along + step)
+			if rect.has_point(tile) and (footprint.has(tile) or soft.has(tile)):
+				clear = false
+		if clear:
+			open.append(lane)
+	return open
+
+## How far across `segment` her centre passes `_PAST_A_SEAL` tiles either side of `along` with
+## none of `bodies`' solid pieces holding it off, in px from the street's near edge, sampled every
+## 2px; -1 where no such line exists.
+func _her_line_past(map: CityMap, segment: StreetNetwork.Segment, along: int,
+		ground: WalkGround, bodies: Array[EventPlan]) -> float:
+	var solids: Array[WalkGround.Solid] = []
+	for body in bodies:
+		solids.append_array(ground.solids_of(body))
+	var world := map.tile_rect_to_world(segment.tile_rect())
+	var width: float = world.size.y if segment.horizontal else world.size.x
+	var centre := (float(along) + 0.5) * Tuning.TILE_SIZE
+	var reach := float(_PAST_A_SEAL * Tuning.TILE_SIZE)
+	var across := Tuning.PLAYER_BODY_RADIUS
+	while across <= width - Tuning.PLAYER_BODY_RADIUS:
+		var clear := true
+		var on := centre - reach
+		while on <= centre + reach and clear:
+			var at := Vector2(on, world.position.y + across) if segment.horizontal \
+					else Vector2(world.position.x + across, on)
+			for solid in solids:
+				clear = clear and not solid.stops_her_at(at)
+			on += 2.0
+		if clear:
+			return across
+		across += 2.0
+	return -1.0

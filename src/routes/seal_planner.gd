@@ -55,6 +55,11 @@ extends RefCounted
 ## for the day, and it is offered only on a street `StreetTrees` actually planted (see
 ## `FALLEN_TREE_SEAL_ID`).
 ##
+## **On a pedestrian street, only a seal that closes it.** A precinct is paved frontage to
+## frontage with no carriageway, so a soft seal's open middle, or a crash's walkable pavements,
+## would be a hole walkers walk through and she risks nothing in. A precinct is offered only the
+## hard seals solid all across (`_closes_a_precinct()`), and a seal there spans it wall to wall.
+##
 ## **The doorstep is exempt.** `ClosurePlanner.home_street(map)` is never sealed, for the same
 ## reason it is never closed: the home is a notch with one exit, so sealing it seals her in.
 ##
@@ -353,7 +358,8 @@ static func plan_day(rows: EventCatalogue, map: CityMap, spec: DaySpec, route: R
 			continue
 		if thinned and not _seals_this_street(rng):
 			continue
-		var candidate := _pick_candidate(rows, pictures, day, rng, lined.has(key))
+		var candidate := _pick_candidate(rows, pictures, day, rng, lined.has(key),
+				TutorialRoute.is_a_precinct(map, segment))
 		if not candidate:
 			continue
 		var sited := seal_street(rows, map, segment, candidate, route, trees, emptied)
@@ -375,11 +381,30 @@ static func plan_day(rows: EventCatalogue, map: CityMap, spec: DaySpec, route: R
 ## and the burst water main is a day-1 picture that closes the whole width.
 const TUTORIAL_PRECINCT_SEAL_ID := "burst_main_seal"
 
-## The soft pairs a side street's mouth on the tutorial route is never sealed with: each is a row
-## that teaches one of day 1's lessons on the route (`DawnTutorial`), the market stall the noise she
-## passes wide and the delivery van the sidewalk that makes her cross, and a side street sealed with
-## one would blur that lesson. Every other soft pair offered that day may seal a mouth.
-const TUTORIAL_MOUTH_LEFT_OUT := ["delivery_pair", "market_pair"]
+## The rows that teach one of day 1's lessons on the route (`DawnTutorial`): the market stall the
+## noise she passes wide and the delivery van the sidewalk that makes her cross. Only the van's
+## entry does work here: the stall's reach already passes `TUTORIAL_MOUTH_MOST_REACH`, and the entry
+## stays so the lesson rows are left out by what they are, whatever their reach is set to.
+const _TUTORIAL_LESSON_ROWS := [DawnTutorial.NOISE_PASSED_WIDE, DawnTutorial.SHUTS_HER_SIDEWALK]
+
+## How far across her line a soft pair at a side street's mouth may reach before it can refuse a
+## lesson's tiles: the distance between the two lanes of a sidewalk (32px), which is the construction
+## pair's reach and so the widest that stays. A row reaching past it (the café tables' 56px, the
+## market stall's 58px) beside a lesson's crossing can take both lanes, and `RouteLineRule` then
+## refuses the lesson's row and removes it from the day. *Proposed, not asked for*: the 32px is the
+## builder's reading of where a lesson starts to be refused, open to overturn.
+const TUTORIAL_MOUTH_MOST_REACH := float((Tuning.SIDEWALK_WIDTH - 1) * Tuning.TILE_SIZE)
+
+## Whether a side street's mouth on the tutorial route is never sealed with `candidate`, a soft
+## pair: it holds a row that teaches one of the lessons, so a side street sealed with it would blur
+## that lesson, or one whose reach across her line (`EventDef.line_reach()`) passes
+## `TUTORIAL_MOUTH_MOST_REACH`. Every other soft pair offered that day may seal a mouth.
+static func _is_left_out_of_a_mouth(rows: EventCatalogue, candidate: Candidate) -> bool:
+	for id in candidate.def_ids:
+		if _TUTORIAL_LESSON_ROWS.has(id) \
+				or rows.by_id(id).line_reach() > TUTORIAL_MOUTH_MOST_REACH:
+			return true
+	return false
 
 ## `tutorial`'s side streets past its first block (`TutorialRoute.side_street_mouths()`), by
 ## segment key, each with the ends of it that open onto the route (`true` for its `a` end).
@@ -401,9 +426,9 @@ static func _mouths_of(tutorial: TutorialRoute) -> Dictionary:
 ## "doesn't have to be a full hard seal -- street can be open -- just both sidewalks need to be
 ## blocked -- no valid route goes off of the tutorial route past the first block")*:
 ##
-## - **a soft pair**, drawn from the day's soft pictures less `TUTORIAL_MOUTH_LEFT_OUT`, on an
-##   ordinary side street. It is **never thinned**: a thinned pair would open the one way off the
-##   route the seal is there to close;
+## - **a soft pair**, drawn from the day's soft pictures less those left out
+##   (`_is_left_out_of_a_mouth()`), on an ordinary side street. It is **never thinned**: a
+##   thinned pair would open the one way off the route the seal is there to close;
 ## - **the burst water main** (`TUTORIAL_PRECINCT_SEAL_ID`) across a precinct side street, whose
 ##   paved middle no sidewalk pair closes. A seal need not be a full hard seal, so where a soft
 ##   one cannot close the street a hard one does.
@@ -418,7 +443,8 @@ static func _seal_a_mouth(rows: EventCatalogue, map: CityMap, segment: StreetNet
 	var precinct := TutorialRoute.is_a_precinct(map, segment)
 	var eligible: Array[Candidate] = []
 	for candidate in pictures:
-		if offers(rows, candidate, day, false) and _seals_a_tutorial_mouth(candidate, precinct):
+		if offers(rows, candidate, day, false, precinct) \
+				and _seals_a_tutorial_mouth(rows, candidate, precinct):
 			eligible.append(candidate)
 	if eligible.is_empty():
 		return null
@@ -427,11 +453,12 @@ static func _seal_a_mouth(rows: EventCatalogue, map: CityMap, segment: StreetNet
 	return SitedSeal.new(segment, picked, along, _place(rows, map, segment, picked, along))
 
 ## Whether `candidate` may seal a side street's mouth on the tutorial route: the burst water main
-## across a precinct, a soft pair less `TUTORIAL_MOUTH_LEFT_OUT` anywhere else.
-static func _seals_a_tutorial_mouth(candidate: Candidate, precinct: bool) -> bool:
+## across a precinct, a soft pair not left out (`_is_left_out_of_a_mouth()`) anywhere else.
+static func _seals_a_tutorial_mouth(rows: EventCatalogue, candidate: Candidate,
+		precinct: bool) -> bool:
 	if precinct:
 		return candidate.id == TUTORIAL_PRECINCT_SEAL_ID
-	return candidate.strength == Strength.SOFT and not TUTORIAL_MOUTH_LEFT_OUT.has(candidate.id)
+	return candidate.strength == Strength.SOFT and not _is_left_out_of_a_mouth(rows, candidate)
 
 ## How far from a body's centre `candidate` keeps her centre: its widest row's
 ## `obstructs_within()` and her own body.
@@ -451,7 +478,7 @@ static func tutorial_mouth_stub(rows: EventCatalogue, map: CityMap,
 	var precinct := TutorialRoute.is_a_precinct(map, segment)
 	var reach := 0.0
 	for candidate in candidates():
-		if _seals_a_tutorial_mouth(candidate, precinct):
+		if _seals_a_tutorial_mouth(rows, candidate, precinct):
 			reach = maxf(reach, _reach_of(rows, candidate))
 	var along := _mouth_along_tile(segment, at_a, reach, trees)
 	var mouth := segment.mouth_rect(at_a)
@@ -595,24 +622,51 @@ static func _seals_this_street(rng: RandomNumberGenerator) -> bool:
 const FALLEN_TREE_SEAL_ID := "fallen_tree_seal"
 
 static func _pick_candidate(rows: EventCatalogue, pictures: Array[Candidate], day: int,
-		rng: RandomNumberGenerator, street_has_trees: bool) -> Candidate:
+		rng: RandomNumberGenerator, street_has_trees: bool, on_a_precinct: bool) -> Candidate:
 	var eligible: Array[Candidate] = []
 	for candidate in pictures:
-		if offers(rows, candidate, day, street_has_trees):
+		if offers(rows, candidate, day, street_has_trees, on_a_precinct):
 			eligible.append(candidate)
 	if eligible.is_empty():
 		return null
 	return eligible[rng.randi_range(0, eligible.size() - 1)]
 
 ## Whether `candidate` may seal a street on `day`: every row it names is available by then
-## (`EventDef.own_first_day()`), and a fallen tree only on a street with trees of its own
-## (`street_has_trees`, `FALLEN_TREE_SEAL_ID`). What `plan_day()` draws a street's picture from, and
-## what a scene recipe's authored seal is held to (`SceneRecipeRuntime`).
+## (`EventDef.own_first_day()`), a fallen tree only on a street with trees of its own
+## (`street_has_trees`, `FALLEN_TREE_SEAL_ID`), and on a pedestrian street
+## (`on_a_precinct`, `TutorialRoute.is_a_precinct()`) only a picture that closes it
+## (`_closes_a_precinct()`). What `plan_day()` draws a street's picture from, and what a scene
+## recipe's authored seal is held to (`SceneRecipeRuntime`).
 static func offers(rows: EventCatalogue, candidate: Candidate, day: int,
-		street_has_trees: bool) -> bool:
+		street_has_trees: bool, on_a_precinct: bool) -> bool:
 	if candidate.id == FALLEN_TREE_SEAL_ID and not street_has_trees:
 		return false
+	if on_a_precinct and not _closes_a_precinct(rows, candidate):
+		return false
 	return _eligible(rows, candidate, day)
+
+## **Whether `candidate` closes a pedestrian street frontage to frontage**: a hard seal whose rows
+## are solid all across their shape. A precinct is paved frontage to frontage and has no
+## carriageway, so a seal there has nothing to leave open to be risked:
+##
+## - **no soft seal** *(tiny-lark #931, the player, asked what a soft seal should leave open on a
+##   pedestrian street, picked "(c)": never place one there)*. A soft pair takes both sidewalks and
+##   leaves the middle lanes open, which on a street with no traffic costs nothing to walk;
+## - **no hard seal solid in parts** (`EventDef.is_solid_in_parts()`), the car accident, whose
+##   pavements and debris are walkable and priced only by its field, so walkers walk through it.
+##   A hard seal spans the street and nothing gets past it, which the crash is not; and a crash of
+##   two cars on a street no car drives is no picture of anything. Left out by the reading of the
+##   player's answer rather than by their words, open to their overturn.
+##
+## Generic over the candidate list, so a new picture is offered on a precinct or not by its own rows.
+static func _closes_a_precinct(rows: EventCatalogue, candidate: Candidate) -> bool:
+	if candidate.strength != Strength.HARD:
+		return false
+	for id in candidate.def_ids:
+		var def := rows.by_id(id)
+		if def and def.is_solid_in_parts():
+			return false
+	return true
 
 static func _eligible(rows: EventCatalogue, candidate: Candidate, day: int) -> bool:
 	if day < candidate.first_day:
