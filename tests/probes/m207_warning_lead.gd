@@ -190,7 +190,7 @@ static func gold(encounter: Dictionary, answer: Answer, edge: DangerEdge) -> Dic
 				instance = made[0]
 				result["created_at"] = clock - warned_at
 			continue
-		created_where.tell(her, Vector2.INF, Rect2(), answer == Answer.RUN)
+		created_where.tell(her, Vector2.INF, null, answer == Answer.RUN)
 		instance.step(STEP)
 		var at := instance.global_position
 		var in_view := _in_view(at - her)

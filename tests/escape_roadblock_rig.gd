@@ -279,19 +279,23 @@ class Meter extends RefCounted:
 
 ## The camera's view round her once it has settled on her walking `heading`: `Tuning.VIEW_HALF_EXTENT`
 ## either way of her, led by `Stroller.CAMERA_LOOK_AHEAD` the way `Stroller` leads it (its
-## `OBLIQUE_Y` squash on the vertical). What `EventManager` hands a waiting charger as
-## `WhereSheIs.view()`; the view round her alone for no heading.
+## `OBLIQUE_Y` squash on the vertical): the camera's view of what `EventManager` hands a waiting
+## charger as `WhereSheIs.view()`; the view round her alone for no heading.
 static func view_round(her: Vector2, heading: Vector2) -> Rect2:
 	var lead := Vector2(heading.x, heading.y * Stroller.OBLIQUE_Y) * Stroller.CAMERA_LOOK_AHEAD
 	return Rect2(her + lead - Tuning.VIEW_HALF_EXTENT, Tuning.VIEW_HALF_EXTENT * 2.0)
 
 ## One frame of the world round her: `where` (the one the instances were handed) told where
 ## she is, every instance stepped, then asked whether it catches her. True on a catch. With a
-## `heading` (the way she faces), the camera's view round her is told too (`view_round()`).
+## `heading` (the way she faces), what she sees is told too: the camera's view round her
+## (`view_round()`), in the tap scheme, which covers none of it.
 static func tick(where: WhereSheIs, instances: Array[EventInstance], her: Vector2,
 		running: bool, heading := Vector2.ZERO) -> bool:
-	var view := view_round(her, heading) if heading != Vector2.ZERO else Rect2()
-	where.tell(her, Vector2.INF, view, running, false)
+	var seen: VisibleView = null
+	if heading != Vector2.ZERO:
+		seen = VisibleView.new()
+		seen.look(view_round(her, heading), null)
+	where.tell(her, Vector2.INF, seen, running, false)
 	for instance in instances:
 		instance.step(STEP)
 	for instance in instances:

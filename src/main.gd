@@ -494,7 +494,7 @@ func _ready() -> void:
 		# one view (`VisibleView`) rather than growing a second one: "has she seen this" for a
 		# mark's notice. Whether anything it places or removes is anywhere on screen, covered
 		# corners included, is the city's siting's, over the same view.
-		_resistance.set_sight(events.sees)
+		_resistance.set_sight(events.visible_view())
 
 	_day = DayController.new()
 	_day.name = "Day"

@@ -641,8 +641,8 @@ func _tell_them_where_she_is() -> void:
 	var pram := Vector2.INF
 	if stroller != null and not stroller.is_carrying():
 		pram = stroller.global_position + stroller.facing_direction() * Tuning.PLAYER_BODY_RADIUS
-	world.where_she_is().tell(world.player().global_position, pram,
-			world.visible_view().camera_view(), running, awake, held)
+	world.where_she_is().tell(world.player().global_position, pram, world.visible_view(), running,
+			awake, held)
 	for instance in world.instances():
 		instance.source().set_outranked(instance.counts_as_one_barrier() and instance != strongest)
 

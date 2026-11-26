@@ -152,9 +152,9 @@ func _test_a_dog_shaken_off_mid_telegraph_is_telegraphing_until_its_clock_runs(t
 	var clock := 0.0
 	while not dog.is_on_its_way_out() and clock < def.telegraphs_for():
 		if clock >= 1.2:
-			dog_where.tell(dog_where.at(), Vector2.INF, Rect2(), true)
+			dog_where.tell(dog_where.at(), Vector2.INF, null, true)
 			her += Vector2(Tuning.RUN_SPEED * STEP, 0.0)
-		dog_where.tell(her, Vector2.INF, Rect2(), dog_where.is_running())
+		dog_where.tell(her, Vector2.INF, null, dog_where.is_running())
 		dog.step(STEP)
 		clock += STEP
 	t.check(dog.is_on_its_way_out() and dog.age() < def.telegraphs_for(),
@@ -164,12 +164,12 @@ func _test_a_dog_shaken_off_mid_telegraph_is_telegraphing_until_its_clock_runs(t
 	t.check(dog.has_given_up(), "having given up: she shook it off, its clock did not run out")
 	# She follows it at 100px, so it stays in her sight and in the world while its clock runs.
 	while dog.age() < def.telegraphs_for() - 2.0 * STEP and not dog.is_gone():
-		dog_where.tell(dog.global_position + Vector2(100.0, 0.0), Vector2.INF, Rect2(),
+		dog_where.tell(dog.global_position + Vector2(100.0, 0.0), Vector2.INF, null,
 				dog_where.is_running())
 		dog.step(STEP)
 		t.check(dog.is_telegraphing(), "every frame until its clock runs out (%.1fs)" % dog.age())
 	while dog.age() < def.telegraphs_for() + STEP and not dog.is_gone():
-		dog_where.tell(dog.global_position + Vector2(100.0, 0.0), Vector2.INF, Rect2(),
+		dog_where.tell(dog.global_position + Vector2(100.0, 0.0), Vector2.INF, null,
 				dog_where.is_running())
 		dog.step(STEP)
 	t.check(not dog.is_gone() and dog.is_on_its_way_out(), "still in the world, leaving")

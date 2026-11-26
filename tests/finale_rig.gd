@@ -604,7 +604,7 @@ func _test_a_roadblock_band_costs_nothing(t: TestRunner) -> void:
 		var charged := false
 		var frames := 0
 		while not guard.has_given_up() and frames < int(10.0 / step):
-			told.tell(guard.global_position + Vector2(0.0, 300.0), Vector2.INF, Rect2(), true)
+			told.tell(guard.global_position + Vector2(0.0, 300.0), Vector2.INF, null, true)
 			guard.step(step)
 			charged = charged or guard.is_chasing()
 			if guard.is_chasing():
@@ -666,7 +666,7 @@ func _test_the_far_guard_leaves_with_his_partner(t: TestRunner) -> void:
 		waited += 1
 	var frames := 0
 	while not guard.is_on_its_way_out() and frames < int(10.0 / step):
-		told.tell(guard.global_position + Vector2(0.0, 300.0), Vector2.INF, Rect2(), true)
+		told.tell(guard.global_position + Vector2(0.0, 300.0), Vector2.INF, null, true)
 		guard.step(step)
 		frames += 1
 	var her := told.at()
@@ -862,7 +862,7 @@ func _test_a_lured_off_roadblock_raises_no_mark_over_her(t: TestRunner) -> void:
 		waited += 1
 	var frames := 0
 	while not band.has_given_up() and frames < int(60.0 / step):
-		told.tell(band.global_position + Vector2(0.0, 300.0), Vector2.INF, Rect2(), true)
+		told.tell(band.global_position + Vector2(0.0, 300.0), Vector2.INF, null, true)
 		band.step(step)
 		frames += 1
 	t.check(band.has_given_up(), "the band's guard charges and is shaken off")

@@ -381,8 +381,8 @@ func _update_door_release_latches(her: Vector2) -> void:
 # *walked* is a crossing under a raised boom and nothing else. Nothing here asks where the arm is.
 #
 # *(2026-09-24: "The guards should start pursuing her in that case".)* **And it sets a guard on
-# her**, one, from the door's hut across the road from her, once the crossing's warning has run with
-# her still across (`_start_the_crossing_warning()`); a catch ends the day, since *"not going
+# her**, one, from the door's hut whose guard warned her (`_hut_that_warns()`), once the
+# crossing's warning has run with her still across (`_start_the_crossing_warning()`); a catch ends the day, since *"not going
 # through the checkpoint is a clear unlawful thing here"*. See `EventCatalogue._door_guard()`.
 
 ## Once a frame: whether she has crossed a door body's own cross-street line since the last look,
@@ -454,7 +454,8 @@ func watch_the_door_lines(delta := 0.0) -> void:
 ## crossed the charge will start. Warning starts when the player is crossing")*: the guard at
 ## the hut across the road from her (or an alley door's post) raises his hand at her
 ## (`EventInstance.raise_its_guards_hand()`, drawn by `warn_at_the_doors()`) from the frame she
-## crosses.
+## crosses, or the nearer hut's guard where the far one's hand would not be all in her sight
+## (`_hut_that_warns()`).
 ## Back across the line before `_crossing_warns_for` has run, the crossing is called off and
 ## nothing comes; still across it once it has run, a guard is set on her
 ## (`_set_a_guard_on_her()`). One crossing at a time, and none while a guard is already after
@@ -462,7 +463,7 @@ func watch_the_door_lines(delta := 0.0) -> void:
 func _start_the_crossing_warning(crossed: EventInstance, here: Vector2) -> bool:
 	if _crossing != null or _guard_is_after_her():
 		return false
-	var hut := _hut_on_the_line_nearest(crossed, here, true)
+	var hut := _hut_that_warns(crossed, here)
 	if not hut:
 		return false
 	_crossing = crossed
@@ -543,8 +544,9 @@ func _call_off_the_crossing(why: String) -> void:
 	_held_crossings.clear()
 
 ## One `door_guard` after her, stepping out of the wall of `hut` — the hut whose guard raised his
-## hand at her when she crossed (`_crossing_hut`, the farther of the huts on the crossed body's own
-## line from where she crossed) — on the side of the line she has crossed to. **The man who warned
+## hand at her when she crossed (`_crossing_hut`, `_hut_that_warns()`: the farther of the huts on
+## the crossed body's own line from where she crossed whose raised hand she could see all of) — on
+## the side of the line she has crossed to. **The man who warned
 ## is the man who comes**: in the warning's 1.75s at a walk she can cross most of the street, which
 ## can make the other hut the farther one by then, so the hut is not asked for again.
 ## *(2026-09-24: "Or guards that pursue her should spawn at the huts" · "One guard is enough".)*
@@ -560,7 +562,11 @@ func _call_off_the_crossing(why: String) -> void:
 ## her still across. **The hut across the road, not the nearer one**: from the nearer hut's wall
 ## (about 57px from her as she crosses the near lane, 16px if she crosses beside it) his charge
 ## comes with almost no ground to answer it in. An alley's door has only its post, so its guard
-## steps out of it. *The far hut is chosen while building, open to overturn.*
+## steps out of it. Where the far hut's raised hand would not be all in her sight (under a corner
+## the joystick's controls cover, or past the view's edge), the nearer hut's guard warns and comes
+## instead, since a warning she cannot see is none (feathery-lynx #581; bouncy-owl #1774). *The far
+## hut, and the nearer one where the far guard's hand is hidden, are chosen while building, open to
+## overturn.*
 func _set_a_guard_on_her(hut: EventInstance, crossed: EventInstance, here: Vector2) -> void:
 	if not is_instance_valid(hut) or _guard_is_after_her():
 		return
@@ -569,13 +575,26 @@ func _set_a_guard_on_her(hut: EventInstance, crossed: EventInstance, here: Vecto
 	var at := hut.global_position + axis * side * hut.solid_reach()
 	_guard_after_her = _spawn.call(_guard, at)
 
-## The hut or post on `door`'s own cross-street line nearest `here` — or, with `farthest`, the
-## farthest — or null. The farthest is the one whose guard warns her and the one a guard steps out
-## of (`_set_a_guard_on_her()`).
-func _hut_on_the_line_nearest(door: EventInstance, here: Vector2, farthest := false) -> EventInstance:
+## **The hut or post whose guard warns her** of a crossing of `door`'s own cross-street line at
+## `here`: the farthest from `here` whose raised hand is all in her sight
+## (`EventFootprints.raised_hand_rect()` on `EventInstance.its_guards_feet()`, asked of the world's
+## `VisibleView.sees_all()`: inside the camera's view and, in the joystick scheme, clear of the two
+## bottom corners its controls cover; feathery-lynx #581), so a hand she cannot see is never his
+## warning (bouncy-owl #1774). The street camera has no limits, so it stays within about 74px
+## of her and the near hand is always in sight; the fallback where none is, defensive and never
+## met in play, is the nearer (whose charge comes from closer) once a view has been looked
+## through, and the farthest while none has (a rig). Null for none. The warning starts with the
+## crossing (inbox #788 in minty-lemur), so it is not held: which hut warns is the check. His is
+## the hut a guard steps out of (`_set_a_guard_on_her()`).
+func _hut_that_warns(door: EventInstance, here: Vector2) -> EventInstance:
 	var axis := door.facing_now()
-	var hut: EventInstance = null
-	var nearest := INF
+	var view := world.visible_view()
+	var nearest: EventInstance = null
+	var nearest_at := INF
+	var farthest: EventInstance = null
+	var farthest_at := -1.0
+	var seen: EventInstance = null
+	var seen_at := -1.0
 	for instance in world.instances():
 		if not instance.detains_again() or instance.is_gone() or instance.is_on_its_way_out():
 			continue
@@ -587,15 +606,23 @@ func _hut_on_the_line_nearest(door: EventInstance, here: Vector2, farthest := fa
 				> Tuning.STREET_WIDTH * Tuning.TILE_SIZE:
 			continue
 		var range_to := instance.global_position.distance_to(here)
-		if farthest:
-			range_to = -range_to
-		if range_to < nearest:
-			nearest = range_to
-			hut = instance
-	return hut
+		if range_to > farthest_at:
+			farthest_at = range_to
+			farthest = instance
+		if range_to < nearest_at:
+			nearest_at = range_to
+			nearest = instance
+		if range_to > seen_at and view != null \
+				and view.sees_all(EventFootprints.raised_hand_rect(instance.its_guards_feet())):
+			seen_at = range_to
+			seen = instance
+	if seen != null:
+		return seen
+	return nearest if view != null and view.camera_view().has_area() else farthest
 
 ## **The checkpoint's warning**: while a crossing is warning her (`_start_the_crossing_warning()`),
-## the guard at the hut on its line across the road from her — the one who would come for her —
+## the guard at the hut on its line `_hut_that_warns()` chose — across the road from her unless that
+## hand would be hidden from her, and the one who would come for her —
 ## raises his hand, or an alley's post's own guard, its post being its whole door, and the page
 ## counts each time he does (`EventBus.pursuit_warned`, `door-guard-warned`;
 ## `EventInstance.raise_its_guards_hand()`). Every other guard stands as he always does. A drawing

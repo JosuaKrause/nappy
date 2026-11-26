@@ -70,7 +70,7 @@ func _measure(t: TestRunner, fallback: bool) -> void:
 		player.global_position = mark_at
 		RunCity.events(city).visible_view().look(Rect2(player.global_position - Tuning.VIEW_HALF_EXTENT,
 				Tuning.VIEW_HALF_EXTENT * 2.0), null)
-		director.set_sight(RunCity.events(city).sees)
+		director.set_sight(RunCity.events(city).visible_view())
 		var plans_before := RunCity.events(city).plans().size()
 		var started := Time.get_ticks_usec()
 		director.contact().complete_now()

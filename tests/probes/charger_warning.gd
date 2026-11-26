@@ -107,7 +107,7 @@ static func _walk(t: TestRunner, def: EventDef, walk: String) -> Dictionary:
 						wanted = Tuning.RUN_SPEED
 		speed = move_toward(speed, wanted, Tuning.ACCELERATION * STEP)
 		her.y += speed * STEP
-		instance_where.tell(her, Vector2.INF, Rect2(), speed > Tuning.WALK_SPEED)
+		instance_where.tell(her, Vector2.INF, null, speed > Tuning.WALK_SPEED)
 		instance.step(STEP)
 		elapsed += STEP
 		if warned_at == INF and not instance.is_waiting():

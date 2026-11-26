@@ -21,18 +21,9 @@ func _draw_figure(canvas: CanvasItem) -> void:
 							else EventPictures.GUARD_STANDING,
 					EventPictures.GUARD_ANCHOR)
 
-## The hut's own doorway direction, read off `CityMap.pavement_inward()` at the tile it actually
-## stands on rather than stored: the placement never turns, so there is nothing to cache, and this
-## is the same geometry every other row that cares which way a pavement faces already asks —
-## `EventDef.Pavement.AGAINST_THE_BUILDING`'s own facing is `-pavement_inward`, and the doorway
-## faces the carriageway for the same reason a lorry backing into a yard faces out of the wall
-## behind it. `Vector2i.DOWN` (south) off a pavement, the harmless default open ground gets.
+## The hut's own doorway direction (`EventFootprints.hut_doorway()`), facing the carriageway.
 func _hut_doorway() -> Vector2i:
-	var map := event.world_map()
-	var inward := map.pavement_inward(map.world_to_tile(event.global_position))
-	if inward != Vector2i.ZERO:
-		return -inward
-	return Vector2i.DOWN
+	return EventFootprints.hut_doorway(event.world_map(), event.global_position)
 
 func _hut_texture(doorway: Vector2i) -> String:
 	if doorway == Vector2i.UP:
@@ -44,8 +35,9 @@ func _hut_texture(doorway: Vector2i) -> String:
 	return EventPictures.HUT_SOUTH
 
 ## The hut, doorway facing the carriageway, with a guard posted beside it on the pavement rather
-## than in the doorway itself — offset along whichever axis the doorway does not face, so the two
-## never overlap whichever of the four the doorway turns out to be.
+## than in the doorway itself, where `EventInstance.its_guards_feet()` says he stands
+## (`EventFootprints.hut_guard_beside()`), so the two never overlap whichever of the four the
+## doorway turns out to be.
 ##
 ## **The guard is the only part of it that goes inside for a hold.** The hut is a building: it
 ## stays exactly where it is, casting the same shadow, so the two seconds read as her having gone
@@ -56,7 +48,7 @@ func _draw_checkpoint_hut(canvas: CanvasItem) -> void:
 	_draw_at_anchor(canvas, _hut_texture(doorway), EventPictures.HUT_ANCHOR)
 	if event.is_its_guard_inside():
 		return
-	var beside := Vector2(0.0, 22.0) if doorway.x == 0 else Vector2(22.0, 0.0)
+	var beside := event.its_guards_feet() - event.global_position
 	# The guard's own shadow, not the row's shape — a per-part point beside the hut, same as the
 	# dog beside a dog walker.
 	_draw_shadow(canvas, beside, 8.0)

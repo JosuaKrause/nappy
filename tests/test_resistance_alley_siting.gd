@@ -176,7 +176,7 @@ func _test_a_relocation_never_retires_a_guard_in_view_or_awake(t: TestRunner) ->
 
 	var feet := guard.global_position
 	_look_at(Rect2(feet - Vector2(40.0, 40.0), Vector2(80.0, 80.0)))
-	director.set_sight(RunCity.events(_city).sees)
+	director.set_sight(RunCity.events(_city).visible_view())
 	director.tick(STEP)
 	t.check(director.contact_position().distance_to(old_at) < 0.5,
 			"with him on her screen, the mark stays where it is")

@@ -434,7 +434,7 @@ func _attempt_the_day(t: TestRunner, day: int, her: Vector2, seen: bool) -> Arra
 	var director := _director(t)
 	director.use_player(player)
 	_look_at(Rect2(-1.0e6, -1.0e6, 2.0e6, 2.0e6) if seen else Rect2())
-	director.set_sight(RunCity.events(_city).sees)
+	director.set_sight(RunCity.events(_city).visible_view())
 	var mark_guard := EventCatalogue.mark_guard().id()
 	var task_guard := EventCatalogue.task_guard().id()
 	var marks_before := _live(mark_guard)

@@ -1141,7 +1141,7 @@ with her already well inside the stand-off, and it would fire from a fraction of
 pursuer holds the ground a pursuer that sets off beside her holds (`PursuitSpec.Start.SETS_OFF_BESIDE_HER`):
 it stands while she is nearer than the stand-off, follows at the stand-off once she is further, and
 lunges the moment she is back at the full stand-off with the line clear. One held while it stands
-for its notice (day 13's task guard set on her in her view, `EventInstance.notice_her_at()`)
+for its notice (day 13's task guard set on her in her sight, `EventInstance.notice_her_at()`)
 follows nowhere: it stands where it is and lunges the same way. **A pursuer that
 waited for her charges on its warning's clock** (`EventInstance.warns_by_radius()`, `PursuitSpec.warns_for()`), so a
 late notice at an alley mouth is answered by the warning's whole length to leave in, and where the wall
@@ -1236,14 +1236,17 @@ Two things are deliberately not the same as an ordinary telegraph. **The warning
 and a clock inside it** *(inbox #764 in minty-lemur: a warning happens when she comes close; she can turn around;
 inbox #788 in minty-lemur: "We should do one radius and warn inside it for 2s. If the player leaves the radius
 nothing happens and the warning stops. If they stay within the charge starts")*: it starts when she
-comes inside `EventDef.notice_within()` along a clear line and with its warning picture in the camera's view,
-not when the day put it there; leaving the radius before its `PursuitSpec.warns_for()` has run stops it, and it
+comes inside `EventDef.notice_within()` along a clear line and with all of its warning picture in sight (in
+the camera's view, and in the joystick scheme under neither bottom corner its controls cover), not when the
+day put it there; leaving the radius before its `PursuitSpec.warns_for()` has run stops it, and it
 waits again; still inside when it has run, it charges (`EventInstance.warns_by_radius()`). Standing
 in it and running 0.3s after the charge gets away (`docs/EVENTS.md`, "Every charger that does not
 arrive charging warns first"). A guard a task sets
-on her from wherever he stands (`EventInstance.notice_her_at()`) is not on this rule: in her view
-he stands with his warning up for `Tuning.WARNING_ALONE_MAX` and then charges, and out of it he is
-sent at her under a badge of the same second. And its warning does **not** damp what it is emitting:
+on her from wherever he stands (`EventInstance.notice_her_at()`) is not on this rule: with all of
+his warning picture in her sight he stands with it up for `Tuning.WARNING_ALONE_MAX` and then
+charges, wholly off the camera's view he is sent at her under a badge of the same second, and
+between the two (under a covered corner, or half past the view's edge) the order waits until he is
+one or the other. And its warning does **not** damp what it is emitting:
 `TELEGRAPH_INTENSITY_FRACTION` means *this has not started yet*, and a man who has been standing in
 that alley since she came round the corner has started. What has not started is the lunge.
 

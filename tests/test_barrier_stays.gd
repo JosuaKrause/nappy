@@ -157,7 +157,7 @@ func _test_a_shaken_off_guard_leaves_the_barrier_standing(t: TestRunner) -> void
 	var frames := 0
 	# She runs: outrunning him for `PURSUIT_SHAKEN_OFF` seconds ends the chase.
 	while not guard.has_given_up() and frames < int(60.0 / STEP):
-		where.tell(guard.global_position + Vector2(0.0, 300.0), Vector2.INF, Rect2(), true)
+		where.tell(guard.global_position + Vector2(0.0, 300.0), Vector2.INF, null, true)
 		guard.step(STEP)
 		frames += 1
 	t.check(guard.has_given_up(), "she shakes him off (%d frames)" % frames)
@@ -168,7 +168,7 @@ func _test_a_shaken_off_guard_leaves_the_barrier_standing(t: TestRunner) -> void
 	var stood := where.at()
 	while guard.is_on_its_way_out() and walked < int(30.0 / STEP):
 		# She stands still; he walks out of her sight.
-		where.tell(stood, Vector2.INF, Rect2(), where.is_running())
+		where.tell(stood, Vector2.INF, null, where.is_running())
 		guard.step(STEP)
 		walked += 1
 		var body := _its_body(guard)
@@ -183,7 +183,7 @@ func _test_a_shaken_off_guard_leaves_the_barrier_standing(t: TestRunner) -> void
 	t.check(guard.global_position.is_equal_approx(post), "the node is back on the barrier")
 	# The day carries on: it still stands a long time later.
 	for i in int(120.0 / STEP):
-		where.tell(post + Vector2(0.0, 90.0), Vector2.INF, Rect2(), where.is_running())
+		where.tell(post + Vector2(0.0, 90.0), Vector2.INF, null, where.is_running())
 		guard.step(STEP)
 	t.check(not guard.is_gone() and guard.is_solid(), "it is still there two minutes on")
 	stage.close()
@@ -353,7 +353,7 @@ func _test_a_streamed_out_barrier_comes_back_as_only_the_barrier(t: TestRunner) 
 	# Stream out in the middle of his walking away.
 	var frames := 0
 	while not guard.is_on_its_way_out() and frames < int(60.0 / STEP):
-		where.tell(guard.global_position + Vector2(0.0, 300.0), Vector2.INF, Rect2(), true)
+		where.tell(guard.global_position + Vector2(0.0, 300.0), Vector2.INF, null, true)
 		guard.step(STEP)
 		frames += 1
 	t.check(guard.is_on_its_way_out(), "she shook him off and he is walking away")

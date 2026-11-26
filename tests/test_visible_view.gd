@@ -8,6 +8,7 @@ extends RefCounted
 
 func run(t: TestRunner) -> void:
 	_test_a_point_under_a_covered_corner_is_out_of_sight_only_with_the_joystick(t)
+	_test_all_of_a_box_is_in_sight_only_clear_of_the_covered_corners(t)
 	_test_just_out_of_sight_is_the_edge_of_the_view_on_each_side(t)
 	_test_just_out_of_sight_may_be_a_covered_corner(t)
 	_test_just_out_of_sight_is_never_nearer_than_its_floor(t)
@@ -115,6 +116,37 @@ func _test_a_point_under_a_covered_corner_is_out_of_sight_only_with_the_joystick
 	t.check(not tap.sees(outside) and not joystick.sees(outside), "past the view is out of both")
 	t.check(not VisibleView.new().sees(Vector2.ZERO),
 			"and a view never looked through sees nothing")
+
+## **All of a box is in sight only inside the view and, with the joystick, clear of both corners it
+## covers** (`sees_all()`, what a warning she has to see is held to): a 20px box wholly inside the
+## camera's view, its one corner just over the top edge of each covered corner, is all in sight in
+## the tap scheme and not in the joystick one; the same box 2px above that edge, and one in the
+## middle, are all in sight in both; one sticking 1px past the view's side is in neither, though some
+## of it is in sight.
+func _test_all_of_a_box_is_in_sight_only_clear_of_the_covered_corners(t: TestRunner) -> void:
+	var tap := VisibleView.around(Vector2.ZERO, null)
+	var joystick := VisibleView.around(Vector2.ZERO, TouchCover.joystick())
+	var view := tap.camera_view()
+	var scale := view.size / ScreenOrientation.DESIGN_SIZE
+	var left := TouchCover.joystick().left_corner()
+	var right := TouchCover.joystick().right_corner()
+	var left_top := view.position + Vector2(left.end.x, left.position.y) * scale
+	var right_top := view.position + right.position * scale
+	var box := Vector2(20.0, 20.0)
+	var over_left := Rect2(left_top + Vector2(-10.0, -19.0), box)
+	var over_right := Rect2(right_top + Vector2(-10.0, -19.0), box)
+	for over: Rect2 in [over_left, over_right]:
+		t.check(view.encloses(over) and tap.sees_all(over) and not joystick.sees_all(over),
+				"a box 1px into a covered corner (%s) is all in sight in the tap scheme, not in the "
+				% over + "joystick one")
+		var above := Rect2(over.position - Vector2(0.0, 2.0), box)
+		t.check(tap.sees_all(above) and joystick.sees_all(above),
+				"and 2px above the corner it is all in sight in both (%s)" % above)
+	var middle := Rect2(-box * 0.5, box)
+	t.check(tap.sees_all(middle) and joystick.sees_all(middle), "a box in the middle is in both")
+	var past := Rect2(Vector2(view.end.x - 19.0, 0.0), box)
+	t.check(tap.sees_any(past) and not tap.sees_all(past) and not joystick.sees_all(past),
+			"a box 1px past the view's side is partly in sight and not all of it, in either scheme")
 
 ## On the tap scheme's whole view a thing is placed where its drawn box has just left the view:
 ## straight up, its feet at the top edge (the box stands above them); straight down, the box's top at

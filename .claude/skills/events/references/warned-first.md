@@ -75,7 +75,9 @@ masked man runs his line from the tick he exists. An on-screen charger is alread
 never carries a badge, wherever its charge begins: it warns her in her view before any charge
 (`pursuits.md`). So a charger whose warning could start out of her sight is fixed by a check before
 that warning (the waiting charger's view, a vehicle stopping for her only in view, day 13's guard
-sent under a badge when he is out of it), never by giving it a badge.
+warning in place only with all of his warning in sight, sent under a badge only once wholly off the
+view and held in between, a door's crossing warned of by a hut guard whose hand she can see all
+of), never by giving it a badge.
 
 **The warning time is the row's own number** (PLAYTEST-145 1). Nothing about where a thing is
 created may be derived from its telegraph, and a row's telegraph is not shortened by shrinking its

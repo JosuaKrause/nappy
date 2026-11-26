@@ -170,15 +170,18 @@ var _day := 0
 ## `main` (`set_sight()`), and "would it be drawn in front of her", for everything the director
 ## places or removes, is the siting's (`SpawnSiting.Rule.DRAWING_OFF_THE_VIEW`).
 ##
-## `_sight` answers **"has she seen it"**, and only for a chalk mark's notice dwell
-## (`_track_sight_and_reposition()`): `EventManager.sees()`, what she can see (`VisibleView`), the
-## camera's view less, in the joystick scheme, the two bottom corners its controls cover *(inbox
-## #581, the player: "everything should follow this (and treat it depending on the input
-## mode)")*. So a chalk mark under a covered corner is not seen, and its notice does not run there.
-## A rig may leave it unset — with no predicate, nothing is ever seen and the re-placement rule
-## simply keeps running, which is also correct: a mark nobody is watching for should never stop
-## moving because of it.
-var _sight: Callable
+## `_sight` answers **"has she seen it"**: the day's one `VisibleView`
+## (`EventManager.visible_view()`), the camera's view less, in the joystick scheme, the two
+## bottom corners its controls cover *(inbox #581, the player: "everything should follow this
+## (and treat it depending on the input mode)")*. It is asked twice: of a point for a chalk
+## mark's notice dwell (`_track_sight_and_reposition()`), so a chalk mark under a covered corner
+## is not seen and its notice does not run there; and of day 13's task guard's whole warning
+## picture when the done task sets him on her (`_set_the_task_guard_on_her()`), so he never
+## raises his hand under a covered corner or half past the view's edge. A rig may leave it unset
+## — with no view, nothing is ever seen: the re-placement rule simply keeps running, which is
+## also correct, since a mark nobody is watching for should never stop moving because of it, and
+## the task guard is sent under a badge.
+var _sight: VisibleView = null
 ## **"Would it be drawn in front of her"** is the siting's, over the camera's whole view, corners
 ## included in either scheme (`SpawnSiting.on_the_view()`): where a relocated mark, a waiting robber,
 ## a task target, a pursuer sent after her and day 10's raid may appear, and when a waiting robber or
@@ -212,6 +215,11 @@ var _task_guard_in_band := false
 ## The arrow's choice `_move_the_task_guard_to_her_target()` last answered, so a new one is answered
 ## the frame the arrow makes it rather than on the arrow's next clock.
 var _task_guard_asked_for: Variant = null
+## Whether the done task's order on `_task_guard` is held (`_set_the_task_guard_on_her()`): she has
+## done the roadblock task while some of him is on the camera's view but not all of his warning is
+## in her sight, so the order waits, asked again each tick (`tick()`), until he is wholly in sight
+## or wholly off the view.
+var _task_guard_order_held := false
 ## What the last search of `_move_the_task_guard_to_her_target()` that found him nowhere better read
 ## — the arrow's target, her tile and the way she faces, his tile and the day's blocking versions —
 ## so it is not run again, twice a second, until one of them changes **or `TASK_GUARD_RETRY_SECONDS`
@@ -360,11 +368,11 @@ func use_player(player: Stroller) -> void:
 	if _contact and is_instance_valid(_contact):
 		_contact.use_player(player)
 
-## Hands the director the day's answer about her view that is its own: `sees`, whether she can see
-## a world point (the notice dwell's). Whether a world point is anywhere in the camera's whole view
-## (placing and removing's) is the siting's. See the docs on `_sight`.
-func set_sight(sees: Callable) -> void:
-	_sight = sees
+## Hands the director the day's answer about her view that is its own: `view`, what she can see
+## (the notice dwell's, and the task guard's warning). Whether anything is anywhere in the camera's
+## whole view (placing and removing's) is the siting's. See the docs on `_sight`.
+func set_sight(view: VisibleView) -> void:
+	_sight = view
 
 ## Hands the director the calendar it offers steps from, in place of the run's own
 ## (`ResistanceSteps.all()`): a step a later slice will build, such as one with a deadline, offered
@@ -400,6 +408,7 @@ func start_day(day: int, rng: RandomNumberGenerator, day_length: float) -> void:
 	_task_guard_over = null
 	_task_guard_in_band = false
 	_task_guard_asked_for = null
+	_task_guard_order_held = false
 	_task_guard_found_nothing_for = []
 	_task_guard_found_nothing_age = 0.0
 	_task_guard_moves = null
@@ -2921,6 +2930,9 @@ func tick(delta: float) -> void:
 		_take_the_neighbor_away()
 	if _lingering_rider:
 		_tick_lingering_rider(delta)
+	# Asked before the step's own checks: the task that gave the order is done by now.
+	if _task_guard_order_held:
+		_set_the_task_guard_on_her()
 	if not _step or _expired or not _contact or _contact.is_finished():
 		return
 	_elapsed += delta
@@ -3167,32 +3179,44 @@ func _approach_key(roadblock: EventInstance) -> Vector2i:
 ## **Day 13's done task sets its guard on her, wherever he stands** *(inbox #651 follow-up, the
 ## player, of a guard still at another roadblock when she reaches hers: "as long as he starts
 ## pursuing when you hit the task it's fine")*. The moment she has touched the roadblock, a guard who
-## has not yet noticed her notices her now (`EventInstance.notice_her_at()`) and, in her view,
+## has not yet noticed her notices her now (`EventInstance.notice_her_at()`) and, in her sight,
 ## starts after her from where he is: from the band with a clear line, as he would have; from the
 ## ring past the band, or round a corner, the same. **He starts after her and walks round buildings
 ## to her** (`EventInstance._chase_way`): where no clear line runs to her he follows the walk to her,
 ## refreshed as she moves, unless she leaves him behind: he gains on a walker only 38px a second (his
 ## 130 against `Tuning.WALK_SPEED`'s 92), so a long walk away can outlast his `Tuning.PURSUIT_TIME`
-## chase; running still shakes him off, as it does any chase. In her view he is the guard she can
-## already see, already in the world, so nothing appears; out of it, at the roadblock before or
-## anywhere else, he is never set on her where he stands, since a charger already in the world
-## carries no badge (velvet-marten #699, #705; bouncy-owl #1774), and is sent at her as an
-## off-screen charger instead (below). The chase keeps
-## every pursuit rule — his notice before any lunge, his stand-off while it runs, a lunge only along
-## a clear line. A guard already after her, or whose chase is over, is left as he is.
+## chase; running still shakes him off, as it does any chase. In her sight he is the guard she can
+## already see, already in the world, so nothing appears; wholly off the camera's view, at the
+## roadblock before or anywhere else, he is never set on her where he stands, since a charger
+## already in the world carries no badge (velvet-marten #699, #705; bouncy-owl #1774), and is sent
+## at her as an off-screen charger instead (below). The chase keeps every pursuit rule — his notice
+## before any lunge, his stand-off while it runs, a lunge only along a clear line. A guard already
+## after her, or whose chase is over, is left as he is.
 ##
 ## **His warning is a second, seen or not** *(inbox #764 in minty-lemur, the player: "yes, we can do a 1s on screen
-## and 1s off-screen warning if they were not visible")*. In her view (`GUARD_BOX` on the camera's view) he stands
-## where he is with his warning up for `Tuning.WARNING_ALONE_MAX` and then charges. Out of it he is
-## taken out of the world unseen and sent at her as a task's robber is
-## (`_send_at_her()`, `EventCatalogue.task_guard_sent()`): the screen-edge badge alone for the same
-## second, then he arrives charging from just out of sight.
+## and 1s off-screen warning if they were not visible")*. With all of his warning picture in her
+## sight (`EventInstance.warning_rect()` asked of `_sight`, `VisibleView.sees_all()`: inside the
+## camera's view and, in the joystick scheme, clear of the two bottom corners its controls cover;
+## feathery-lynx #581) he stands where he is with his warning up for `Tuning.WARNING_ALONE_MAX` and
+## then charges. Wholly off the camera's view (`GUARD_BOX`, `SpawnSiting.Rule.DRAWING_OFF_THE_VIEW`)
+## he is taken out of the world unseen and sent at her as a task's robber is (`_send_at_her()`,
+## `EventCatalogue.task_guard_sent()`): the screen-edge badge alone for the same second, then he
+## arrives charging from just out of sight.
+##
+## **Between the two the order is held** (`_task_guard_order_held`): some of him drawn on the
+## camera's view but not all of his warning in her sight, under a covered corner or half past
+## the view's edge. A warning there is a hand she cannot see (bouncy-owl #1774), and taking him
+## away there is pop-in (olive-hedgehog #598), so he goes on waiting, his own notice by radius
+## still his, and the order is asked again each tick (`tick()`) until he is wholly in her sight
+## or wholly off the view. A guard whose own notice started while she could see all of his
+## warning is held the same way.
 func _set_the_task_guard_on_her() -> void:
 	# A guard already warning her by sight is set on her too: left to his own warning, she could
 	# walk out of it and he would never come.
 	if not _task_guard or not is_instance_valid(_task_guard) or _task_guard.is_gone() \
 			or not (_task_guard.is_waiting()
 					or (_task_guard.is_telegraphing() and _task_guard.warns_by_radius())):
+		_task_guard_order_held = false
 		return
 	var her := _player_position()
 	# With no player (only a rig) the order's point is the contact's place: he is set heading there,
@@ -3200,13 +3224,23 @@ func _set_the_task_guard_on_her() -> void:
 	if her == Vector2.INF and _contact:
 		her = _contact.global_position
 	if her == Vector2.INF:
+		_task_guard_order_held = false
+		return
+	if _sight != null and _sight.sees_all(_task_guard.warning_rect()):
+		_task_guard_order_held = false
+		_task_guard.notice_her_at(her, Tuning.WARNING_ALONE_MAX, true)
+		_trace.note("roll", "the roadblock is done: the task's guard, in her sight, warns her and "
+				+ "comes after her from %.0fpx away" % _task_guard.global_position.distance_to(her))
 		return
 	if not _spawn_siting.allows(SpawnSiting.Rule.DRAWING_OFF_THE_VIEW, _guard_drawn,
 			_task_guard.global_position):
-		_task_guard.notice_her_at(her, Tuning.WARNING_ALONE_MAX, true)
-		_trace.note("roll", "the roadblock is done: the task's guard, in her view, warns her and "
-				+ "comes after her from %.0fpx away" % _task_guard.global_position.distance_to(her))
+		if not _task_guard_order_held:
+			_trace.note("roll", "the roadblock is done: the task's guard, on her view but not all "
+					+ "in her sight %.0fpx away, waits until he is in it or off it"
+					% _task_guard.global_position.distance_to(her))
+		_task_guard_order_held = true
 		return
+	_task_guard_order_held = false
 	var away := _task_guard.global_position.distance_to(her)
 	_events.retire(_task_guard)
 	_task_guard = null
@@ -3246,7 +3280,7 @@ func _track_sight_and_reposition(delta: float) -> void:
 	var at := _contact.global_position
 	var noticing: bool = _player != null and is_instance_valid(_player) \
 			and _player.global_position.distance_to(at) <= SEEN_DISTANCE \
-			and _sight.is_valid() and _sight.call(at)
+			and _sight != null and _sight.sees(at)
 	if noticing:
 		_seen_dwell += delta
 		if _seen_dwell >= SEEN_DWELL_SECONDS:

@@ -2718,7 +2718,8 @@ static func _checkpoint_post() -> EventDef:
 ## going through the checkpoint is a clear unlawful thing, independent of the resistance: one guard
 ## is enough. Nothing places it but `CheckpointController._set_a_guard_on_her()`: `SCRIPTED` on day 0
 ## like the rest of the door's kit, so the ordinary roll never reaches it, stepping out of the wall
-## of the door's hut across the road from her on the side she crossed to. The guards drawn at the
+## of the door's hut whose guard warned her (across the road from her, or the nearer where that
+## guard's raised hand would be hidden from her) on the side she crossed to. The guards drawn at the
 ## huts stay at their posts, so the door stays manned.
 ##
 ## **The roadblock's hunting guard is the pursuer copied**, and so is the man: the same eight-view
@@ -2732,6 +2733,7 @@ static func _checkpoint_post() -> EventDef:
 ##
 ## **He charges at once** (`PursuitSpec.Start.CHARGES_AT_ONCE`): his warning came before he was set
 ## on her. From the frame she crosses the door's line, the guard at the hut across the road from her
+## (the nearer hut's, where that hand would not be all in her sight; `CheckpointController`)
 ## raises his hand (`EventInstance.is_its_guard_warning()` is then true), or an alley post's guard;
 ## back across before his warning (`ChargerTiming.warning()`) has run, nobody comes, and still
 ## across once it has, this man steps out of that hut or post and charges from his first frame

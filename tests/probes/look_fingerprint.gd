@@ -204,7 +204,9 @@ func _drive(t: TestRunner, atlas: AtlasLibrary, ground: String, drive: String, s
 			_sample(rig, 0, seen)
 	for tick in range(1, TICKS + 1):
 		var she := _she_at(drive, tick)
-		where.tell(she, Vector2.INF, Rect2(she - Vector2(576.0, 324.0), Vector2(1152.0, 648.0)))
+		var sight := VisibleView.new()
+		sight.look(Rect2(she - Vector2(576.0, 324.0), Vector2(1152.0, 648.0)), null)
+		where.tell(she, Vector2.INF, sight)
 		for rig in rigs:
 			if rig.alive():
 				_act(rig, tick)
