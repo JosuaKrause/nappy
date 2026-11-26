@@ -18,11 +18,10 @@ const RIGHT := &"props/park_sign_right"
 
 ## The way the sign points, one step on the lattice.
 var _points := Vector2i.UP
-## The baked atlas pages the sign draws from (`AtlasLibrary`), handed by the city before it is
-## added; a sign nobody handed one (a suite's) makes its own when it first enters the tree.
+## The baked atlas pages the sign acquires and releases (`AtlasLibrary`), handed by the city
+## before it is added.
 var _atlas: AtlasLibrary = null
-## What the sign is drawn through (`ParkSignDrawer`), handed by the city before it is added; a
-## sign nobody handed one makes its own over its `_atlas` when it first enters the tree.
+## What the sign is drawn through (`ParkSignDrawer`), handed by the city before it is added.
 var _drawer: ParkSignDrawer = null
 
 ## Mounts the sign pointing `points`, drawing from `library` through `drawer`, before the city
@@ -33,10 +32,6 @@ func mount(library: AtlasLibrary, drawer: ParkSignDrawer, points: Vector2i) -> v
 	_points = points
 
 func _enter_tree() -> void:
-	if _atlas == null:
-		_atlas = AtlasLibrary.new()
-	if _drawer == null:
-		_drawer = ParkSignDrawer.new(_atlas)
 	_atlas.acquire(&"street_kit")
 
 func _exit_tree() -> void:

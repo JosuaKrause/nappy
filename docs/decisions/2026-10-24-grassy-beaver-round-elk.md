@@ -65,10 +65,21 @@ points somewhere), whose closures act as the city's signposts: a sign adds to th
 | two signs | 1 |
 
 Of the 76 first signs, 51 point straight on across the junction and 25 down a turn. **Nearly half the
-runs stand no sign**, which is the cost the design's pick 2 named; the plainer alternatives, for the
-player to weigh, are a sign in those runs too (it turns false only from the day the park is
-requisitioned, if ever, since a step needs its cause) or a tutorial park preferred that stays calm,
-which is `TutorialRoute.for_city()`'s choice and touches the tutorial route's seals.
+runs stand no sign**, which is the cost the design's pick 2 named. A sign in those runs too is
+ruled out, not offered: the player's condition is a sign at junctions only where it can stay across
+all days (curly-moose #819), and a sign beside a park the city may requisition turns false the day it
+does. The one open alternative is `TutorialRoute.for_city()` preferring a tutorial park that stays
+calm all run, ordered calm park first, then six streets before seven, then park or calm zone before
+square or courtyard. Over the same 144 seeds it costs:
+
+- signs would stand in 125 of 144 runs instead of 76 (49 of the 68 runs without one gain a calm
+  park; 19 still have none);
+- of the 49, 19 need the seven-street route, one lesson street left empty;
+- of the 49, 15 get a square or courtyard instead of a park;
+- the swing park (day 12's task park) could no longer be the tutorial park;
+- it edits `for_city()`, which merged in #1767, and so the route's seal tests and probes.
+
+It is a question for the board, built on the pick as it stands.
 
 ## Checks
 
