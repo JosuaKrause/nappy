@@ -6,4 +6,4 @@ about 1.7–3 s frozen per second of walking at a phone's rough factor. Nothing 
 the game outright, so a game that never came back is not explained. A frame record from the phone on
 day 12, after the park with the baby asleep, on a build carrying this fix, can rule this family out
 as a cause of long frames there, though not prove what v0.25.4's lock was; snowy-trout's
-review item already asks the player for one. The item goes when the record has come, and the player is asked once the new version is published.
+review item already asks the player for one. The item goes when the record has come, and the player is asked now: the version carrying the fix, v0.29.3, is published.
