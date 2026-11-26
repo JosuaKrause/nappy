@@ -1021,7 +1021,7 @@ the sink when `main` builds them and ask its `is_on()` each frame (the crowd's t
 **The game's own `_draw()` overrides carry no counting code.** With the record on, `FrameRecorder`
 connects the `draw` signal (emitted before each `_draw()`) of every node that is counted, at
 `setup()` over the tree as it stands and then as nodes enter it, and the connected call adds 1 to a
-per-kind count. A node is counted by its class where the recorder may name it (`draw_kind()`),
+per-kind count. A node is counted by its class where the recorder may name it (`FrameRecorder._draw_kind()`),
 else by the kind it declares in its `FrameTiming.DRAW_KIND_META` (the view's nodes, which an
 observer may not name, and the canvases that are no class of their own: a shadow chunk, a station's
 yard layer). A crowd agent is counted through its `CrowdTiming`. With no recorder, nothing is
