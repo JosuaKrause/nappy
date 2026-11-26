@@ -19,17 +19,15 @@ warn where she can see him. A hand raised under the Run disc is no warning.
 (https://github.com/JosuaKrause/nappy/pull/1785#pullrequestreview-6067438071).
 
 **What a builder does.** Read the code that decides "in her view" for a waiting charger (the whole-view
-test in `src/world/spawn_siting.gd`, `EventManager`'s on-screen reads, and where the charger's rest
-turns into its warning in `src/events/simulation/behaviours/event_pursuit.gd`), and decide which kind
-the charger is by what she can see (`VisibleView.sees()`, the corners removed), so a charger whose body
-is under a covered corner counts as out of view and arrives as the off-screen kind (badge, already
-charging) or waits to be sited clear of the corners. The pop-in rule stays: a thing never appears or
-vanishes inside the camera's whole view. The fix goes where the decision is made, never as a second
+test in `src/world/spawn_siting.gd`, `EventManager.sees()`, which asks `VisibleView.sees()` with the
+corners removed, and where the charger's rest turns into its warning in
+`src/events/simulation/behaviours/event_pursuit.gd`), and site a waiting charger clear of the covered
+corners, so the place he stands and raises his hand is one she can see. The pop-in rule stays: a thing
+never appears or vanishes inside the camera's whole view, which is why a charger under a corner is not
+made to arrive already charging there. The fix goes where the siting decision is made, never as a second
 test beside it, and a test holds both modes (the tap mode keeps the whole view).
 
-**Proposed, not asked for:** the band `next` (the filer's proposal; the player named none), and which
-of the two ways out above a charger under a corner takes. The plainer alternative is to move only his
-raised hand's place, which leaves him standing where she cannot see him.
+**Proposed, not asked for:** the band `next` (the filer's proposal; the player named none).
 
 **Alive beside it:** fix-1785 (two kinds of charge, events code) and finish-1752 (M199, the roadblock that
 closes its whole street); this entry touches neither's files while they are open.

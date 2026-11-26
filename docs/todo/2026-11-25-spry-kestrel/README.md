@@ -3,8 +3,7 @@ priority: now
 # spry-kestrel — A flag to see the escape building's window flashes with and without a least gap · filed 2026-11-25
 
 **The ask.** The player asked to see the escape building's window flashes with and without a least gap
-before judging it (their board answer on building-flash-limit: "this goes in the review tab. I need to
-see it"; a board answer, not yet filed in a playtest). Their earlier words ask the flashes to match the
+before judging it (their board answer on building-flash-limit, inbox #1787 in gentle-beaver). Their earlier words ask the flashes to match the
 apartment building's (minty-lemur #785). Today `FlashRhythm.LEAST_GAP` (0.4 s) applies to the city only;
 the building keeps the player's own timing, where 6.3% of 20,000 simulated walks hold four flashes in a
 second (`tools/decisions.sh snowy-goose`).
