@@ -8,7 +8,8 @@ extends "res://tests/events_shared_city.gd"
 ## enough in it to meet, danger before act three, the named decisions, the city's memory of where
 ## she went, a scar outliving its day, a park staying reachable every day and a flock sited on a
 ## tile rather than in front of her; and a day planned at full heat, which is the same day when
-## planned twice and places more patrols than a cold one.
+## planned twice and places more patrols than a cold one; and no placed plan of a planned day
+## standing in the field of a cyclist the director sends.
 ##
 ## `test_events_costs.gd` keeps the cost side, which asks the rows alone.
 ##
@@ -41,6 +42,15 @@ extends "res://tests/events_shared_city.gd"
 ## read them too), the taught day of each seed (`_the_taught_day()`) and the act walk
 ## (`_the_act_walk()`), which the calm-left-alone case and the city's memory case both read. The
 ## dawn writes nothing a later dawn reads, so no case needs a plan of its own for a run's later day.
+##
+## **Why one case hands its planned days to a real `EventDirector`.**
+## `_test_no_placed_plan_stands_in_a_sent_cyclists_field` holds the events skill's "nothing else
+## happens inside a lethal event's field" for the one lethal row whose plan keeps its field clear,
+## the cyclist, which the director sends and no dawn places: the guarantee spans the dawn's plan and
+## the director's sending, so it is asked of the days the dawn plans, which hold the fields a placed
+## plan of a real day stands in, and of the director the game hands them to. The director is the
+## case's subject as much as the plan, and a fake of it would hold nothing; how it sites and refuses
+## a row on one street is `tests/test_event_director.gd`'s, on a hand-drawn map.
 ##
 ## **Day 1 grows the ordinary tree in every case but one**, deliberately: `GameDawn` handed no walk
 ## grows the tree with no tutorial route, and what those cases ask holds of any day's tree. The

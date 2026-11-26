@@ -1198,6 +1198,9 @@ var _sent_waiting: Array[EventDef] = []
 ## her walk, and held at the head of the queue he would stop every cat and dog behind him for as
 ## long, as a place marble did until it waited (calm-pelican-6, a marble that cannot be sited never
 ## blocks the route). Any other row with no room holds the route, asked again a second later.
+## *Proposed, not asked for:* that the cyclist waits rather than holding the route is the builder's
+## pick, measured in the record gray-bunny against holding the route and against holding it for a
+## few one-second retries first; the choice is the player's.
 static func _waits_for_room(def: EventDef) -> bool:
 	return def.is_sent_ahead() or EventPlan.new(def, Vector2.ZERO).keeps_its_field_clear()
 
@@ -1251,41 +1254,112 @@ func _sited(next: EventDef, at: Vector2, heading: Vector2, view: VisibleView) ->
 		path = crossing[0]
 		crouch = crossing[1]
 		crossing_point = crossing[2]
-	if not path.is_empty() and (not clear_to_send(path, next)
-			or not _its_field_holds_while_its_badge_is_up(next, path, at)):
+	if not path.is_empty() and not _may_be_sent_on(next, path, at):
 		path = PackedVector2Array()
 	return [path, crouch, crossing_point]
 
-## **Whether no placed plan comes inside the field of a row warned of first down her line while its
-## badge is up** (the cyclist; `_keeps_its_own_field_clear()`). Such a row is created once its
-## badge has been up, on the route down her line from wherever she is then, `path`'s own way
-## (`EventsAhead._warn_down_her_line()`), and that route is asked `clear_to_send()` again, a
-## refusal withdrawing the badge. So the route is worked out the way its creation works it out, for
-## her shifted along `path`'s line by up to `Tuning.RUN_SPEED` times `EventDef.warned_for()` and a
-## tile, either way and every half tile, and each route found is asked the field: a badge is never
-## raised for a thing that cannot come, "a badge shouldn't disappear before the entity is visible"
-## (minty-dolphin #852). A shift that finds no route down her line is not asked, since it is not
-## the field that refuses it. True for a row created at once, one warned of first in its lane, and
-## one whose plan keeps no field clear.
-func _its_field_holds_while_its_badge_is_up(def: EventDef, path: PackedVector2Array,
-		at: Vector2) -> bool:
+## **Whether `def` may be sent on `path`, with her at `at`**: `clear_to_send()` of `path`, and,
+## for a row warned of first down her line whose plan keeps its field clear (the cyclist), no placed
+## plan inside his field on any route he could be created on while his badge is up
+## (`_clear_on_every_route_while_its_badge_is_up()`). **Then the ground under all of those routes is
+## drawn** (`use_ground_drawer()`), and where that drew anything everything is asked again, all of it
+## before he is handed out and so before his badge goes up: a unit drawn later could stand a plan in
+## his field, and one drawn as he arrives would withdraw a badge already raised, "a badge shouldn't
+## disappear before the entity is visible" (minty-dolphin #852). The routes are asked before the
+## draw so that a row refused, which is asked again a second later, stops at its first refusal.
+func _may_be_sent_on(def: EventDef, path: PackedVector2Array, at: Vector2) -> bool:
+	if not clear_to_send(path, def):
+		return false
+	var routes: Array[PackedVector2Array] = []
+	if not _clear_on_every_route_while_its_badge_is_up(def, path, at, routes):
+		return false
+	if not _draw_the_ground_under(routes, def.field_reach()):
+		return true
+	if not clear_to_send(path, def):
+		return false
+	for route in routes:
+		if not _keeps_its_own_field_clear(EventPlan.new(def, route[0], route)):
+			return false
+	return true
+
+## **Whether no placed plan stands inside the field of a row warned of first down her line on any
+## route it could be created on while its badge is up** (the cyclist; `_keeps_its_own_field_clear()`),
+## each route asked added to `routes`, `path` first; false at the first that has one. Such a row is
+## created once its badge has been up, on the route down her line from wherever she is then,
+## `path`'s own way (`EventsAhead._warn_down_her_line()`), and that route is asked `clear_to_send()`
+## again, a refusal withdrawing the badge. So the route is worked out the way its creation works it
+## out, for her shifted by up to `Tuning.RUN_SPEED` times `EventDef.warned_for()` and a tile in any
+## direction, along her line, across it (a step across her sidewalk, onto the road or over the street
+## moves his place across with her, `PendingWarning.down_her_line()`) and both at once, every half
+## tile each way, wherever she can stand (`CityMap.is_walkable()`), as the convoy's hold samples her
+## (`_holds_while_its_badge_is_up()`). A shift that finds no route down her line adds none, since it
+## is not the field that refuses it. True, with `routes` left empty, for a row created at once, one
+## warned of first in its lane, and one whose plan keeps no field clear.
+func _clear_on_every_route_while_its_badge_is_up(def: EventDef, path: PackedVector2Array,
+		at: Vector2, routes: Array[PackedVector2Array]) -> bool:
 	if def.is_warned_in_its_lane() or not def.warns_before_it_exists() \
 			or not EventPlan.new(def, path[0], path).keeps_its_field_clear():
 		return true
+	routes.append(path)
 	var direction := (path[0] - path[1]).normalized()
+	var across := Vector2(-direction.y, direction.x)
 	var reach := Tuning.RUN_SPEED * def.warned_for() + Tuning.TILE_SIZE
-	var shift := -reach
-	while shift <= reach:
-		var her := at + direction * shift
-		var place := PendingWarning.down_her_line(_map, def, her, direction)
-		if place != Vector2.INF:
-			var route := _navigator.trim(PendingWarning.route_down_her_line(_map, place, her,
-					direction), EventInstance.mover_for(def))
-			if route.size() >= 2 and not _keeps_its_own_field_clear(
-					EventPlan.new(def, route[0], route)):
-				return false
-		shift += Tuning.TILE_SIZE * 0.5
+	var step := Tuning.TILE_SIZE * 0.5
+	var mover := EventInstance.mover_for(def)
+	var along := -reach
+	while along <= reach:
+		var sideways := -reach
+		while sideways <= reach:
+			var by := direction * along + across * sideways
+			var her := at + by
+			if by.length() <= reach and _map.is_walkable(_map.world_to_tile(her)):
+				var place := PendingWarning.down_her_line(_map, def, her, direction)
+				if place != Vector2.INF:
+					var route := _navigator.trim(PendingWarning.route_down_her_line(_map, place,
+							her, direction), mover)
+					if route.size() >= 2:
+						routes.append(route)
+						if not _keeps_its_own_field_clear(EventPlan.new(def, route[0], route)):
+							return false
+			sideways += step
+		along += step
 	return true
+
+## What draws the ground round a point (`use_ground_drawer()`), or none.
+var _ground_drawer := Callable()
+
+## **Hands in what draws the ground round a point**: `EventsAhead.draw_the_ground_round()`, which
+## draws every undrawn unit any part of which lies within a reach of it, each after the units it
+## waits for, so no unit's draw changes, and answers whether it drew any. Asked under every route a
+## cyclist could be created on before he is sent (`_may_be_sent_on()`). A director handed none (a
+## test's) draws nothing.
+func use_ground_drawer(drawer: Callable) -> void:
+	_ground_drawer = drawer
+
+## **Draws the ground within `reach` of every route of `routes`**: the box round them all, grown by
+## `reach` and half a tile (her place between two of the routes sampled), cut into squares along
+## its long side, each drawn round its middle out to its corners, so every unit any part of which
+## lies within `reach` of a route has drawn. Answers whether it drew any unit.
+func _draw_the_ground_under(routes: Array[PackedVector2Array], reach: float) -> bool:
+	if routes.is_empty() or not _ground_drawer.is_valid():
+		return false
+	var bounds := Rect2(routes[0][0], Vector2.ZERO)
+	for route in routes:
+		for point in route:
+			bounds = bounds.expand(point)
+	bounds = bounds.grow(reach + Tuning.TILE_SIZE * 0.5)
+	var axis := Vector2.RIGHT if bounds.size.x >= bounds.size.y else Vector2.DOWN
+	var long := bounds.size.dot(axis)
+	var short := bounds.size.dot(Vector2.ONE - axis)
+	var pieces := maxi(1, ceili(long / maxf(short, 1.0)))
+	var piece := axis * (long / pieces) + (Vector2.ONE - axis) * short
+	var drew := false
+	for k in pieces:
+		var centre := bounds.position + axis * (long / pieces) * (float(k) + 0.5) \
+				+ (Vector2.ONE - axis) * short * 0.5
+		var drew_here: bool = _ground_drawer.call(centre, piece.length() * 0.5)
+		drew = drew_here or drew
+	return drew
 
 ## Spends the event at the head of the queue on `next`: its slot, and its marble when it came from
 ## the bag (`from_the_bag`), with today's count of the row. Answers the row handed out — the

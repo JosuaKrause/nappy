@@ -108,6 +108,23 @@ func plan_builder() -> PlanBuilder:
 func instances() -> Array[EventInstance]:
 	return _instances
 
+## **The fields kept clear by what was sent at her and is out now**: a plan of each live instance
+## that came under a warning (`EventInstance.was_warned_of()`), is neither gone nor on its way out,
+## and whose plan keeps its field clear (`EventPlan.keeps_its_field_clear()`: it ends the day, is
+## not a wall and does not pursue), standing where it is on the whole route it was sent on: a
+## cyclist the director sent down her line. Such a row is no plan of the walk, so a beat her walk
+## lays while it is out is judged among these as well (`WalkSiting`): nothing else happens inside
+## a lethal event's field.
+func sent_fields_kept_clear() -> Array[EventPlan]:
+	var fields: Array[EventPlan] = []
+	for instance in _instances:
+		if not instance.was_warned_of() or instance.is_gone() or instance.is_on_its_way_out():
+			continue
+		var plan := EventPlan.new(instance.row(), instance.position, instance.walks())
+		if plan.keeps_its_field_clear():
+			fields.append(plan)
+	return fields
+
 ## Brings `instance` into the world, after the ones already there.
 func take_in(instance: EventInstance) -> void:
 	_instances.append(instance)

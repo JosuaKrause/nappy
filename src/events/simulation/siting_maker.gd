@@ -29,7 +29,7 @@ func make(day: int, tree: RouteTree, ground: RowGround) -> WalkSiting:
 	var streets := _world.streets()
 	var left_open := streets.tutorial_walk_left_open() if streets else null
 	return _assemble(day, _world.city_map(), tree, _walk, _world.plan_builder(), ground, fronts,
-			_world.day_stream(day, "siting").seed, left_open)
+			_world.day_stream(day, "siting").seed, left_open, _world.sent_fields_kept_clear)
 
 ## **A siting from pieces** (`make()` hands it the world's). `base` seeds the streams its judge
 ## builds candidates on. Builds, in order: the corridor made of the day's tree, which its caller
@@ -44,10 +44,12 @@ func make(day: int, tree: RouteTree, ground: RowGround) -> WalkSiting:
 ## here; the tiles a row may stand on (`SitedGround`) over `fronts`, the fronts a crew may paste
 ## (empty for a walk with no city). `left_open` is day 1's walk on the day that leaves it open
 ## (`DayStreets.tutorial_walk_left_open()`), else null: the rules keep one sidewalk of each of its
-## streets open, as the dawn's do (`DawnContext.use_the_walk_left_open()`).
+## streets open, as the dawn's do (`DawnContext.use_the_walk_left_open()`). `sent` answers the
+## fields kept clear by what was sent at her and is out now (`EventWorld.sent_fields_kept_clear()`),
+## which every beat is judged among beside the walk's plans; none for a siting handed none.
 static func _assemble(day: int, map: CityMap, tree: RouteTree, walk: WalkEvents,
 		builder: PlanBuilder, ground: RowGround, fronts: Dictionary, base: int,
-		left_open: TutorialRoute = null) -> WalkSiting:
+		left_open: TutorialRoute = null, sent := Callable()) -> WalkSiting:
 	var corridor := Corridor.of(tree)
 	var calm := walk.calm()
 	var leave_alone: Array[Rect2] = calm.unused_ground() if calm else ([] as Array[Rect2])
@@ -62,4 +64,4 @@ static func _assemble(day: int, map: CityMap, tree: RouteTree, walk: WalkEvents,
 	if not locations:
 		locations = DayLocations.lay_out(map, corridor)
 	return WalkSiting.new(map, tree, walk, locations, judge,
-			SitedGround.new(map, ground, fronts))
+			SitedGround.new(map, ground, fronts), sent)

@@ -7,8 +7,12 @@ extends RefCounted
 ## street at the next box ahead of her, and for her standing in a junction box; a car's first leg
 ## sent only where the day's way on says a car may drive it and go on from its end; a sent row
 ## refused, and asked again, where its first leg starts within `EventScheduler.EVENT_SPACING_ANY`
-## of a placed plan or runs through a field a plan keeps clear; and a marble of her route sent ahead of her that has no
-## room, which waits for room and lets the marbles behind it through (calm-pelican-6); and its
+## of a placed plan or runs through a field a plan keeps clear; a cyclist refused where a placed plan
+## stands inside his own field, on the route he is sited on or on one she could bring him onto while
+## his badge is up, walking back along her line or stepping across it, and the ground under all of
+## those routes drawn before he is sent (handed a drawer whose answers the test sets); and a marble
+## of her route that waits for room (a sent row's, the patrol's, or the cyclist's) and has none,
+## which waits and lets the marbles behind it through (calm-pelican-6); and its
 ## looks at what her walk lays (`site_what_is_on_her_way()`), handed a stand-in for the day's
 ## siting (`FakeWalkSiting`): a look asks each plan owed once, between one `begin_look()` and
 ## one `end_look()`, no oftener than once a walking second; a placed plan behind her for three
@@ -100,6 +104,8 @@ func run(t: TestRunner) -> void:
 		_test_a_row_with_no_room_lets_the_next_marbles_through(t, row)
 	_test_a_cyclist_is_not_sent_where_a_placed_plan_stands_in_his_field(t)
 	_test_a_cyclist_is_not_sent_where_a_plan_would_stand_in_his_field_as_he_arrives(t)
+	_test_a_cyclist_is_not_sent_where_a_step_sideways_brings_his_field_over_a_plan(t)
+	_test_the_ground_under_a_cyclists_routes_draws_before_he_is_sent(t)
 	_test_a_look_asks_each_owed_plan_once_between_one_begin_and_one_end(t)
 	_test_a_placed_plan_behind_her_is_asked_again_and_one_that_was_live_never(t)
 	_test_the_next_crew_waits_while_one_is_laid_and_not_yet_real(t)
@@ -828,6 +834,86 @@ func _test_a_cyclist_is_not_sent_where_a_plan_would_stand_in_his_field_as_he_arr
 			end + on * (reach + walked_back + 2.0 * TILE))]
 	t.check(not _due(_director(map, "cyclist", far)).is_empty(),
 			"and a café further off than she can walk while his badge is up does not")
+
+## **Nor where a placed plan would stand inside his field once she has stepped sideways under his
+## badge**: his place is found level with her own line across the street
+## (`PendingWarning.down_her_line()`), so a step across her sidewalk moves his whole route across
+## with her. Her on the outer tile of the east sidewalk, a café on the outer tile of the west one a
+## few tiles ahead: the route he is sited on, down her own tile's line, is clear of the café by more
+## than his reach, and one tile west it is not, so he is refused before his badge goes up rather
+## than withdrawn when he arrives (minty-dolphin #852).
+func _test_a_cyclist_is_not_sent_where_a_step_sideways_brings_his_field_over_a_plan(
+		t: TestRunner) -> void:
+	var map := _street()
+	var her := _turned(Vector2i(Tuning.STREET_WIDTH - 1, HER.y), true)
+	var cafe := EventPlan.new(EventCatalogue.by_id("cafe_tables"), _turned(Vector2i(0, HER.y - 3), true))
+	var cyclist := EventCatalogue.by_id("cyclist")
+	var open := _due_at(_director(map, "cyclist", _no_plans()), her)
+	if open.size() < 2:
+		t.check(false, "the cyclist is handed out down her outer tile's line with nothing standing")
+		return
+	var path := open[1] as PackedVector2Array
+	t.check(cafe.gap_to(EventPlan.new(cyclist, path[0], path)) >= cyclist.field_reach(),
+			"the café is clear of the field of the route he is sited on (%.0fpx, his reach %.0fpx)"
+			% [cafe.gap_to(EventPlan.new(cyclist, path[0], path)), cyclist.field_reach()])
+	var stepped := her + Vector2.LEFT * TILE
+	var place := PendingWarning.down_her_line(map, cyclist, stepped, (path[0] - path[1]).normalized())
+	var moved := PendingWarning.route_down_her_line(map, place, stepped,
+			(path[0] - path[1]).normalized())
+	t.check(place != Vector2.INF and cafe.gap_to(EventPlan.new(cyclist, moved[0], moved))
+			< cyclist.field_reach(), "and one tile west of her line the route he arrives on is not")
+	var plans: Array[EventPlan] = [cafe]
+	t.check(_due_at(_director(map, "cyclist", plans), her).is_empty(),
+			"so he is refused as he is sited")
+
+## **The ground under every route a cyclist could arrive on is drawn before he is sent**
+## (`EventDirector.use_ground_drawer()`, `EventsAhead.draw_the_ground_round()` in play), so his badge
+## goes up only over ground that has drawn: a drawer that stands a café in his way as it draws, as
+## a unit drawn there would, refuses him on the turn he is sited, where a draw as he arrived would
+## have withdrawn his badge (minty-dolphin #852). And with nothing drawn into his way he is sent,
+## the drawer having been asked round every point within his reach of the route he is sent on.
+func _test_the_ground_under_a_cyclists_routes_draws_before_he_is_sent(t: TestRunner) -> void:
+	var map := _street()
+	var plans: Array[EventPlan] = []
+	var director := _director(map, "cyclist", plans)
+	var cafe := EventPlan.new(EventCatalogue.by_id("cafe_tables"), _her() + Vector2(0.0, -3.0 * TILE))
+	var draws := [0]
+	director.use_ground_drawer(func(_at: Vector2, _reach: float) -> bool:
+		draws[0] = int(draws[0]) + 1
+		if plans.is_empty():
+			plans.append(cafe)
+		return true)
+	t.check(_due(director).is_empty() and int(draws[0]) > 0,
+			"a café drawn into his way as he is sited refuses him on that turn (%d draws asked)"
+			% int(draws[0]))
+	var discs: Array[Vector4] = []
+	var open := _director(map, "cyclist", _no_plans())
+	open.use_ground_drawer(func(at: Vector2, reach: float) -> bool:
+		discs.append(Vector4(at.x, at.y, reach, 0.0))
+		return false)
+	var sent := _due(open)
+	if sent.size() < 2:
+		t.check(false, "and with nothing drawn into his way he is sent")
+		return
+	var path := sent[1] as PackedVector2Array
+	var reach := (sent[0] as EventDef).field_reach()
+	var uncovered := 0
+	var along := (path[1] - path[0]).normalized()
+	var across := Vector2(-along.y, along.x)
+	for k in 9:
+		var on := path[0].lerp(path[path.size() - 1], float(k) / 8.0)
+		for offset: Vector2 in [Vector2.ZERO, across * reach, -across * reach, along * reach,
+				-along * reach]:
+			var point: Vector2 = on + offset
+			var covered := false
+			for disc in discs:
+				if Vector2(disc.x, disc.y).distance_to(point) <= disc.z:
+					covered = true
+			if not covered:
+				uncovered += 1
+	t.check(not discs.is_empty() and uncovered == 0,
+			"and with nothing drawn into his way he is sent, the ground within his reach of his route "
+			+ "asked to draw first (%d discs, %d points uncovered)" % [discs.size(), uncovered])
 
 ## What `site_what_is_on_her_way()` hands the siting while she walks north from her tile for `seconds`
 ## of walking, one tenth of a second a tick; answers every plan it moved, in order.

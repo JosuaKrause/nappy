@@ -6,8 +6,9 @@ extends RefCounted
 ## was for once its time is up or withdrawing it, and raising the mark over her head for the live
 ## events that end the day (handed `FakeEvent`s over a world of its own, no manager),
 ## `EventSpawner` recording a scar once and drawing the pelican bag of the run it is handed, and
-## `CheckpointController` saying what a door does to her as intents rather than moving her. And
-## the manager seeing her once she is handed in, never by looking her up.
+## `CheckpointController` saying what a door does to her as intents rather than moving her, and
+## `EventWorld` answering the fields kept clear by what was sent at her and is out now. And the
+## manager seeing her once she is handed in, never by looking her up.
 
 const STEP := 0.1
 ## One physics frame, the step the lesson's retry is driven at.
@@ -24,6 +25,7 @@ func run(t: TestRunner) -> void:
 	_test_a_failed_lesson_retry_leaves_the_director_running(t)
 	await _test_the_manager_sees_her_only_once_she_is_handed_in(t)
 	_test_only_a_lethal_thing_puts_the_mark_over_her_head(t)
+	_test_the_world_answers_the_fields_kept_clear_by_what_was_sent_at_her(t)
 
 ## The parts a case drives, made the way `EventManager._init()` makes them: one world over a map
 ## drawn in a world node (`EventSurroundings.on()`) with a run of its own, as the escape's
@@ -467,3 +469,24 @@ func _a_live(row: EventDef, at: Vector2) -> FakeEvent:
 	live.core = row.core_within()
 	live.heard = row.heard_within()
 	return live
+
+## **The world answers the fields kept clear by what was sent at her and is out now**
+## (`EventWorld.sent_fields_kept_clear()`, what every beat her walk lays is judged among,
+## `WalkSiting`): a cyclist created where his warning pointed (`EventSpawner.spawn_warned()`) is
+## one, on the route he was sent on; one created with no warning is not, nor a pursuer that came
+## under one (a pursuer's field follows her and is kept clear of nothing).
+func _test_the_world_answers_the_fields_kept_clear_by_what_was_sent_at_her(t: TestRunner) -> void:
+	var parts := _parts(t)
+	var path := PackedVector2Array([Vector2(400.0, 100.0), Vector2(400.0, 900.0)])
+	var cyclist := parts.spawner.spawn_warned(EventCatalogue.by_id("cyclist"), path)
+	parts.spawner.spawn(EventCatalogue.by_id("cyclist"), Vector2(800.0, 100.0),
+			PackedVector2Array([Vector2(800.0, 100.0), Vector2(800.0, 900.0)]))
+	parts.spawner.spawn_warned(EventCatalogue.by_id("charging_dog"),
+			PackedVector2Array([Vector2(1200.0, 100.0), Vector2(1200.0, 900.0)]))
+	var fields := parts.world.sent_fields_kept_clear()
+	t.check(fields.size() == 1 and fields[0].walks() == path and fields[0].keeps_its_field_clear(),
+			"the warned cyclist's field is answered on the route he was sent on, and nothing else (%d)"
+			% fields.size())
+	t.check(fields.size() == 1 and fields[0].placed_at() == cyclist.position,
+			"standing where he is")
+	parts.free_all()

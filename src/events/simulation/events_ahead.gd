@@ -60,6 +60,7 @@ func use_sitings(maker: SitingMaker) -> void:
 func use_director(director: EventDirector, spawn_siting: SpawnSiting) -> void:
 	_director = director
 	_director.force(_forced_row, _forced_interval)
+	_director.use_ground_drawer(draw_the_ground_round)
 	_spawn_siting = spawn_siting
 
 ## Whether a director sites anything ahead of her in this world.
@@ -569,10 +570,10 @@ func rig_her_route(ids: Array[String], size: int, just_ahead := false) -> Array:
 ## **The route is asked again when it is created what `EventDirector.due()` asked when it sited
 ## one** (`EventDirector.clear_to_send()`: the region doors, and no placed plan inside the field the
 ## cyclist keeps clear) — she has walked on since, and a cyclist coming through a door's gap is
-## exactly what that refuses. A refusal withdraws the warning; the director's siting asked the
-## routes she could bring him onto while his badge is up, so a plan placed when he was sited does
-## not refuse him here. **A row that keeps its field clear has the ground along its route drawn first**
-## (`_draw_the_ground_along()`), so no unit drawn afterwards stands a plan in his field.
+## exactly what that refuses. A refusal withdraws the warning. The director's siting asked every
+## route she could bring him onto while his badge is up, after drawing the ground under all of them
+## (`EventDirector._may_be_sent_on()`), so neither a plan placed when he was sited nor a unit drawn
+## since refuses him here.
 func _warn_down_her_line(def: EventDef, her: Vector2, direction: Vector2) -> void:
 	# Rolled as the warning goes up rather than when the rider is created, so the badge's own lines
 	# in the run log already name the pelican — see `_spawner.rolls_a_pelican()`.
@@ -581,10 +582,7 @@ func _warn_down_her_line(def: EventDef, her: Vector2, direction: Vector2) -> voi
 		return PendingWarning.down_her_line(world.city_map(), def, at, direction, world.visible_view())
 	var arrive := func(place: Vector2, at: Vector2) -> bool:
 		var path := _route_down_her_line(def, place, at, direction)
-		if path.size() < 2:
-			return false
-		_draw_the_ground_along(def, path)
-		if not _director.clear_to_send(path, def):
+		if path.size() < 2 or not _director.clear_to_send(path, def):
 			return false
 		var instance := _spawner.spawn_warned(def, path, pelican)
 		world.trace().note("ahead", "%s comes at her from %.0fpx in front of her at %s, its warning over"
@@ -626,25 +624,6 @@ func _warn_in_its_lane(def: EventDef, her: Vector2, sited: PackedVector2Array) -
 				% [def.id(), path[0].distance_to(at), RunTrace.tile(world.map().world_to_tile(at))])
 		return true
 	_warnings.warn_first(def, her, where, arrive)
-
-## **Draws the ground along `path` before a row that keeps its field clear is sent on it**
-## (`EventPlan.keeps_its_field_clear()`, the cyclist): round points every half the field's reach
-## along it, both ends included, out to 1.05 of the reach, so the discs cover the whole band the
-## field reaches and no unit drawn later puts a plan inside it. `draw_the_ground_round()` draws
-## only what is undrawn, so it does nothing where the ground round her already covers the route.
-func _draw_the_ground_along(def: EventDef, path: PackedVector2Array) -> void:
-	var sent := EventPlan.new(def, path[0], path)
-	if not sent.keeps_its_field_clear():
-		return
-	var reach := sent.field_reach()
-	var step := reach * 0.5
-	for k in range(path.size() - 1):
-		var length := path[k].distance_to(path[k + 1])
-		var at := 0.0
-		while at < length:
-			draw_the_ground_round(path[k].move_toward(path[k + 1], at), reach * 1.05)
-			at += step
-	draw_the_ground_round(path[path.size() - 1], reach * 1.05)
 
 ## The route a row coming down her line is created on (`PendingWarning.route_down_her_line()`), cut
 ## to the ground the row can run on (`Navigator.trim()`), so a bike or a dog never comes through a
