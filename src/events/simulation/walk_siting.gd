@@ -99,18 +99,24 @@ var _nowhere := {}
 var _laid := {}
 ## Why asks laid nothing, as `reason -> how many asks`.
 var _waits := {}
+## What answers the fields kept clear by what was sent at her and is out now, or none (`_init()`).
+var _sent := Callable()
 
 ## `tree` is the day's route tree, `walk` the walk's events (its plans,
 ## which every beat is spaced and judged among, its doors and its calm), `locations` the day's
-## locations, `judge` the day's rules over them and `ground` the tiles a row may stand on.
+## locations, `judge` the day's rules over them and `ground` the tiles a row may stand on. `sent`
+## answers the fields kept clear by what was sent at her and is out now
+## (`EventWorld.sent_fields_kept_clear()`, an `Array[EventPlan]`), which a beat is judged among
+## too (`_among()`); a siting handed none judges among the walk's plans alone.
 func _init(map: CityMap, tree: RouteTree, walk: WalkEvents, locations: DayLocations,
-		judge: LocationGround, ground: SitedGround) -> void:
+		judge: LocationGround, ground: SitedGround, sent := Callable()) -> void:
 	_map = map
 	_tree = tree
 	_walk = walk
 	_locations = locations
 	_judge = judge
 	_ground = ground
+	_sent = sent
 
 ## Does at a day's start the scan the first ask for `def` would do mid-walk (`SitedGround.prepare()`).
 func prepare(def: EventDef) -> void:
@@ -175,7 +181,7 @@ func _lay_on_the_first(plan: EventPlan, offers: Dictionary) -> bool:
 	if offers.is_empty():
 		return false
 	var def := plan.row()
-	var among := _walk.everything_but(plan)
+	var among := _among(plan)
 	for location: Location in offers:
 		var sited := _judge.offer_on(def, location, _tiles_of(offers, location), among)
 		if not sited:
@@ -196,13 +202,25 @@ func lay_among(plan: EventPlan, offered: Array[Vector2i]) -> bool:
 		var location := _locations.holding(tile, _map.tile_at(tile))
 		if _is_free(location):
 			_group(grouped, location, tile)
-	var among := _walk.everything_but(plan)
+	var among := _among(plan)
 	for location: Location in grouped:
 		var sited := _judge.offer_on(def, location, _tiles_of(grouped, location), among)
 		if sited:
 			_stand(plan, sited, location)
 			return true
 	return false
+
+## **What a beat `plan` is judged among**: the walk's plans but `plan` itself, and the fields kept
+## clear by what was sent at her and is out now (`_sent`: a cyclist the director sent down her line,
+## which is no plan of the walk), so a beat laid while he rides at her, just ahead of her where he
+## comes from among them, is never laid inside his field: nothing else happens inside a lethal
+## event's field.
+func _among(plan: EventPlan) -> Array[EventPlan]:
+	var among := _walk.everything_but(plan)
+	if _sent.is_valid():
+		var sent: Array[EventPlan] = _sent.call()
+		among.append_array(sent)
+	return among
 
 ## **Stands `plan` away from her and off the day's routes**, for the one case a walk can end without
 ## the guarantee having been met: a day 3 she wins on which every siting was refused, so the day

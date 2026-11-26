@@ -11,6 +11,8 @@ extends RefCounted
 ## (`lay_just_ahead()`) takes the nearest free location straight ahead of her on her branch and
 ## out of her view, within `JUST_AHEAD`: never one in her view, never one beyond that reach, and
 ## never one up a side street of her branch nearer to walk to; with none, it waits and says why.
+## Every beat is judged among the fields kept clear by what was sent at her and is out now (a
+## cyclist down her line) as well as the walk's plans.
 ##
 ## Run with stand-ins for everything it is handed (`FakeRouteTree` whose cells and carried tiles
 ## a check sets, `FakeWalkEvents`, `_Locations` whose table of locations a check sets and which
@@ -37,6 +39,7 @@ func run(t: TestRunner) -> void:
 	_test_a_row_a_mark_rigs_is_laid_just_ahead_out_of_her_view(t)
 	_test_a_row_a_mark_rigs_passes_over_a_side_street_of_her_branch(t)
 	_test_a_row_a_mark_rigs_waits_where_nothing_just_ahead_is_out_of_her_view(t)
+	_test_a_beat_is_judged_among_the_fields_kept_clear_by_what_was_sent_at_her(t)
 
 const FIRE_DAY := 3
 ## Her tile, heading east.
@@ -137,8 +140,8 @@ static func _location(x: int, y: int, available := true, width := 4) -> Location
 
 ## The siting over stand-ins, her way ahead the cells over `first_cell` to `last_cell` along
 ## the row `ROW_Y` (a cell is two tiles square), every tile of them carried by the tree and the
-## row's ground.
-static func _rig(first_cell: int, last_cell: int) -> _Rig:
+## row's ground; `sent` answers the fields kept clear by what was sent at her, none where unset.
+static func _rig(first_cell: int, last_cell: int, sent := Callable()) -> _Rig:
 	var rig := _Rig.new()
 	rig.tree = FakeRouteTree.new(rig.map)
 	var cells := {}
@@ -152,7 +155,7 @@ static func _rig(first_cell: int, last_cell: int) -> _Rig:
 				rig.ground.set_of_tiles[tile] = 1
 	rig.tree.set_cells_ahead(cells).set_carried_tiles(carried)
 	rig.siting = WalkSiting.new(rig.map, rig.tree, rig.walk, rig.locations,
-			rig.judge, rig.ground)
+			rig.judge, rig.ground, sent)
 	return rig
 
 ## `location`, as a draw that filled in its unit leaves it: drawn, with nothing on it.
@@ -542,3 +545,37 @@ func _test_a_row_a_mark_rigs_waits_where_nothing_just_ahead_is_out_of_her_view(t
 			"nothing is laid and nothing judged")
 	t.check(rig.siting.waits().size() == 1,
 			"and the wait is counted with its reason (%s)" % [rig.siting.waits()])
+
+## **A beat is judged among the fields kept clear by what was sent at her and is out now**
+## (`EventWorld.sent_fields_kept_clear()` in play): a cyclist the director sent down her line is no
+## plan of the walk, and nothing else happens inside a lethal event's field, so a row a mark rigs
+## (`lay_just_ahead()`) and a beat laid ahead of her (`lay_ahead()`) are each judged among his plan
+## beside the walk's. Whether a location inside his field is then refused is the judge's own
+## (`StreetInvalidation.room_around()`, `tests/test_ruled_location_ground.gd`).
+func _test_a_beat_is_judged_among_the_fields_kept_clear_by_what_was_sent_at_her(
+		t: TestRunner) -> void:
+	var cyclist := EventPlan.new(EventCatalogue.by_id("cyclist"), _her() + Vector2.RIGHT * 600.0,
+			PackedVector2Array([_her() + Vector2.RIGHT * 600.0, _her() + Vector2.LEFT * 600.0]))
+	var sent: Array[EventPlan] = [cyclist]
+	var answers := func() -> Array[EventPlan]:
+		return sent
+	var rig := _rig(5, 40, answers)
+	rig.locations.table = [_location(26, ROW_Y)] as Array[Location]
+	var man := _unplaced("homeless_yeller")
+	rig.walk.set_plans([man] as Array[EventPlan])
+	rig.siting.begin_look(_her(), Vector2.RIGHT)
+	rig.siting.lay_just_ahead(man)
+	rig.siting.end_look()
+	t.check(not rig.judge.asks.is_empty() and (rig.judge.asks[0][3] as Array[EventPlan]).has(cyclist)
+			and not (rig.judge.asks[0][3] as Array[EventPlan]).has(man),
+			"a row a mark rigs is judged among the sent cyclist, and not among itself")
+	var branch := _rig(24, 50, answers)
+	branch.locations.table = [_location(50, ROW_Y)] as Array[Location]
+	var fire := _unplaced("burning_building")
+	branch.walk.set_plans([fire] as Array[EventPlan])
+	branch.siting.begin_look(_her(), Vector2.RIGHT)
+	branch.siting.lay_ahead(fire)
+	branch.siting.end_look()
+	t.check(not branch.judge.asks.is_empty()
+			and (branch.judge.asks[0][3] as Array[EventPlan]).has(cyclist),
+			"and so is a beat laid ahead of her")

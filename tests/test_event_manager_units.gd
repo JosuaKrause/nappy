@@ -38,6 +38,7 @@ func run(t: TestRunner) -> void:
 		_test_the_walks_reach_is_told_what_a_unit_draws,
 		_test_a_day_started_twice_stands_the_same_rows,
 		_test_two_walks_draw_the_same_day,
+		_test_a_cyclists_route_lies_on_drawn_ground_when_he_is_created,
 	]
 	for test in tests:
 		_walker = Rig.Walker.new()
@@ -532,3 +533,69 @@ static func _where_they_stand(plans: Array[EventPlan]) -> String:
 	for plan in plans:
 		parts.append("%s@%s" % [plan.row_id(), plan.placed_at()])
 	return ";".join(parts)
+
+## **A cyclist's route lies within drawn ground the moment he is created** (the director's
+## pre-draw under every route he could arrive on before his badge goes up,
+## `EventDirector._may_be_sent_on()`, which `EventsAhead` hands `draw_the_ground_round()`), so no unit
+## drawn afterwards stands a plan inside the field he keeps clear. A cyclist is forced
+## (`EventManager.force()`), she is put down beside a row far from her door, where nothing has
+## drawn, and walks on through the manager's own tick until he exists. Then every unit any part of
+## which lies within his field's reach of his route has drawn, which the ground drawn round her
+## does not cover alone once the stream radius or the draw-ahead band is shrunk. **Every plan of the
+## walk is spent as it stands** (`EventPlan.spend()`, the game's own writer of a spent plan), so
+## no placed plan in his field refuses him, which is the director's suite's
+## (`tests/test_event_director.gd`), and the case asks only the ground: what a unit draws does not
+## change for a plan being spent, since a draw is judged among every placed plan, spent or not
+## (`StreetInvalidation.room_around()` asks `EventPlan.is_placed()` alone).
+func _test_a_cyclists_route_lies_on_drawn_ground_when_he_is_created(t: TestRunner) -> void:
+	var events := _stage.events()
+	events.force("cyclist", 1.0)
+	var far_row := _a_far_row(_the_day_drawn_whole(), func(_one: _Drew, _k: int) -> bool:
+		return true, _home())
+	t.check(not far_row.is_empty(), "the day drawn whole holds a row far from her door")
+	if far_row.is_empty():
+		return
+	var far: Vector2 = (far_row[0] as _Drew).places[far_row[1]]
+	_start()
+	var reach := EventCatalogue.by_id("cyclist").field_reach()
+	var rig := Rig.walker(t, _stage, far)
+	var seen := {"route": PackedVector2Array(), "undrawn": [] as Array[String]}
+	var walk := func(_ticks: int) -> bool:
+		rig.velocity = Vector2.RIGHT * Tuning.WALK_SPEED
+		rig.global_position += rig.velocity * Rig.WALK_STEP
+		for plan in events.walk_events().plans():
+			if plan.is_placed():
+				plan.spend()
+		for instance in events.instances():
+			if instance.row_id() != "cyclist":
+				continue
+			var path := instance.walks()
+			seen["route"] = path
+			var undrawn: Array[String] = []
+			for unit in _units().undrawn_within(Vector2.ZERO, INF):
+				if _within_of_the_route(unit.bounds(), path, reach):
+					undrawn.append(unit.name())
+			seen["undrawn"] = undrawn
+			return true
+		return false
+	await PhysicsTicks.pass_ticks(t, int(WALK_SECONDS * 10.0), walk, Rig.WALK_SCALE)
+	var path: PackedVector2Array = seen["route"]
+	t.check(path.size() >= 2, "a forced cyclist was created on her walk")
+	if path.size() >= 2:
+		var undrawn: Array[String] = seen["undrawn"]
+		t.check(undrawn.is_empty(),
+				"every unit within his %.0fpx field of his route is drawn when he is created (%s not)"
+				% [reach, undrawn])
+	events.use_player(null)
+	rig.free()
+
+## Whether any part of `bounds` lies within `reach` of the chain `path`.
+static func _within_of_the_route(bounds: Rect2, path: PackedVector2Array, reach: float) -> bool:
+	for k in range(path.size() - 1):
+		var length := path[k].distance_to(path[k + 1])
+		var at := 0.0
+		while at <= length:
+			if bounds.grow(reach).has_point(path[k].move_toward(path[k + 1], at)):
+				return true
+			at += 8.0
+	return false

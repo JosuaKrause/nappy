@@ -253,7 +253,8 @@ func _test_a_rig_over_a_bag_marble_keeps_its_ensured_marble_within_x(t: TestRunn
 ## Asked of day 2, a day whose dawn owes her more events than its bag holds marbles, with no rig in
 ## front of the bag (day one's dog walkers, day 3's lesson) and no row owed as itself. **Nothing
 ## waits for room here**: the director is handed the day's moments and none of its placed plans, so
-## no row sent ahead of her is refused room by a plan (`EventDirector.clear_to_send()`). A row that
+## no row is refused room by a plan (`EventDirector.clear_to_send()`: a row sent ahead of her, or a
+## cyclist with a plan inside his field). A row that
 ## waits is sent after the marbles behind it, which can carry it past the bag's end; that is
 ## `tests/test_event_director.gd`'s.
 func _test_a_stretch_of_her_route_the_length_of_a_bag_has_its_mix(t: TestRunner) -> void:

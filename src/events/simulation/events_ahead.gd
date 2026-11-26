@@ -60,6 +60,7 @@ func use_sitings(maker: SitingMaker) -> void:
 func use_director(director: EventDirector, spawn_siting: SpawnSiting) -> void:
 	_director = director
 	_director.force(_forced_row, _forced_interval)
+	_director.use_ground_drawer(draw_the_ground_round)
 	_spawn_siting = spawn_siting
 
 ## Whether a director sites anything ahead of her in this world.
@@ -566,9 +567,13 @@ func rig_her_route(ids: Array[String], size: int, just_ahead := false) -> Array:
 ## just out of sight in `direction` on a sidewalk or a square (`PendingWarning.down_her_line()`),
 ## and once its second is up the thing is created where that now is, down her line.
 ##
-## **The route is asked of the region doors again when it is created**, the same refusal
-## `EventDirector.due()` makes when it sites one — she has walked on since, and a cyclist coming
-## through a door's gap is exactly what that refuses. A refusal withdraws the warning.
+## **The route is asked again when it is created what `EventDirector.due()` asked when it sited
+## one** (`EventDirector.clear_to_send()`: the region doors, and no placed plan inside the field the
+## cyclist keeps clear) — she has walked on since, and a cyclist coming through a door's gap is
+## exactly what that refuses. A refusal withdraws the warning. The director's siting asked every
+## route she could bring him onto while his badge is up, after drawing the ground under all of them
+## (`EventDirector._may_be_sent_on()`), so neither a plan placed when he was sited nor a unit drawn
+## since refuses him here.
 func _warn_down_her_line(def: EventDef, her: Vector2, direction: Vector2) -> void:
 	# Rolled as the warning goes up rather than when the rider is created, so the badge's own lines
 	# in the run log already name the pelican — see `_spawner.rolls_a_pelican()`.
@@ -596,7 +601,8 @@ func _warn_down_her_line(def: EventDef, her: Vector2, direction: Vector2) -> voi
 ## thing is created there, its telegraph spent (`EventSpawner.spawn_warned()`), on its first leg
 ## from where she is then (`EventDirector.leg_in_the_lane()`). Day 13's column arrives the same way
 ## (`ResistanceHappenings`). **The leg it is created on is asked again what every sent route is
-## asked** (`EventDirector.clear_to_send()`: the region doors, and the room a placed plan keeps),
+## asked** (`EventDirector.clear_to_send()`: the region doors, the room a placed plan keeps, and for
+## a row whose plan keeps its field clear no placed plan inside it),
 ## since she has walked on since it was sited; a refusal, or no leg from where she is then (none a
 ## car may drive and go on from, `EventDirector.leg_in_the_lane()`), withdraws the warning. Once
 ## created its route is worked out as it goes (`EventInstance.go_on_by()`).

@@ -138,18 +138,31 @@ of the code.
 **Nothing else happens inside a lethal event's field.** A lethal event (`ends_the_day()`) keeps its whole
 outer radius clear of every other event at placement (`StreetInvalidation.room_around()`), and it
 is the one spacing rule with no fallback — one that cannot find room is not placed. A new lethal row
-inherits this, not just the telegraph. **One case of it is held and the whole is not.**
-`tests/test_masts.gd` holds a queued mast: offered only sidewalk inside a
-planned lethal field it is not generated, and offered sidewalk clear of it, it is.
-`tests/test_events_costs.gd` holds who is exempt (below). **No suite walks a planned day** from
-`EventScheduler.build_day()` for the rule, because the walk would find no field to ask:
-`EventScheduler.role_for()` makes a lethal row placed on a tile a `WALL`, which is exempt, except
-a one-shot, a scenery row or an ambient one (it returns `NONE` for the last two before it reaches
-the `WALL` check), and the catalogue's one one-shot is not lethal. **A row a dawn phase or a unit
-places whose plan keeps its field clear (`EventPlan.keeps_its_field_clear()`: it ends the day, is
-not a `WALL` and does not pursue) adds the walk**, in `tests/test_events_scheduler.gd`, which holds
-the planned days. That covers a lethal one-shot, a lethal scenery or ambient row, and a lethal plan
-built without `give_role()`, whose role stays `NONE`.
+inherits this, not just the telegraph. **The lethal row a day sends keeps placed plans out of his field, when he is sent and from what
+is drawn or laid while he is out; a placed one is held where it is placed.**
+`EventScheduler.role_for()` makes a lethal row placed on a tile a `WALL`, which is exempt, except a
+one-shot, a scenery row or an ambient one (it returns `NONE` for the last two before it reaches the
+`WALL` check), and the catalogue's one one-shot is not lethal, so the one lethal row in a day whose
+plan keeps its field clear (`EventPlan.keeps_its_field_clear()`: it ends the day, is not a `WALL`
+and does not pursue) is the cyclist, which the director sends at her and no dawn phase or unit
+places. **The director sends him only where no placed plan stands inside his field** along his whole
+route (`EventDirector.clear_to_send()`), asked of every route he could arrive on while his badge is
+up, for her stepped any way, along her line, across it or both, as far as she can run in its time,
+and again as he is created; `tests/test_events_scheduler.gd` walks the planned days for it: a
+director handed the day's plan sends no cyclist with a placed plan in his field where one handed no
+plan does. A row sent ahead of her keeps out of a field a placed plan keeps clear, the other
+direction. `tests/test_masts.gd` holds a queued mast: offered only sidewalk inside a planned lethal
+field it is not generated, and offered sidewalk clear of it, it is, and `tests/test_events_costs.gd`
+holds who is exempt (below). **What a unit draws while a cyclist is out is kept out of his field by
+drawing first**: the ground under every route he could arrive on draws before his badge goes up
+(`EventDirector._may_be_sent_on()`, handed `EventsAhead.draw_the_ground_round()`), so no unit drawn
+later stands in it, and `tests/test_event_manager_units.gd` holds that his route lies on drawn ground
+when he is created. **A beat her walk lays while he rides is judged among his field**
+(`WalkSiting`, `EventWorld.sent_fields_kept_clear()`), since he is no plan of the walk; one laid in
+the second his badge is up, before he exists, is judged among the walk's plans alone. A row a
+dawn phase or a unit places whose plan keeps its field clear (a lethal one-shot, a lethal scenery or
+ambient row, a lethal plan built without `give_role()`, whose role stays `NONE`) is held by
+`room_around()` at placement, and adds a walk of the planned days to the same suite.
 
 Two exemptions, both about a field with no fixed place to keep clear: a **wall** placement, which
 is off the day's routes by construction, and a **pursuer**, which follows her.

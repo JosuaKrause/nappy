@@ -14,10 +14,12 @@ extends RefCounted
 ## (`EventPlan.row_id()`): the director reads its row and nothing else of it.
 ##
 ## **Placed plans are left out but one.** A walk reads a placed plan only to refuse a row sent
-## ahead of her the room beside it (`EventDirector.clear_to_send()`) and to keep clear of the doors.
-## Placed plans were taken out of each recorded day in halves, for as long as the rows the walk
+## ahead of her the room beside it, to keep one out of a cyclist's field
+## (`EventDirector.clear_to_send()`), and to keep clear of the doors. Day 1 sends no cyclist, and its
+## recorded walks had their placed plans taken out in halves, for as long as the rows the walk
 ## handed out and the seconds they came at stayed the same: `PLACED` is the one plan whose removal
-## changed a walk (day 1 on seed 31337), at the place it was read.
+## changed a walk (day 1 on seed 31337), at the place it was read. The day-2 and day-3 cases are
+## handed no placed plan, and nothing they hold asks one.
 ##
 ## **When to read a day again:** when the rows, or their order, that the scheduler's plan leaves
 ## unsited for one of these days and seeds change, since the cases then walk a day the dawn no

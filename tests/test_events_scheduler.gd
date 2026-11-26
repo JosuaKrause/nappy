@@ -8,7 +8,8 @@ extends "res://tests/events_shared_city.gd"
 ## enough in it to meet, danger before act three, the named decisions, the city's memory of where
 ## she went, a scar outliving its day, a park staying reachable every day and a flock sited on a
 ## tile rather than in front of her; and a day planned at full heat, which is the same day when
-## planned twice and places more patrols than a cold one.
+## planned twice and places more patrols than a cold one; and no placed plan of a planned day
+## standing in the field of a cyclist the director sends.
 ##
 ## `test_events_costs.gd` keeps the cost side, which asks the rows alone.
 ##
@@ -41,6 +42,15 @@ extends "res://tests/events_shared_city.gd"
 ## read them too), the taught day of each seed (`_the_taught_day()`) and the act walk
 ## (`_the_act_walk()`), which the calm-left-alone case and the city's memory case both read. The
 ## dawn writes nothing a later dawn reads, so no case needs a plan of its own for a run's later day.
+##
+## **Why one case hands its planned days to a real `EventDirector`.**
+## `_test_no_placed_plan_stands_in_a_sent_cyclists_field` holds the events skill's "nothing else
+## happens inside a lethal event's field" for the one lethal row whose plan keeps its field clear,
+## the cyclist, which the director sends and no dawn places: the guarantee spans the dawn's plan and
+## the director's sending, so it is asked of the days the dawn plans, which hold the fields a placed
+## plan of a real day stands in, and of the director the game hands them to. The director is the
+## case's subject as much as the plan, and a fake of it would hold nothing; how it sites and refuses
+## a row on one street is `tests/test_event_director.gd`'s, on a hand-drawn map.
 ##
 ## **Day 1 grows the ordinary tree in every case but one**, deliberately: `GameDawn` handed no walk
 ## grows the tree with no tutorial route, and what those cases ask holds of any day's tree. The
@@ -96,6 +106,7 @@ func run(t: TestRunner) -> void:
 	_test_the_fire_is_the_days_only_unsited_place(t)
 	_test_a_crew_drawn_is_handed_to_her_walk(t)
 	_test_a_flock_is_a_place_she_can_see(t)
+	_test_no_placed_plan_stands_in_a_sent_cyclists_field(t)
 
 
 func _signature(planned: Array[EventPlan]) -> String:
@@ -1848,3 +1859,82 @@ func _test_a_flock_is_a_place_she_can_see(t: TestRunner) -> void:
 			"and the burst is what costs (%.1f/s through the middle against %.1f/s while they peck)"
 			% [instance.source().contribution_at(Vector2.ZERO), on_the_ground])
 	instance.free()
+
+## **No placed plan stands inside the field of a cyclist the director sends** (the events skill's
+## "nothing else happens inside a lethal event's field", asked of the one lethal row a day's plan
+## holds whose plan keeps its field clear, which the director sends rather than the dawn placing):
+## on each of the shared city's planned days the cyclist comes on, she stands at `CYCLIST_SPOTS`
+## places down the arterial's sidewalk walking north and south, and a director handed the day's
+## plan and forced to send cyclists (`EventDirector.force()`, the `--force` flag) sends none whose
+## route a placed plan stands nearer than his field reaches (`EventPlan.gap_to()` against
+## `EventPlan.field_reach()`, the measure `StreetInvalidation.room_around()` holds every placement
+## to). The same place asked of a director handed no plan is how the walk knows it found a field to
+## ask: where that one's cyclist has a placed plan of the day inside his field, the day's director
+## refuses him, and the walk finds such a place on the planned days.
+func _test_no_placed_plan_stands_in_a_sent_cyclists_field(t: TestRunner) -> void:
+	var map := _map()
+	var cyclist := EventCatalogue.by_id("cyclist")
+	var none: Array[EventPlan] = []
+	var y_max: float = map.world_size().y
+	var x := CrowdLanes.arterial_pavement(map).x
+	var fields_found := 0
+	var sent := 0
+	var inside: Array[String] = []
+	var not_refused: Array[String] = []
+	for day in range(1, Tuning.RUN_LENGTH_DAYS + 1):
+		if not cyclist.available_on(day):
+			continue
+		var planned := _planned(day)
+		var free := _cyclist_director(map)
+		var of_the_day := _cyclist_director(map)
+		for spot in CYCLIST_SPOTS:
+			var at := Vector2(x, y_max * (float(spot) + 0.5) / CYCLIST_SPOTS)
+			for walking: Vector2 in [Vector2.UP, Vector2.DOWN]:
+				var offered := _cyclist_sent(free, day, none, at, walking)
+				var handed := _cyclist_sent(of_the_day, day, planned, at, walking)
+				var where := "day %d at %s walking %s" % [day, map.world_to_tile(at), walking]
+				if not offered.is_empty() and _a_placed_plan_in_his_field(cyclist, offered, planned):
+					fields_found += 1
+					if not handed.is_empty():
+						not_refused.append(where)
+				if handed.is_empty():
+					continue
+				sent += 1
+				if _a_placed_plan_in_his_field(cyclist, handed, planned):
+					inside.append(where)
+	t.check(fields_found > 0 and sent > 0,
+			"there were cyclists to send (%d) and fields a placed plan stands in to ask (%d)"
+			% [sent, fields_found])
+	t.check(not_refused.is_empty(),
+			"a cyclist whose field a placed plan stands in is refused (not on %s)" % [not_refused])
+	t.check(inside.is_empty(),
+			"no cyclist sent has a placed plan inside his field (%s)" % [inside])
+
+## How many places down the arterial's sidewalk the cyclist walk stands her at, per day.
+const CYCLIST_SPOTS := 12
+
+## A director over `map` that sends cyclists and nothing else (`EventDirector.force()`).
+static func _cyclist_director(map: CityMap) -> EventDirector:
+	var director := EventDirector.new(map)
+	director.force("cyclist", 1.0)
+	return director
+
+## The route `director` sends a cyclist on with the day's plan `plans`, her at `at` walking
+## `walking`, once its wait has passed; empty where it sends none.
+static func _cyclist_sent(director: EventDirector, day: int, plans: Array[EventPlan], at: Vector2,
+		walking: Vector2) -> PackedVector2Array:
+	var rng := RandomNumberGenerator.new()
+	rng.seed = day
+	director.start_day(day, plans, rng, DaySpec.DirectorSends.THE_DAYS_ROWS)
+	var due := director.due(10.0, at, walking * Tuning.WALK_SPEED)
+	return due[1] as PackedVector2Array if due.size() >= 2 else PackedVector2Array()
+
+## Whether a placed, unspent plan of `plans` stands nearer the cyclist's route `path` than his
+## field reaches.
+static func _a_placed_plan_in_his_field(cyclist: EventDef, path: PackedVector2Array,
+		plans: Array[EventPlan]) -> bool:
+	var sent := EventPlan.new(cyclist, path[0], path)
+	for plan in plans:
+		if plan.is_placed() and not plan.is_spent() and sent.gap_to(plan) < sent.field_reach():
+			return true
+	return false
