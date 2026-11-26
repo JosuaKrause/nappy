@@ -451,6 +451,9 @@ src/
 	                      world for it and raises the ending after
 	loss_cause.gd         what ended a hard-fail or crying day: pure rules over plain values, no
 	                      nodes and no globals; `DayDirector` reads the world and hands them in
+	loss_hold.gd          the beat a lost day holds before its summary: the world stops, a camera
+	                      of its own frames her and the one thing that caused the loss, and a
+	                      tap skips it; `main` runs it between the save and the outcome screen
 	day_world_source.gd   where the day director gets the world a spec is walked in: stands it and
 	                      answers it standing; `main` implements it, a test hands a fake
 	day_world.gd          a world standing for one spec: the scene, its events, her and the baby,
