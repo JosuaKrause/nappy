@@ -121,17 +121,17 @@ static func _her(t: TestRunner, at: Vector2) -> Stroller:
 
 # ----------------------------------------------------------- what stands ---
 
-## **A city's simulation stands under the city as one node, its four parts its children in the
-## order they tick** (posters, events, crowd, blackout), and answers each part but the blackout,
-## which nothing reads back; its events site what they send at her.
+## **A city's simulation stands under the city as one node, its five parts its children in the
+## order they tick** (posters, events, crowd, blackout, the thought-bubble watch), and answers each
+## part but the blackout and the watch, which nothing reads back; its events site what they send at her.
 func _test_a_city_stands_its_four_parts_in_its_tree(t: TestRunner) -> void:
 	var made := _city(t)
 	var simulation := _simulation(made)
 	t.check(simulation.get_parent() == made["world"] and simulation.name == WorldSimulation.NODE_NAME,
 			"a city's simulation stands under the city, under its own name")
-	var in_order: Array[String] = ["Posters", "Events", "Crowd", "Blackout"]
+	var in_order: Array[String] = ["Posters", "Events", "Crowd", "Blackout", "Hints"]
 	t.check(_children_of(simulation) == in_order and simulation.get_child(3) is Blackout,
-			"its four parts are its children, in the order they tick (%s)" % [_children_of(simulation)])
+			"its five parts are its children, in the order they tick (%s)" % [_children_of(simulation)])
 	t.check(simulation.poster_walls() == simulation.get_child(0)
 			and simulation.events() == simulation.get_child(1)
 			and simulation.crowd() == simulation.get_child(2),

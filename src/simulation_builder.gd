@@ -145,8 +145,16 @@ func in_the_city(world: CityDressing, map: CityMap, navigator: Navigator, street
 	blackout.setup(map, buildings, signals, events, run.resistance(), _blackout_forced,
 			dark_from_the_start)
 
+	var hints := HintWatch.new()
+	hints.name = "Hints"
+	hints.equip(_trace, _atlas)
+	var sources: Array[ExcitementSources] = [events.excitement_sources(), crowd.sources()]
+	hints.setup(run.hints(), _hint_watchers(map, streets, sources))
+	simulation.add_child(hints)
+
 	simulation.hold_the_events(events)
 	simulation.hold_the_city_parts(crowd, posters, blackout)
+	simulation.hold_the_hints(hints)
 	world.use_excitement_sources(simulation.excitement_sources())
 	return simulation
 
@@ -165,6 +173,16 @@ func in_the_building(world: WorldContext, map: WorldMap, navigator: Navigator,
 	simulation.hold_the_events(events)
 	world.use_excitement_sources(simulation.excitement_sources())
 	return simulation
+
+## **The thought-bubble watchers of a city, in the order they win in**: back to day 1's tutorial
+## route, use the zebra crossing, walk wide of the noise, the way to the park. The two about the
+## route ask `streets` for today's tutorial route and apply only on a day that has one.
+func _hint_watchers(map: CityMap, streets: DayStreets, sources: Array[ExcitementSources]) \
+		-> Array[HintWatcher]:
+	var watchers: Array[HintWatcher] = [BackToRouteWatcher.new(streets, map),
+			UseZebraWatcher.new(map), WalkWideWatcher.new(sources),
+			WayToParkWatcher.new(streets, map)]
+	return watchers
 
 ## The simulation's own node, under the world it stands in. A builder handed no atlas makes one
 ## library here, for every part it stands from now on, as a city handed none makes its own.

@@ -20,6 +20,7 @@ var _events: EventManager
 var _crowd: Crowd
 var _posters: PosterWalls
 var _blackout: Blackout
+var _hints: HintWatch
 ## What charges her in this world, in the order the pairs are summed: the events, then the crowd
 ## where there is one. The same sets the world was handed (`WorldContext.use_excitement_sources()`).
 var _sources: Array[ExcitementSources] = []
@@ -36,6 +37,10 @@ func hold_the_city_parts(crowd: Crowd, posters: PosterWalls, blackout: Blackout)
 	_posters = posters
 	_blackout = blackout
 	_sources = [_events.excitement_sources(), crowd.sources()]
+
+## Takes the thought-bubble watch of a city beside its parts. Called once by the builder.
+func hold_the_hints(hints: HintWatch) -> void:
+	_hints = hints
 
 ## The day's events in this world.
 func events() -> EventManager:
@@ -69,3 +74,5 @@ func meet_her(player: Stroller) -> void:
 		_posters.use_player(player)
 	if _blackout:
 		_blackout.use_player(player)
+	if _hints:
+		_hints.use_player(player)

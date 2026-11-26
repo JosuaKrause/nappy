@@ -75,12 +75,14 @@ func _written_for(run: RunState, day_under_way: bool) -> Dictionary:
 		written[0] = JSON.parse_string(FileAccess.get_file_as_string(_SCRATCH_PATH)))
 	return written[0]
 
-## Everything the file holds but the build that wrote it and `last_day_seconds`, a key the
-## fixture's older format lacks (the header loads a save without it as none, which
-## `test_save.gd` holds), so the comparison is narrowed to the keys the fixture holds.
+## Everything the file holds but the build that wrote it, `last_day_seconds` and `hints`, keys
+## the fixture's older format lacks (the header loads a save without `last_day_seconds` as none,
+## which `test_save.gd` holds, and the hint ledger loads a save without `hints` as none shown,
+## which `test_hint_ledger.gd` holds), so the comparison is narrowed to the keys the fixture holds.
 func _without_build(file: Dictionary) -> Dictionary:
 	var kept := file.duplicate(true)
 	kept.erase("build")
+	_erase_key(kept, "hints")
 	_erase_key(kept, "last_day_seconds")
 	return kept
 
