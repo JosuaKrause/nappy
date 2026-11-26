@@ -91,9 +91,8 @@ const EXCITEMENT_DECAY_ALLEY_MULTIPLIER := 0.58
 ## one minute of it. It sits between an alley's multiplier
 ## (`EXCITEMENT_DECAY_ALLEY_MULTIPLIER`, 0.58) and a main road's
 ## (`EXCITEMENT_DECAY_MAIN_ROAD_MULTIPLIER`, 0.02), harsher than an alley's because this is a
-## decision she made, not ground she has to cross. It was set beside a main road's earlier 0.6 and
-## was not re-derived when M117 re-derived the ground multipliers (the record
-## `tools/decisions.sh amber-ibis-quiet-stork` names the open balance question).
+## decision she made, not ground she has to cross. Nothing re-derives it when the ground
+## multipliers move.
 const RESISTANCE_PACKAGE_DECAY_MULTIPLIER := 0.5
 
 const EXCITEMENT_DECAY_PRECINCT_MULTIPLIER := 1.5

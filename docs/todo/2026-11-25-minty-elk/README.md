@@ -11,7 +11,7 @@ alley's is 0.58. The package's multiplier was not re-derived and now sits near a
 a main road's. Nothing re-derives it when the ground multipliers move.
 
 **Whether it should move is the player's word**, since a cost the player feels moves only on their
-word (inbox #1278 in olive-ferret). **The entry asks the player when it is picked up**, on the board
+word. **The entry asks the player when it is picked up** (the filer's proposal), on the board
 (**board**), with the measured cost of a day carrying the package at 0.5 against the main road's 0.02
 and an alley's 0.58, and what each choice costs; it changes no number before the answer.
 
