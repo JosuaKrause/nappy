@@ -22,6 +22,7 @@ func run(t: TestRunner) -> void:
 	_test_the_kept_ground(t, map, route)
 	_test_the_park_among_the_blocks_she_settled_in(t, route)
 	_test_a_zone_block_of_the_park(t)
+	_test_the_junctions_are_a_copy_of_the_chain(t, route)
 	_test_the_lessons_count_back_from_the_parks_street(t, map)
 	_test_the_line_crosses_lesson_fours_street_and_keeps_the_park_side(t, map)
 	_test_the_ground_past_the_crossing_with_no_cars(t, map)
@@ -148,6 +149,15 @@ static func _arm_of(map: CityMap, junction: Vector2i, toward: Vector2i) -> Stree
 ## Which side of `segment`'s rect `band` is: 0 for its first, 1 for its second.
 static func _side(segment: StreetNetwork.Segment, band: Rect2i) -> int:
 	return 0 if band.position == segment.tile_rect().position else 1
+
+## The route's junctions are the chain from the doorstep's street to the last lesson street's far
+## end, and changing the answer leaves the route's own chain alone.
+func _test_the_junctions_are_a_copy_of_the_chain(t: TestRunner, route: TutorialRoute) -> void:
+	var junctions := route.junctions()
+	t.check(junctions == [FIRST, TURN, FAR] and junctions[0] == route.turning_junction(),
+			"the junctions run from the turn off the doorstep's street to the far end (%s)" % [junctions])
+	junctions.clear()
+	t.check(route.junctions().size() == 3, "the junctions answered are a copy")
 
 ## **The lessons count back from the park's street**, which carries none: the yeller the street
 ## before it, the crossing with no cars at the start of the street before his, the dog walker's and

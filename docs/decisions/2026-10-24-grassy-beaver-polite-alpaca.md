@@ -63,10 +63,8 @@ Two of them go beyond the player's words and are marked as such: 5 and 6.
   assertion holds on the boot's frames and once the shot is skipped.
 - The design had the hold start on the shot's first frame with the focus handed afterwards; the order
   is the other way round (above).
-- `OpeningShot.line_for()` derives the junctions from `TutorialRoute`'s public questions, a known
-  duplicate of the route's own chain; the route class is not touched here, since the lessons' pull
-  request (#1803) owns it. A `TutorialRoute.junctions()` accessor that `line_for()` reads instead follows
-  once that pull request has merged.
+- `OpeningShot.line_for()` reads the junctions from `TutorialRoute.junctions()`, a copy of the
+  route's own chain, and works none of them out itself.
 
 ## Not measured
 
