@@ -96,8 +96,28 @@ highest excitement rate any walk saw; lowest sleep the lowest sleep any walk rea
 
 The plans are the same in every row (148 explosions planned over the 12 seeds); every other walk
 ended in a hard fail (`LOST_HARD_FAIL`). Explosions heard move only because walks end at another moment.
-Only bag D was walked, as the brief for the last builder asked; the entry's wish for every bag still
-on the Review tab is not measured here.
+### The other bags
+
+The same seeds, probe and walks under the other bags still on the Review tab (`ESCAPE_WINNABLE_BAG`),
+on 3577d40d9 (the branch's merge base, which holds the same escape code as main 60e30a341) and on
+the branch's head 6b928d6ad. Bag C is bag A's marbles (`DaySpec.ESCAPE_BAGS` has `"C": _BAG_A`), so
+its walks are bag A's and it was not run again.
+
+| Bag, walk, build | Trucks a walk | Explosions heard a walk | Walks with no truck | Got out | Ended crying | Peak excitement | Lowest sleep |
+|---|---|---|---|---|---|---|---|
+| A (and C), tunnel, main | 2.92 | 3.08 | 3 | 5 | 0 | 21.7/s | 96 |
+| A (and C), tunnel, head | 3.83 | 2.50 | 2 | 0 | 8 | 71.8/s | 67 |
+| A (and C), bridge, main | 0.83 | 2.75 | 9 | 4 | 0 | 3.8/s | 100 |
+| A (and C), bridge, head | 3.33 | 2.42 | 2 | 1 | 5 | 56.4/s | 75 |
+| B, tunnel, main | 0.83 | 3.17 | 7 | 1 | 0 | 4.0/s | 100 |
+| B, tunnel, head | 2.83 | 2.92 | 4 | 0 | 2 | 38.0/s | 83 |
+| B, bridge, main | 0.92 | 3.17 | 8 | 4 | 0 | 16.2/s | 96 |
+| B, bridge, head | 3.33 | 2.75 | 1 | 0 | 5 | 49.3/s | 79 |
+
+Under bag A the trucks pass the explosions on both walks; under bag B they come level on the tunnel
+(2.83 against 2.92) and pass them on the bridge. The cost is larger than under bag D: bag A's
+tunnel gets out 0 walks of 12 (main 5) and 8 end crying, bag A's bridge gets out 1 (main 4), and
+bag B gets out 0 on both walks (main 1 and 4). Every walk not out or crying ended in a hard fail.
 
 ## What the order costs
 
