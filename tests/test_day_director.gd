@@ -155,9 +155,10 @@ func _test_a_hard_fail_is_named_by_its_reason(t: TestRunner) -> void:
 	_put_away(rig)
 
 ## The end hands on whether the game shows the loss and where its one cause stands, read in the
-## frame it ended: a timeout and a win show nothing; a crying day lost to a row goes to the
-## instance of that row that landed the most, not the nearest; a day lost to the crowd, the traffic
-## or herself, or to a cause no longer in the world, shows the beat with nothing to frame.
+## frame it ended: a timeout and a win show nothing; a crying day lost to a row stands where the
+## events say the instance behind it is (`EventManager.the_instance_behind()`, whose rule its own
+## suite holds); a day lost to the crowd, the traffic or herself, or to a cause no longer in the
+## world, shows the beat with nothing to frame.
 func _test_a_loss_is_shown_with_what_caused_it(t: TestRunner) -> void:
 	for result: GameEnums.DayResult in [GameEnums.DayResult.WON, GameEnums.DayResult.LOST_TIMEOUT]:
 		var rig := _rig(t)
@@ -169,16 +170,14 @@ func _test_a_loss_is_shown_with_what_caused_it(t: TestRunner) -> void:
 	var rig := _rig(t)
 	var director: DayDirector = rig["director"]
 	var events: EventManager = rig["events"]
-	var def := EventCatalogue.by_id("cyclist")
-	var near := events.spawn_extra(def, Vector2(100.0, 0.0))
-	var far := events.spawn_extra(def, Vector2(900.0, 0.0))
-	near.source().accumulate_landed(2.0)
-	far.source().accumulate_landed(6.0)
+	var cyclist := events.spawn_extra(EventCatalogue.by_id("cyclist"), Vector2(400.0, 0.0))
+	cyclist.source().accumulate_landed(6.0)
 	var end := director.finish_day(GameEnums.DayResult.LOST_CRYING)
+	var behind := events.the_instance_behind("cyclist")
 	t.check(end.shows_its_cause() and end.has_a_cause_in_view(), "a crying day lost to a row shows it")
-	t.check(end.cause_stands_at().is_equal_approx(far.global_position),
-			"at the instance that landed the most (%s), not the nearest (%s): %s"
-			% [far.global_position, near.global_position, end.cause_stands_at()])
+	t.check(behind != null and end.cause_stands_at().is_equal_approx(behind.global_position),
+			"where the events say the instance behind it stands (%s): %s"
+			% [behind.global_position if behind else Vector2.INF, end.cause_stands_at()])
 	events.stand_down()
 	_put_away(rig)
 	rig = _rig(t)

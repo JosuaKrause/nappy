@@ -477,13 +477,13 @@ var _striker: EventInstance = null
 ## and never the nearest, which may have done little. Asked in the frame the day ends.
 func the_instance_behind(cause: String) -> EventInstance:
 	if _hard_failed:
-		if is_instance_valid(_striker) and not _striker.is_queued_for_deletion():
+		if is_instance_valid(_striker) and not _striker.is_gone():
 			return _striker
 		return null
 	var behind: EventInstance = null
 	var most := -1.0
 	for instance in world.instances():
-		if instance.logged_name().replace("_", "-") != cause:
+		if instance.is_gone() or instance.logged_name().replace("_", "-") != cause:
 			continue
 		var landed := instance.source().landed()
 		if landed > most:

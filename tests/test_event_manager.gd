@@ -37,6 +37,8 @@ func run(t: TestRunner) -> void:
 		_test_successor_replaces_its_parent,
 		_test_a_burst_leaves_its_crater_as_it_goes_off,
 		_test_excitement_sums_over_instances,
+		_test_the_instance_behind_a_hard_fail_is_the_one_that_struck_her,
+		_test_the_instance_behind_a_crying_loss_landed_the_most,
 		_test_an_event_waits_until_she_is_near_it,
 		_test_an_event_that_has_run_does_not_run_again,
 		_test_a_running_event_comes_back_where_it_got_to,
@@ -476,6 +478,61 @@ func _test_excitement_sums_over_instances(t: TestRunner) -> void:
 	var far := Vector2(-10000.0, -10000.0)
 	t.close_to(_stage.events().excitement_sources().total_at(far), 0.0,
 			"nothing reaches a point outside every radius")
+
+## **The instance behind a hard fail is the one whose reach ended the day** (`the_instance_behind()`,
+## asked by the director in the frame the day ends): remembered when `check_hard_fails()` finds it,
+## so it is the answer while it still stands, even moved out of reach of her and beside another of
+## its row that landed more on the baby, and once it is gone there is none, never the other.
+func _test_the_instance_behind_a_hard_fail_is_the_one_that_struck_her(t: TestRunner) -> void:
+	var events := _stage.events()
+	var def := EventCatalogue.by_id("cyclist")
+	var her := CrowdLanes.arterial_pavement(_stage.map())
+	var rig := Rig.walker(t, _stage, her)
+	t.check(events.the_instance_behind("cyclist") == null, "before anything, nothing is behind a loss")
+	var striker := events.spawn_extra(def, her)
+	var other := events.spawn_extra(def, her + Vector2(600.0, 0.0))
+	# Made in place, each is still telegraphing; the striker is aged past it, as one sent down her
+	# line arrives (`PendingWarning`).
+	striker.restore(striker.save().at_age(striker.age() + def.telegraphs_for() + 0.1))
+	other.source().accumulate_landed(6.0)
+	striker.source().accumulate_landed(1.0)
+	t.check(striker.is_lethal_at(her) and not other.is_lethal_at(her),
+			"one cyclist stands on her and can end the day, the other is far off")
+	events.check_hard_fails()
+	t.check(events.what_struck_her() == "cyclist", "her day is ended by the cyclist's reach")
+	t.check(events.the_instance_behind("cyclist") == striker,
+			"the one that struck her is behind the loss, not the one that landed more")
+	events.move_extra(striker, her + Vector2(300.0, 0.0))
+	t.check(not striker.is_lethal_at(her) and events.the_instance_behind("cyclist") == striker,
+			"struck her, still standing, out of her reach now: still the one behind it")
+	events.retire(striker)
+	t.check(events.the_instance_behind("cyclist") == null,
+			"once it is gone nothing is behind it, never the other of its row")
+	events.retire(other)
+	events.use_player(null)
+	rig.free()
+
+## **The instance behind a crying loss is the one of its row that landed the most** on the baby
+## (`ExcitementSource.landed()`, the share the cause's group is summed from), never the nearest, which
+## may have done little: no hard fail, so nothing is remembered, and the share decides.
+func _test_the_instance_behind_a_crying_loss_landed_the_most(t: TestRunner) -> void:
+	var events := _stage.events()
+	var def := EventCatalogue.by_id("cyclist")
+	var her := CrowdLanes.arterial_pavement(_stage.map())
+	var rig := Rig.walker(t, _stage, her)
+	var near := events.spawn_extra(def, her + Vector2(100.0, 0.0))
+	var far := events.spawn_extra(def, her + Vector2(900.0, 0.0))
+	near.source().accumulate_landed(2.0)
+	far.source().accumulate_landed(6.0)
+	events.check_hard_fails()
+	t.check(events.what_struck_her() == "", "neither reaches her, so nothing struck her")
+	t.check(events.the_instance_behind("cyclist") == far,
+			"the one that landed the most is behind it, not the nearest")
+	t.check(events.the_instance_behind("busker") == null, "and a row with no instance has none")
+	for instance: EventInstance in [near, far]:
+		events.retire(instance)
+	events.use_player(null)
+	rig.free()
 
 # ---------------------------------------------------- the world near you (M27) ---
 # Playtest 04: *"don't load everything upfront."* The day is still planned across the whole

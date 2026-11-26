@@ -163,7 +163,7 @@ func _test_a_loss_no_one_thing_caused_holds_on_her(t: TestRunner) -> void:
 	her.free()
 
 func _test_a_tap_ends_the_beat_at_once(t: TestRunner) -> void:
-	for tap: InputEvent in [_press_mouse(), _press_key()]:
+	for tap: InputEvent in [_press_mouse(), _press_touch(), _press_key()]:
 		var her := _her_camera(t, Vector2.ZERO)
 		var hold := _hold(t)
 		var ends: Array[int] = [0]
@@ -171,9 +171,10 @@ func _test_a_tap_ends_the_beat_at_once(t: TestRunner) -> void:
 		hold.begin(her, Vector2.ZERO, Vector2(200.0, 0.0), VIEW)
 		for _frame in 3:
 			await t.get_tree().physics_frame
-		t.check(ends[0] == 0, "a few ticks in, the beat is running")
+		t.check(ends[0] == 0 and hold.is_running(), "a few ticks in, the beat is running")
 		t.get_viewport().push_input(tap)
-		t.check(ends[0] == 1, "a %s ends it on the spot" % tap.get_class())
+		t.check(ends[0] == 1 and not hold.is_running(),
+				"a %s ends it on the spot" % tap.get_class())
 		t.check(t.get_viewport().get_camera_2d() == her, "and gives the view back")
 		t.get_tree().paused = false
 		hold.free()
@@ -182,6 +183,13 @@ func _test_a_tap_ends_the_beat_at_once(t: TestRunner) -> void:
 func _press_mouse() -> InputEvent:
 	var press := InputEventMouseButton.new()
 	press.button_index = MOUSE_BUTTON_LEFT
+	press.pressed = true
+	return press
+
+## A finger on the phone's screen, the tap the beat names.
+func _press_touch() -> InputEvent:
+	var press := InputEventScreenTouch.new()
+	press.position = VIEW * 0.5
 	press.pressed = true
 	return press
 
