@@ -3040,8 +3040,10 @@ route he is sited on and every route he could arrive on while his badge is up
 (`EventDirector.clear_to_send()`; "The dog walker, the patrol and the convoy are sent ahead of
 her"), and `tests/test_events_scheduler.gd` walks the planned days for it: a director handed the
 day's plan sends no cyclist with a placed plan inside his field, on days where a director handed no
-plan sends such cyclists. What a unit draws while a cyclist is out is judged among the walk's
-plans, not his live field. A row a dawn phase or a unit places whose plan keeps its field clear
+plan sends such cyclists. The ground along his route draws before he is sent
+(`EventsAhead._draw_the_ground_along()`: round points every half his field's reach, out to a little
+more than the reach), so what a unit draws while he is out never stands in his field, and
+`tests/test_event_manager_units.gd` holds that his route lies on drawn ground when he is created. A row a dawn phase or a unit places whose plan keeps its field clear
 (`EventPlan.keeps_its_field_clear()`: it ends the day, is not a wall and does not pursue) is held
 by `room_around()` at placement and adds its own walk of the planned days to that suite.
 

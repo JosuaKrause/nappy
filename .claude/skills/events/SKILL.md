@@ -152,7 +152,9 @@ no plan does. A row sent ahead of her keeps out of a field a placed plan keeps c
 direction. `tests/test_masts.gd` holds a queued mast: offered only sidewalk inside a planned lethal
 field it is not generated, and offered sidewalk clear of it, it is, and `tests/test_events_costs.gd`
 holds who is exempt (below). **What a unit draws while a
-cyclist is out is judged among the walk's plans, not his live field**, which nothing holds. A row a
+cyclist is out is kept out of his field by drawing first**: the ground along his route draws before he
+is sent (`EventsAhead._draw_the_ground_along()`), so no unit drawn later stands in it, and
+`tests/test_event_manager_units.gd` holds that his route lies on drawn ground when he is created. A row a
 dawn phase or a unit places whose plan keeps its field clear (a lethal one-shot, a lethal scenery or
 ambient row, a lethal plan built without `give_role()`, whose role stays `NONE`) is held by
 `room_around()` at placement, and adds a walk of the planned days to the same suite.

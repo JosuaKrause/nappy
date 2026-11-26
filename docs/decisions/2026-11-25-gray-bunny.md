@@ -58,11 +58,24 @@ difficulty change on days 2 to 14, reported plainly and not tuned.
 - His field measured as `field_reach()` along his whole route, behind her included, as `room_around()` measures every
   placement. The alternative measured above asks it only to two tiles past her.
 
-**Left open.**
+**The other direction: built.** What a unit draws, or a beat her walk lays just ahead of her, while a cyclist is out is
+judged among the walk's plans and not his live field (the placement side asks plans, not live sent rows). A check inside
+a unit's draw against a live cyclist would make the unit's draw depend on when she walks past, which the events skill rules
+out ("The day follows from its seed": every unit's draw is the same whatever her path, but for the beats). Built instead:
+as his warning ends, before `EventDirector.clear_to_send()`, `EventsAhead._draw_the_ground_along()` draws the ground
+round his route for a row whose plan keeps its field clear (`EventPlan.keeps_its_field_clear()`), at points every half the
+field's reach along it, both ends included, out to 1.05 of the reach (discs spaced r/2 apart cover the route's whole
+reach-wide band). `draw_the_ground_round()` draws only undrawn units, so it does nothing where the ground round her
+already covers the route, and the draw of every unit stays what it was.
 
-- What a unit draws, or a beat her walk lays just ahead of her, while a cyclist is out is judged among the walk's plans
-  and not his live field (the placement side asks plans, not live sent rows). A check inside a unit's draw against a live
-  cyclist would make the unit's draw depend on when she walks past, which the events skill rules out ("The day follows
-  from its seed": every unit's draw is the same whatever her path, but for the beats); drawing the units his field
-  reaches before he is created, as a place the resistance sends her to draws its ground first, keeps the draw as it is.
-  Which of the two is wanted is a question for the orchestrator.
+**Whether it ever draws.** By the bound, his route lies about 900px from her at most (a view's half extent and his
+footprint just out of sight, `FURTHER_TILES` of 12 tiles, a lateral shift of up to 6 tiles, plus his reach of 134)
+against `Tuning.EVENT_STREAM_RADIUS` of 900px plus `Tuning.EVENT_DRAW_AHEAD` of 448px, so it is covered with margin,
+though by the stream radius alone it is not. Measured with a temporary count over the suites that create a cyclist through
+the manager's arrival (the guard test's forced cyclist and one more), **the pre-draw drew nothing on either of the two
+cyclists made**, so on the played radii it is a guard and not a change to any day. Two cyclists is a thin sample: it says
+the pre-draw did nothing where it was looked at, not that it never draws. **The guard test**
+(`tests/test_event_manager_units.gd`: a forced cyclist, her put down beside a row far from her door) fails when the
+pre-draw is removed and the band shrunk (stream radius 1px, draw-ahead 0: three units in his field undrawn at his
+creation) and passes with the pre-draw in the same shrunk band (none); at the played radii it passes with or without the
+pre-draw, which is the bound above, so it holds the sum of the radius, the band and the pre-draw.
