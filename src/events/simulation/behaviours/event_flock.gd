@@ -11,7 +11,8 @@ extends EventBehaviour
 ## each is load-bearing:
 ##
 ## - **The excitement is still a pure query, and it is now a query over eleven sources.** `Baby` asks
-##   the world, the world sums `contribution_at()`, and this one sums over its birds — which is the
+##   the world for the sources at her place (`excitement_sources_at()`) and sums what each charges,
+##   and this one's charge sums over its birds — which is the
 ##   invariant working exactly as written rather than an exception to it. It is also what makes the
 ##   flock *dangerous* in the way a route-planning game can use: the middle of it stacks four or five
 ##   overlapping fields and the edge of it stacks one, so walking round it is cheap and walking
