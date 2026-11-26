@@ -329,7 +329,7 @@ func _test_catalogue_and_mutations(t: TestRunner) -> void:
 			before_the_chat = source.save().state_of("EventHold")
 			source.start_chat()
 			_event_parity(t, source, at, definition.id() + " chatting")
-		source_where.tell(at, Vector2.INF, Rect2(), false, false)
+		source_where.tell(at, Vector2.INF, null, false, false)
 		_event_parity(t, source, at, definition.id() + " sleep")
 		if source.detains_her():
 			# The hold is put back as the game's own save of it made before the chat, so the

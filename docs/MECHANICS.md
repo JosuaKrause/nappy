@@ -1236,8 +1236,9 @@ Two things are deliberately not the same as an ordinary telegraph. **The warning
 and a clock inside it** *(inbox #764 in minty-lemur: a warning happens when she comes close; she can turn around;
 inbox #788 in minty-lemur: "We should do one radius and warn inside it for 2s. If the player leaves the radius
 nothing happens and the warning stops. If they stay within the charge starts")*: it starts when she
-comes inside `EventDef.notice_within()` along a clear line and with its warning picture in the camera's view,
-not when the day put it there; leaving the radius before its `PursuitSpec.warns_for()` has run stops it, and it
+comes inside `EventDef.notice_within()` along a clear line and with all of its warning picture in sight (in
+the camera's view, and in the joystick scheme under neither bottom corner its controls cover), not when the
+day put it there; leaving the radius before its `PursuitSpec.warns_for()` has run stops it, and it
 waits again; still inside when it has run, it charges (`EventInstance.warns_by_radius()`). Standing
 in it and running 0.3s after the charge gets away (`docs/EVENTS.md`, "Every charger that does not
 arrive charging warns first"). A guard a task sets

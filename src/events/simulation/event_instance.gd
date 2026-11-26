@@ -411,45 +411,47 @@ func body_position() -> Vector2:
 	return post.body_position() if post else global_position
 
 ## **Whether a waiting charger would raise his warning in her view**: the whole of his warning
-## picture (`warning_rect()`) inside the camera's view this frame (`WhereSheIs.view()`; inbox #788
-## in minty-lemur). Every charger that waits for her and pursues notices her only then, on a day as in
-## the escape, so his warning never starts off the screen, and his warning's clock starts from
-## there. The view is the camera's own, look-ahead and trailing included. Always true for any other
-## row, and for an instance nobody has handed a view (an empty view, a rig that steps it
+## picture (`warning_rect()`) in sight this frame (`VisibleView.sees_all()` on `WhereSheIs.view()`;
+## inbox #788 in minty-lemur): inside the camera's view, look-ahead and trailing included, and in the
+## joystick scheme under neither bottom corner its controls cover, since a hand raised under the
+## Run disc is no warning (inbox #581 in feathery-lynx). Every charger that waits for her and
+## pursues notices her only then, on a day as in the escape, so his warning never starts where she
+## cannot see it, and his warning's clock starts from there. Always true for any other row, and for
+## an instance nobody has handed a view (none, or one never looked through, a rig that steps it
 ## directly), where the notice is the radius alone.
 ##
 ## **And whether a vehicle that lets men out would let them out in her view** (`EventInvestigation`
 ## stops for her only then): all it draws (`drawn_box()`) and, for every man it lets out, his
 ## picture with a hand raised (`EventFootprints.raised_hand_rect()`) on his feet at **every** place
 ## he may get out (`where_its_officer_may_get_out()`: its door on her side, the door on the other
-## side, its own place), wholly inside the view. Which of them he takes is his ground's to say when he
-## gets out (`EventsAhead.let_the_officers_out()`), so the test holds wherever that is. So a man let
-## out warns her in her view before his charge, and is never a charger already in the world coming
-## at her unseen and with no badge (velvet-marten #699, #705; bouncy-owl #1774). A vehicle not yet
-## handed the man it lets out (`lets_out_as()`) cannot say where he would stand, and is not in her
-## view yet.
+## side, its own place), wholly in sight, the covered corners left out as above. Which of them he
+## takes is his ground's to say when he gets out (`EventsAhead.let_the_officers_out()`), so the
+## test holds wherever that is. So a man let out warns her in her view before his charge, and is
+## never a charger already in the world coming at her unseen and with no badge (velvet-marten #699,
+## #705; bouncy-owl #1774). A vehicle not yet handed the man it lets out (`lets_out_as()`) cannot
+## say where he would stand, and is not in her view yet.
 func _would_stand_in_her_view() -> bool:
 	var view := _where.view()
-	if not view.has_area():
+	if view == null or not view.camera_view().has_area():
 		return true
 	if _composed.investigation():
 		return _would_let_its_men_out_in(view)
 	if not _def.pursues() or not warns_by_radius():
 		return true
-	return view.encloses(warning_rect())
+	return view.sees_all(warning_rect())
 
-## Whether this vehicle and every place each of its men may get out stand whole in `view`
+## Whether this vehicle and every place each of its men may get out stand whole in sight in `view`
 ## (`_would_stand_in_her_view()`).
-func _would_let_its_men_out_in(view: Rect2) -> bool:
+func _would_let_its_men_out_in(view: VisibleView) -> bool:
 	if _its_officer == null:
 		return false
 	var box := drawn_box()
-	if box.has_area() and not view.encloses(Rect2(global_position + box.position, box.size)):
+	if box.has_area() and not view.sees_all(Rect2(global_position + box.position, box.size)):
 		return false
 	var count := _def.lets_out()
 	for i in count:
 		for feet: Vector2 in where_its_officer_may_get_out(_its_officer, i, count):
-			if not view.encloses(EventFootprints.raised_hand_rect(feet)):
+			if not view.sees_all(EventFootprints.raised_hand_rect(feet)):
 				return false
 	return true
 

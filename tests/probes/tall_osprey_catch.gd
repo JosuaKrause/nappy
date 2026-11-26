@@ -124,7 +124,7 @@ func _caught(def: EventDef, mode: String, rng: RandomNumberGenerator) -> bool:
 			wanted = Tuning.RUN_SPEED
 		speed = move_toward(speed, wanted, Tuning.ACCELERATION * STEP)
 		her.x += speed * STEP
-		instance_where.tell(her, Vector2.INF, Rect2(), speed > Tuning.WALK_SPEED)
+		instance_where.tell(her, Vector2.INF, null, speed > Tuning.WALK_SPEED)
 		instance.step(STEP)
 		elapsed += STEP
 		if since_notice != INF:

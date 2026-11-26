@@ -827,7 +827,7 @@ func _walk_the_trap(t: TestRunner, def: EventDef, start: Vector2, speed: float,
 		stroller.position = her
 		stroller.velocity = bearing * velocity
 		await tree.physics_frame
-		robber_where.tell(her, Vector2.INF, Rect2(), absf(velocity) > Tuning.WALK_SPEED)
+		robber_where.tell(her, Vector2.INF, null, absf(velocity) > Tuning.WALK_SPEED)
 		var box := robber.drawn_box()
 		var in_sight := VisibleView.around(her, null).sees_any(
 				Rect2(robber.global_position + box.position, box.size))

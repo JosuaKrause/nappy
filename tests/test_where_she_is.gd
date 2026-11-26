@@ -8,7 +8,9 @@ extends RefCounted
 
 const HER := Vector2(120.0, 40.0)
 const PRAM := Vector2(134.0, 40.0)
-const VIEW := Rect2(Vector2(-200.0, -100.0), Vector2(640.0, 360.0))
+## What she can see, as the tick tells it: a view looked through once, so a handle answering it is
+## answering the very one told.
+var _seen := VisibleView.around(Vector2(120.0, 80.0), null)
 
 func run(t: TestRunner) -> void:
 	_test_a_handle_answers_the_whole_word_told_so_far(t)
@@ -21,14 +23,14 @@ func run(t: TestRunner) -> void:
 ## The word with all six facts set to something other than what nowhere answers.
 func _told() -> WhereSheIs:
 	var word := WhereSheIs.nowhere()
-	word.tell(HER, PRAM, VIEW, true, false, true)
+	word.tell(HER, PRAM, _seen, true, false, true)
 	return word
 
 func _test_a_handle_answers_the_whole_word_told_so_far(t: TestRunner) -> void:
 	var handle := _told().handle_for_an_event()
 	t.check(handle.at() == HER, "a handle made after the tick's word knows where she stands")
 	t.check(handle.pram_at() == PRAM, "and where her pram is")
-	t.check(handle.view() == VIEW, "and the camera's view")
+	t.check(handle.view() == _seen, "and what she can see")
 	t.check(handle.is_running(), "and that she runs")
 	t.check(not handle.baby_is_awake(), "and that the baby sleeps")
 	t.check(handle.is_held_at_a_door(), "and that a door holds her")
@@ -43,7 +45,7 @@ func _test_a_handle_follows_the_words_after(t: TestRunner) -> void:
 func _test_a_handle_answers_nowhere_before_any_word(t: TestRunner) -> void:
 	var handle := WhereSheIs.nowhere().handle_for_an_event()
 	t.check(handle.at() == Vector2.INF and handle.pram_at() == Vector2.INF
-			and not handle.view().has_area() and not handle.is_running()
+			and handle.view() == null and not handle.is_running()
 			and handle.baby_is_awake() and not handle.is_held_at_a_door(),
 			"a handle before any word is told answers nowhere on all six facts")
 
@@ -54,7 +56,7 @@ func _test_a_forgotten_word_is_nowhere_for_every_handle(t: TestRunner) -> void:
 	var after := word.handle_for_an_event()
 	for handle: WhereSheIs in [before, after]:
 		t.check(handle.at() == Vector2.INF and handle.pram_at() == Vector2.INF
-				and not handle.view().has_area() and not handle.is_running()
+				and handle.view() == null and not handle.is_running()
 				and handle.baby_is_awake() and not handle.is_held_at_a_door(),
 				"after the walk's word is forgotten a handle answers nowhere on all six facts")
 

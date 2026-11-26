@@ -117,7 +117,7 @@ func _blow_at(vent: EventPlan) -> EventInstance:
 func _tick(at: Vector2, awake: bool) -> float:
 	_events.step_the_repeats(STEP)
 	var incoming := 0.0
-	_events.world.where_she_is().tell(at, Vector2.INF, Rect2(), false, awake)
+	_events.world.where_she_is().tell(at, Vector2.INF, null, false, awake)
 	for instance in _events.instances():
 		if instance.row_id() != "basement_steam":
 			continue

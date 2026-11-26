@@ -37,6 +37,7 @@ func run(t: TestRunner) -> void:
 	_test_every_waiting_charger_warns_by_radius(t)
 	_test_a_warning_is_not_counted_as_a_chase(t)
 	_test_a_charge_begun_out_of_her_sight_raises_no_badge(t)
+	_test_a_waiting_charger_under_a_covered_corner_does_not_warn(t)
 	_test_a_pursuer_stops_at_walls(t)
 	_test_the_robbers_lunge_is_further_out_than_his_catch(t)
 	_test_the_robber_does_not_catch_her_through_a_wall(t)
@@ -77,23 +78,23 @@ func _test_a_sent_pursuer_counts_running_before_he_is_visible(t: TestRunner) -> 
 		var pursuer := EventInstance.new()
 		pursuer.setup(EventCatalogue.by_id(id), Vector2.ZERO, PackedVector2Array(), Vector2.RIGHT,
 				EventSurroundings.new().hearing(pursuer_where))
-		pursuer_where.tell(pursuer_where.at(), Vector2.INF, Rect2(), true)
+		pursuer_where.tell(pursuer_where.at(), Vector2.INF, null, true)
 		for frame in int(Tuning.PURSUIT_SHAKEN_OFF / STEP) - 1:
 			pursuer_where.tell(Vector2(500.0 + frame * Tuning.RUN_SPEED * STEP, 0.0),
-					Vector2.INF, Rect2(), pursuer_where.is_running())
+					Vector2.INF, null, pursuer_where.is_running())
 			pursuer.step(STEP)
 		t.check(not pursuer.has_given_up(), "%s needs the full sustained run" % id)
 		pursuer_where.tell(pursuer_where.at())
 		pursuer.step(STEP)
-		pursuer_where.tell(pursuer_where.at(), Vector2.INF, Rect2(), true)
+		pursuer_where.tell(pursuer_where.at(), Vector2.INF, null, true)
 		for frame in int(Tuning.PURSUIT_SHAKEN_OFF / STEP) - 1:
 			pursuer_where.tell(pursuer_where.at() + Vector2.RIGHT * Tuning.RUN_SPEED * STEP,
-					Vector2.INF, Rect2(), pursuer_where.is_running())
+					Vector2.INF, null, pursuer_where.is_running())
 			pursuer.step(STEP)
 		t.check(not pursuer.has_given_up(), "%s restarts the shake-off timer after a walk" % id)
 		for frame in 3:
 			pursuer_where.tell(pursuer_where.at() + Vector2.RIGHT * Tuning.RUN_SPEED * STEP,
-					Vector2.INF, Rect2(), pursuer_where.is_running())
+					Vector2.INF, null, pursuer_where.is_running())
 			pursuer.step(STEP)
 		t.check(pursuer.has_given_up(), "%s is shaken off by sustained running while offscreen" % id)
 		pursuer.free()
@@ -128,7 +129,7 @@ func _answer_rig(def: EventDef, reaction: float) -> Dictionary:
 		if speed > Tuning.WALK_SPEED:
 			result["running"] = float(result["running"]) + STEP
 		her.x += speed * STEP
-		instance_where.tell(her, Vector2.INF, Rect2(), speed > Tuning.WALK_SPEED)
+		instance_where.tell(her, Vector2.INF, null, speed > Tuning.WALK_SPEED)
 		instance.step(STEP)
 		elapsed += STEP
 		if since_the_lunge != INF:
@@ -169,10 +170,10 @@ func _chase_rig(def: EventDef, player_speed: float) -> Dictionary:
 	var was_telegraphing := true
 	while elapsed < 12.0 and not instance.is_gone() and not result["caught"]:
 		her.x += player_speed * STEP
-		instance_where.tell(her, Vector2.INF, Rect2(), instance_where.is_running())
+		instance_where.tell(her, Vector2.INF, null, instance_where.is_running())
 		# The break-off is a fact about *her* since playtest 14, so a rig that only moves her is
 		# not running the rule. See `Tuning.PURSUIT_SHAKEN_OFF`.
-		instance_where.tell(instance_where.at(), Vector2.INF, Rect2(),
+		instance_where.tell(instance_where.at(), Vector2.INF, null,
 				player_speed > Tuning.WALK_SPEED)
 		instance.step(STEP)
 		elapsed += STEP
@@ -752,15 +753,13 @@ func _test_a_charge_begun_out_of_her_sight_raises_no_badge(t: TestRunner) -> voi
 		var man_where := WhereSheIs.nowhere()
 		var man := _instance(t, def, Vector2.ZERO, PackedVector2Array(), null, man_where)
 		var her := Vector2(150.0, 0.0)
-		man_where.tell(her, Vector2.INF, Rect2(her - Tuning.VIEW_HALF_EXTENT,
-				Tuning.VIEW_HALF_EXTENT * 2.0))
+		man_where.tell(her, Vector2.INF, VisibleView.around(her, null))
 		_advance(man, 0.5)
 		t.check(man.is_telegraphing() and not man.is_chasing(),
 				"he stands for his notice with her beside him (walks off %s)" % walks_off)
 		if walks_off:
 			her = Vector2(420.0, 0.0)
-			man_where.tell(her, Vector2.INF, Rect2(her - Tuning.VIEW_HALF_EXTENT,
-					Tuning.VIEW_HALF_EXTENT * 2.0))
+			man_where.tell(her, Vector2.INF, VisibleView.around(her, null))
 		var waited := 0.0
 		while man.is_telegraphing() and waited < 10.0:
 			man.step(STEP)
@@ -770,6 +769,48 @@ func _test_a_charge_begun_out_of_her_sight_raises_no_badge(t: TestRunner) -> voi
 		t.check(not man.was_warned_of(),
 				"his charge puts no badge up, in her sight or out of it (walks off %s)" % walks_off)
 		man.free()
+
+## **A waiting charger does not raise his hand under a corner the joystick's controls cover**
+## (`EventInstance._would_stand_in_her_view()`, asking `VisibleView.sees_all()`; inbox #581 in
+## feathery-lynx: those corners are not in sight; bouncy-owl #1774: an on-screen charger warns in
+## her view). The alley robber, waiting on open ground, with her walking up and to the right inside
+## his radius, the camera's view led by her walk as `Stroller` leads it, and his warning picture
+## (`EventFootprints.warning_picture_size()`, standing on his feet) inside that view at its bottom
+## left, 10px into the bottom-left corner. In
+## the joystick scheme, whose steering ring or Run disc covers that corner, he goes on waiting; in
+## the tap scheme, under the same view, he notices her and warns.
+func _test_a_waiting_charger_under_a_covered_corner_does_not_warn(t: TestRunner) -> void:
+	var def: EventDef = _waiting_pursuers(func(row: EventDef) -> bool:
+		return row.id() == "alley_robbery")[0]
+	var cover := TouchCover.joystick()
+	var corner_width := cover.left_corner().end.x * Tuning.VIEW_HALF_EXTENT.x * 2.0 \
+			/ cover.design_box().x
+	var heading := Vector2(1.0, -1.0).normalized()
+	var lead := Vector2(heading.x, heading.y * Stroller.OBLIQUE_Y) * Stroller.CAMERA_LOOK_AHEAD
+	var size := EventFootprints.warning_picture_size(def.look())
+	var warning := Rect2(Vector2(-size.x * 0.5, -size.y), size)
+	for joystick: bool in [true, false]:
+		var robber_where := WhereSheIs.nowhere()
+		var robber := _instance(t, def, Vector2.ZERO, PackedVector2Array(), null, robber_where)
+		var camera := Rect2(Vector2(warning.position.x + 10.0 - corner_width,
+				warning.end.y + 2.0 - Tuning.VIEW_HALF_EXTENT.y * 2.0), Tuning.VIEW_HALF_EXTENT * 2.0)
+		var her := camera.get_center() - lead
+		var seen := VisibleView.new()
+		seen.look(camera, cover if joystick else null)
+		t.check(camera.encloses(warning) and seen.sees(her)
+				and her.distance_to(robber.global_position) < def.notice_within(),
+				"his warning picture is inside the camera's view, and she stands in sight %.0fpx "
+				% her.distance_to(robber.global_position) + "from him, inside his radius")
+		for i in int(round(0.5 / STEP)):
+			robber_where.tell(her, Vector2.INF, seen)
+			robber.step(STEP)
+		if joystick:
+			t.check(robber.is_waiting() and not robber.is_telegraphing(),
+					"with his warning under the corner the joystick covers, he goes on waiting")
+		else:
+			t.check(robber.is_telegraphing(),
+					"in the tap scheme, under the same view, he notices her and warns")
+		robber.free()
 
 ## **She leaves while he warns and comes back** (review 4 of PR #781): she stands 10px inside his
 ## radius until three quarters of his warning has run, steps 20px outside it (measured from where he
@@ -827,7 +868,7 @@ func _run_inside_the_warning_rig(t: TestRunner, def: EventDef) -> Dictionary:
 		else:
 			speed = move_toward(speed, 0.0, Tuning.ACCELERATION * STEP)
 		her.x += speed * STEP
-		instance_where.tell(her, Vector2.INF, Rect2(), speed > Tuning.WALK_SPEED)
+		instance_where.tell(her, Vector2.INF, null, speed > Tuning.WALK_SPEED)
 		if instance_where.is_running():
 			ran_for += STEP
 		var was_telegraphing := instance.is_telegraphing()
@@ -911,7 +952,7 @@ func _standing_rig(t: TestRunner, def: EventDef, player_speed: float, reaction :
 				and instance.global_position.distance_to(her) + speed * STEP <= stop_at:
 			speed = 0.0
 		her.y += speed * STEP
-		instance_where.tell(her, Vector2.INF, Rect2(), speed > Tuning.WALK_SPEED)
+		instance_where.tell(her, Vector2.INF, null, speed > Tuning.WALK_SPEED)
 		instance.step(STEP)
 		elapsed += STEP
 		if since_the_lunge != INF:
@@ -1195,7 +1236,7 @@ func _test_a_late_notice_is_answered_by_his_warning(t: TestRunner) -> void:
 			var instance_where := WhereSheIs.nowhere()
 			var instance := _a_waiting_robber(t, map, mouth, back, instance_where)
 			var her := corner + d1 * 16.0 + d2 * Tuning.PLAYER_BODY_RADIUS
-			instance_where.tell(her, Vector2.INF, Rect2(), instance_where.is_running())
+			instance_where.tell(her, Vector2.INF, null, instance_where.is_running())
 			instance.step(STEP)
 			t.check(not instance.is_waiting(), "%dpx in: he notices her in the mouth" % int(back))
 			var speed := 0.0
@@ -1206,7 +1247,7 @@ func _test_a_late_notice_is_answered_by_his_warning(t: TestRunner) -> void:
 				if answer == "run" and elapsed >= 0.3:
 					speed = move_toward(speed, Tuning.RUN_SPEED, Tuning.ACCELERATION * STEP)
 				her += Navigator.new(map).step(her, d1 * speed * STEP, Mover.lattice())
-				instance_where.tell(her, Vector2.INF, Rect2(), speed > Tuning.WALK_SPEED)
+				instance_where.tell(her, Vector2.INF, null, speed > Tuning.WALK_SPEED)
 				instance.step(STEP)
 				elapsed += STEP
 				charged = charged or instance.is_chasing()

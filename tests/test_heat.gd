@@ -33,6 +33,7 @@ func run(t: TestRunner) -> void:
 	_test_the_patrol_stops_once_it_notices(t)
 	_test_a_hunting_van_lets_its_men_out_only_in_her_view(t)
 	_test_a_van_that_saw_her_out_of_view_never_stops_past_its_notice(t)
+	_test_a_van_lets_no_man_out_under_a_covered_corner(t)
 	_test_a_streamed_patrol_resumes_where_it_left_off(t)
 	_test_a_streamed_patrol_mid_chase(t)
 	_test_every_waiting_row_resumes_the_notice(t)
@@ -424,15 +425,16 @@ func _test_a_hunting_van_lets_its_men_out_only_in_her_view(t: TestRunner) -> voi
 	var instance_where := WhereSheIs.nowhere()
 	var instance := _parked_van(t, hot, instance_where)
 	var her := Vector2(0.0, hot.notice_within() - 10.0)
-	var about_her := Rect2(her - Tuning.VIEW_HALF_EXTENT, Tuning.VIEW_HALF_EXTENT * 2.0)
+	var about_her := VisibleView.around(her, null)
 	for i in int(round(1.0 / STEP)):
 		instance_where.tell(her, Vector2.INF, about_her)
 		instance.step(STEP)
 	t.check(instance.is_waiting() and instance.officers_owed() == 0,
 			"inside its notice %.0fpx below it, but out of her view, it does not stop for her"
 			% her.y)
-	var holding_it := Rect2(Vector2(-Tuning.VIEW_HALF_EXTENT.x, her.y - 300.0),
-			Tuning.VIEW_HALF_EXTENT * 2.0)
+	var holding_it := VisibleView.new()
+	holding_it.look(Rect2(Vector2(-Tuning.VIEW_HALF_EXTENT.x, her.y - 300.0),
+			Tuning.VIEW_HALF_EXTENT * 2.0), null)
 	instance_where.tell(her, Vector2.INF, holding_it)
 	instance.step(STEP)
 	t.check(not instance.is_waiting() and instance.officers_owed() == 2,
@@ -453,14 +455,14 @@ func _test_a_van_that_saw_her_out_of_view_never_stops_past_its_notice(t: TestRun
 	t.check(her.length() <= hot.notice_within(), "215px is inside its notice (%.0fpx)"
 			% hot.notice_within())
 	for i in int(round(1.0 / STEP)):
-		instance_where.tell(her, Vector2.INF,
-				Rect2(her - Tuning.VIEW_HALF_EXTENT, Tuning.VIEW_HALF_EXTENT * 2.0))
+		instance_where.tell(her, Vector2.INF, VisibleView.around(her, null))
 		instance.step(STEP)
 	t.check(instance.is_waiting() and instance.officers_owed() == 0,
 			"it notices her out of her view and does not stop")
 	her = Vector2(290.0, 140.0)
-	var holding_it := Rect2(Vector2(-150.0, -140.0), Tuning.VIEW_HALF_EXTENT * 2.0)
-	t.check(her.length() > hot.notice_within() and holding_it.has_point(her),
+	var holding_it := VisibleView.new()
+	holding_it.look(Rect2(Vector2(-150.0, -140.0), Tuning.VIEW_HALF_EXTENT * 2.0), null)
+	t.check(her.length() > hot.notice_within() and holding_it.sees(her),
 			"she walks off to %.0fpx, past its notice, with it in her view" % her.length())
 	for i in int(round(1.0 / STEP)):
 		instance_where.tell(her, Vector2.INF, holding_it)
@@ -474,6 +476,55 @@ func _test_a_van_that_saw_her_out_of_view_never_stops_past_its_notice(t: TestRun
 			"back inside its notice (%.0fpx) under the same view, it stops and owes its two men"
 			% her.length())
 	instance.free()
+
+## **A vehicle lets no man out under a corner the joystick's controls cover**
+## (`EventInstance._would_stand_in_her_view()`, asking `VisibleView.sees_all()`; inbox #581 in
+## feathery-lynx: those corners are not in sight; bouncy-owl #1774: an on-screen charger warns in
+## her view). The fully heated unmarked van, parked, with her walking up and to the right inside its
+## notice along a clear line, the camera's view led by her walk as `Stroller` leads it, and the van
+## at that view's bottom left: the van and every place its men may get out inside the view, and the
+## lower door's men 10px into the bottom-left corner. In the joystick scheme, whose steering ring or
+## Run disc covers that corner, it does not stop for her; in the tap scheme, under the same view, it
+## stops and owes its two men.
+func _test_a_van_lets_no_man_out_under_a_covered_corner(t: TestRunner) -> void:
+	var hot := EventCatalogue.heated(EventCatalogue.by_id("abduction"), Tuning.RESISTANCE_GOAL)
+	var man := EventCatalogue.out_of_the_car(DaySpec.for_day(10), false)
+	var cover := TouchCover.joystick()
+	var corner_width := cover.left_corner().end.x * Tuning.VIEW_HALF_EXTENT.x * 2.0 \
+			/ cover.design_box().x
+	var heading := Vector2(1.0, -1.0).normalized()
+	var lead := Vector2(heading.x, heading.y * Stroller.OBLIQUE_Y) * Stroller.CAMERA_LOOK_AHEAD
+	for joystick: bool in [true, false]:
+		var instance_where := WhereSheIs.nowhere()
+		var instance := _parked_van(t, hot, instance_where)
+		var box := instance.drawn_box()
+		var whole := Rect2(instance.global_position + box.position, box.size)
+		var lowest := Rect2()
+		for i in hot.lets_out():
+			for feet: Vector2 in instance.where_its_officer_may_get_out(man, i, hot.lets_out()):
+				var hand := EventFootprints.raised_hand_rect(feet)
+				whole = whole.merge(hand)
+				if hand.end.y > lowest.end.y:
+					lowest = hand
+		var camera := Rect2(Vector2(lowest.position.x + 10.0 - corner_width,
+				whole.end.y + 2.0 - Tuning.VIEW_HALF_EXTENT.y * 2.0), Tuning.VIEW_HALF_EXTENT * 2.0)
+		var her := camera.get_center() - lead
+		var seen := VisibleView.new()
+		seen.look(camera, cover if joystick else null)
+		t.check(camera.encloses(whole) and seen.sees(her)
+				and her.distance_to(instance.global_position) < hot.notice_within(),
+				"the van and its men's places are inside the camera's view, and she stands in sight "
+				+ "%.0fpx from it, inside its notice" % her.distance_to(instance.global_position))
+		for i in int(round(1.0 / STEP)):
+			instance_where.tell(her, Vector2.INF, seen)
+			instance.step(STEP)
+		if joystick:
+			t.check(instance.is_waiting() and instance.officers_owed() == 0,
+					"with a man's place under the corner the joystick covers, it does not stop")
+		else:
+			t.check(not instance.is_waiting() and instance.officers_owed() == 2,
+					"in the tap scheme, under the same view, it stops and owes its two men")
+		instance.free()
 
 ## The fully heated unmarked van `hot`, parked at the origin facing right, hearing where she is from
 ## `where`, and handed the man it lets out the way `EventsAhead.let_the_officers_out()` hands

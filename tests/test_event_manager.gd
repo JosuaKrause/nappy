@@ -99,7 +99,7 @@ func _test_a_world_keeps_the_navigator_it_was_handed(t: TestRunner) -> void:
 func _test_a_walk_starts_with_nobody_told_where_she_is(t: TestRunner) -> void:
 	var events := _stage.events()
 	events.world.where_she_is().tell(Vector2(700.0, 700.0), Vector2(714.0, 700.0),
-			Rect2(0.0, 0.0, 9.0, 9.0), true, false, true)
+			VisibleView.around(Vector2(700.0, 700.0), null), true, false, true)
 	var handle := events.world.where_she_is().handle_for_an_event()
 	var no_plans: Array[EventPlan] = []
 	events.start_recipe(no_plans, DaySpec.for_day(2), 2, Vector2.ZERO)

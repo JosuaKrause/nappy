@@ -2358,7 +2358,7 @@ func _guard_rig(def: EventDef, guard_at: Vector2, her_at: Vector2, heading: Vect
 		var wanted := speed if elapsed >= reaction else minf(speed, Tuning.WALK_SPEED)
 		moving = move_toward(moving, wanted, Tuning.ACCELERATION * STEP)
 		her += heading * moving * STEP
-		guard_where.tell(her, Vector2.INF, Rect2(), moving > Tuning.WALK_SPEED)
+		guard_where.tell(her, Vector2.INF, null, moving > Tuning.WALK_SPEED)
 		guard.step(STEP)
 		elapsed += STEP
 		if guard.is_lethal_at(her):

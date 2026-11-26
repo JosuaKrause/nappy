@@ -1,7 +1,7 @@
 class_name WhereSheIs
 extends RefCounted
 ## **Where she is this tick, for every live event and its parts**: where she stands, where her
-## pram's body is, the camera's view, whether she runs, whether the baby is awake, and whether a
+## pram's body is, what she can see, whether she runs, whether the baby is awake, and whether a
 ## district door's hold has her. `EventManager` finds her once a physics tick and tells it in one
 ## call carrying the tick's whole word (`tell()`); every live event is handed it when it is set up
 ## (`EventInstance.setup()`) and hands it on to its behaviours and its excitement source. A fact
@@ -9,8 +9,8 @@ extends RefCounted
 ## her up, it is handed a point, and everything it does with the point is a distance.
 ##
 ## **Nowhere** (`nowhere()`) is what it answers before anybody has told it anything, and what a
-## live event is handed where nobody names one (a rig): no position (`Vector2.INF`), no pram, an
-## empty view, not running, the baby awake, no door holding her.
+## live event is handed where nobody names one (a rig): no position (`Vector2.INF`), no pram, no
+## view, not running, the baby awake, no door holding her.
 ##
 ## **A live event hears the word through a handle of its own** (`handle_for_an_event()`), made
 ## when the event is set up, **whatever made it and whenever in the tick**:
@@ -26,7 +26,7 @@ extends RefCounted
 
 var _at := Vector2.INF
 var _pram_at := Vector2.INF
-var _view := Rect2()
+var _view: VisibleView = null
 var _running := false
 var _awake := true
 var _held := false
@@ -41,10 +41,11 @@ static func nowhere() -> WhereSheIs:
 
 ## **The tick's whole word**, told once a physics tick by `EventManager._tell_them_where_she_is()`
 ## with her in the world: her position, her pram's body (`Vector2.INF` while she carries the
-## baby), the camera's view, whether she runs, whether the baby is awake, and whether a door's hold
+## baby), what she can see (the day's one `VisibleView`, looked through the camera this tick),
+## whether she runs, whether the baby is awake, and whether a door's hold
 ## has her. What is not given is what nowhere answers.
-func tell(at: Vector2, pram_at := Vector2.INF, view := Rect2(), running := false, awake := true,
-		held := false) -> void:
+func tell(at: Vector2, pram_at := Vector2.INF, view: VisibleView = null, running := false,
+		awake := true, held := false) -> void:
 	_at = at
 	_pram_at = pram_at
 	_view = view
@@ -66,7 +67,7 @@ func handle_for_an_event() -> WhereSheIs:
 func forget() -> void:
 	_at = Vector2.INF
 	_pram_at = Vector2.INF
-	_view = Rect2()
+	_view = null
 	_running = false
 	_awake = true
 	_held = false
@@ -82,9 +83,9 @@ func pram_at() -> Vector2:
 	var word := _told()
 	return word._pram_at
 
-## The camera's whole view this tick (`VisibleView.camera_view()`), empty where nothing has
-## looked through a camera.
-func view() -> Rect2:
+## What she can see this tick (`VisibleView`): the camera's view, less the bottom corners the
+## joystick scheme's controls cover. Null where nothing has looked through a camera.
+func view() -> VisibleView:
 	var word := _told()
 	return word._view
 

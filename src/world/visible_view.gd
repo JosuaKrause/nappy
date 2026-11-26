@@ -11,8 +11,12 @@ extends RefCounted
 ## up for a thing until she can see it (`DangerEdge`); the fire's
 ## sighting, which summons the engine (`EventSpawner.summon_what_has_been_sighted()`); a chalk mark
 ## counting as noticed, the one "has she seen this" of the resistance's (`ResistanceDirector`, handed
-## `sees()` by `main`); the poster crews' pasting (`PosterWalls._work_the_crews()`); and the
-## page's counter (`EncounterWatch`, the pelican's `pelican-seen`). **What is drawn and loaded is not
+## `sees()` by `main`); the poster crews' pasting (`PosterWalls._work_the_crews()`); the
+## page's counter (`EncounterWatch`, the pelican's `pelican-seen`); and a charger already in the
+## world, who warns only with all of his warning in sight, and a vehicle, which stops for her only
+## with itself and every man it lets out in sight (`sees_all()`,
+## `EventInstance._would_stand_in_her_view()`), so a hand raised under the Run disc is never his
+## warning. **What is drawn and loaded is not
 ## asked here**: the streaming of the ground, the scenery and the day's events keeps the whole view,
 ## since the corners are drawn under the controls rather than left undrawn.
 ##
@@ -120,6 +124,14 @@ func sees(point: Vector2) -> bool:
 ## Whether any of `rect` (world space) is in sight.
 func sees_any(rect: Rect2) -> bool:
 	return share_of(rect) > 0.0
+
+## Whether all of `rect` (world space) is in sight: inside the view, and in the joystick scheme
+## meeting neither covered corner. What a warning she has to see is held to: a waiting charger's
+## raised hand, and the men a vehicle lets out (`EventInstance._would_stand_in_her_view()`).
+func sees_all(rect: Rect2) -> bool:
+	if not _view.encloses(rect):
+		return false
+	return not _joystick or not (rect.intersects(_left) or rect.intersects(_right))
 
 ## **Just out of sight**: the least distance along `direction` (unit) from `from` at which a thing
 ## whose drawn box is `box` — relative to its feet — is wholly out of sight, never less than

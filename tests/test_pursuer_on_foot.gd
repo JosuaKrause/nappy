@@ -422,7 +422,7 @@ func _test_walking_away_is_caught_before_the_cap_and_running_shakes_him_off(t: T
 			var speed := Tuning.RUN_SPEED if running else Tuning.WALK_SPEED
 			while elapsed < def.lasts_for() + 1.0:
 				at += Vector2.DOWN * speed * STEP
-				pursuer_where.tell(at, Vector2.INF, Rect2(), running)
+				pursuer_where.tell(at, Vector2.INF, null, running)
 				pursuer.step(STEP)
 				elapsed += STEP
 				if pursuer.is_lethal_at(at):
@@ -552,9 +552,9 @@ func _test_he_waits_outside_a_hold_to_stop_her(t: TestRunner) -> void:
 			EventSurroundings.new().hearing(man_where))
 	var her := Vector2.ZERO
 	var elapsed := 0.0
-	man_where.tell(man_where.at(), Vector2.INF, Rect2(), false, true, true)
+	man_where.tell(man_where.at(), Vector2.INF, null, false, true, true)
 	while elapsed < out.telegraphs_for() + 4.0:
-		man_where.tell(her, Vector2.INF, Rect2(), false, true, man_where.is_held_at_a_door())
+		man_where.tell(her, Vector2.INF, null, false, true, man_where.is_held_at_a_door())
 		man.step(STEP)
 		elapsed += STEP
 	t.check(not man.has_stopped_her() and man.global_position.distance_to(her) <= out.lethal_reach(),

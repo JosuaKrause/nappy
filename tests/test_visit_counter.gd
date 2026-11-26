@@ -814,7 +814,7 @@ func _test_a_charge_ends_in_exactly_one_of_three(t: TestRunner) -> void:
 	var her := Vector2(300.0, 0.0)
 	for i in int(round(3.0 / step)):
 		her.x += Tuning.RUN_SPEED * step
-		shaken_where.tell(her, Vector2.INF, Rect2(), true)
+		shaken_where.tell(her, Vector2.INF, null, true)
 		shaken.step(step)
 		if shaken.is_on_its_way_out():
 			break

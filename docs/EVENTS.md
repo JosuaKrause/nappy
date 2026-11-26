@@ -576,9 +576,11 @@ sets what the warning is:
 
    **It warns only once its warning would stand in her view** (`EventInstance._would_stand_in_her_view()`):
    it notices her inside its radius along a clear line and only with the whole of its warning
-   picture inside the camera's view that frame (`VisibleView.camera_view()`, which `EventManager` tells it
-   in `WhereSheIs.view()`), on a day as in the escape, and the warning's clock starts from the frame its
-   whole warning picture is in view. An instance stepped with no view handed to it (a rig that
+   picture in sight that frame (`VisibleView.sees_all()` on what `EventManager` tells it she sees,
+   `WhereSheIs.view()`): inside the camera's view and, in the joystick scheme, under neither bottom
+   corner its steering ring and Run disc cover, since those corners are not in sight (feathery-lynx
+   #581). That holds on a day as in the escape, and the warning's clock starts from the frame its
+   whole warning picture is in sight. An instance stepped with no view handed to it (a rig that
    steps an `EventInstance` directly) notices her by its radius alone.
 2. **A charger that exists only to charge her but does not arrive charging** — the man an
    investigating patrol car or a hunting van lets out, and day 13's task guard set on her in her
@@ -587,7 +589,8 @@ sets what the warning is:
    **A vehicle stops for her only where it and its men would stand whole in her view**
    (`EventInvestigation`, `EventInstance._would_stand_in_her_view()`), at every place a man may get
    out (its door on her side, the door on the other side and its own place,
-   `EventInstance.where_its_officer_may_get_out()`), and only on a frame she is within its notice
+   `EventInstance.where_its_officer_may_get_out()`), in sight as a waiting charger's warning is
+   (a covered corner left out), and only on a frame she is within its notice
    along a clear line, so the man always raises his hand where she can see it, close to her, and his
    charge, wherever it begins, carries no badge.
    **A door's crossing warns on a clock** *(inbox #788 in minty-lemur, the player: "The actual crossing will
