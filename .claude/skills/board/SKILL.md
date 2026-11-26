@@ -223,10 +223,7 @@ restart prompt alone is not enough.
 ## Before a question goes up
 
 **Every question is checked against the player's recorded words before it is posted, and again when
-the work it names merges.** Most questions that reached the board were there only because nothing
-was searched first: each was one noun search away from an answer.
-The player named the cause: most board questions were there only because they were not checked
-first (inbox #1775 in tiny-newt). The steps below are the filer's proposal for fixing it, open to correction.
+the work it names merges.**
 
 1. **Search for the question's nouns, before writing it.** Run `tools/decisions.sh --in all <noun>`
    and `rg -i <noun> docs/playtests/` for each noun the question turns on (the thing, the place,
@@ -267,7 +264,7 @@ checked against what merged.
 
 **One question per Review-tab item**, as on the Main tab: an item that bundles several settings or
 looks is split into one item each. **An answered question leaves the board in the turn it is
-answered**: it moves under `## Settled` or is removed ("Settling"), and never stays under
+answered**: it moves under `## Settled` or is removed after recording its outcome as Settling says, and never stays under
 `## Waiting on you` or on the Review tab with an answer typed under it.
 
 ## Answering
@@ -347,6 +344,10 @@ The editor's traps that have each cost a failed call:
 These rules above are the filer's proposals and readings, not the player's words, and hold until
 the player corrects them. The citation is the player's word each one extends:
 
+- **The pre-post check of a question** ("Before a question goes up"): the player's remark is that
+  most board questions were there only because they were not checked first (inbox #1775 in
+  tiny-newt); the search step, the four classes, the filter on agents' questions, the re-read at a
+  merge and one question per Review item are the filer's proposal for fixing it.
 - **What a batch is** ("When it is read"): the orchestrator's next write for the player
   (inbox #986 in brisk-pelican), the recurring read included, so the Running and Recently done
   tables are current within about an hour (inbox #1619 in teal-dolphin).
