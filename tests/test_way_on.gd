@@ -2,8 +2,8 @@ extends RefCounted
 ## `WayOn`: the next leg of a route worked out as it goes. A row of the road drives from junction box
 ## to junction box, straight on where the street beyond the next box is a through road and otherwise
 ## round the corner in that box, away from her first, or by a way out it is asked for
-## (`leg_out_by()`); a row on foot walks straight on; and one check says whether a car may drive a
-## stretch (`drives_clear()`).
+## (`leg_out_by()`); a row on foot walks straight on; and one reading says how a car drives a
+## stretch, round a body in its lane by the other lane, or that it may not (`driven()`).
 ##
 ## On a hand-drawn lattice of three by three junction boxes, laid as every city's streets are
 ## (`StreetLayout.lay()`), with a real `ThroughRoads` and the map's own navigator: both are pure
@@ -25,6 +25,7 @@ func run(t: TestRunner) -> void:
 	_test_a_body_straight_on_takes_the_turn(t)
 	_test_the_days_rule_asks_a_live_leg_and_not_a_leaving_one(t)
 	_test_what_a_car_may_drive(t)
+	_test_a_car_drives_round_a_body_in_its_lane(t)
 	_test_a_row_on_foot_walks_straight_on(t)
 
 ## The three by three lattice, its streets laid with no main road and no precinct.
@@ -108,7 +109,7 @@ func _test_a_turn_in_the_next_box_away_from_her(t: TestRunner) -> void:
 		t.check(leg.size() > 3 and leg[leg.size() - 1].is_equal_approx(ends),
 				"driving %s with her %s of the box, it turns away from her to %s: %s"
 				% [heading, case[2], ends, leg])
-		t.check(_on_carriageway(map, leg) and way_on.drives_clear(_patrol, leg),
+		t.check(_on_carriageway(map, leg) and way_on.driven(_patrol, leg) == leg,
 				"and the turn stays on carriageway")
 
 ## **A leg out of the next box by a given way** (`leg_out_by()`): southbound down the middle street on
@@ -151,23 +152,24 @@ func _test_a_closed_street_has_no_leg_and_a_stub_goes_on(t: TestRunner) -> void:
 	t.check(on.size() == 2 and on[1].is_equal_approx(Vector2(20.0 * TILE, east)),
 			"on a stub into the through roads it goes on into them: %s" % on)
 
-## A body put down after the walk's through roads were worked out, on the car's lane in the far half
-## of the next box: straight on is refused, as `drives_clear()` asks each leg of the ground, and it
-## turns away from her instead.
+## A body put down after the walk's through roads were worked out, across both lanes in the far half
+## of the next box: straight on is refused, as `driven()` asks each leg of the ground, and it turns
+## away from her instead.
 func _test_a_body_straight_on_takes_the_turn(t: TestRunner) -> void:
 	var map := _lattice()
 	var way_on := _way_on(map)
 	var at := Vector2(_lane(1, Vector2i.DOWN), 9.5 * TILE)
 	var her := Vector2(25.0, 9.0) * TILE
 	var clear := way_on.next_leg(_patrol, at, Vector2.DOWN, her)
-	var body: Array[Vector2i] = [map.world_to_tile(Vector2(at.x, 18.5 * TILE))]
+	var body: Array[Vector2i] = [map.world_to_tile(Vector2(at.x, 18.5 * TILE)),
+			map.world_to_tile(Vector2(_lane(1, Vector2i.UP), 18.5 * TILE))]
 	map.obstruct_tiles(1, body)
 	var round := way_on.next_leg(_patrol, at, Vector2.DOWN, her)
 	t.check(clear.size() == 2 and round.size() > 3
 			and round[round.size() - 1].is_equal_approx(Vector2(14.0 * TILE,
 			_lane(1, Vector2i.LEFT))),
 			"straight on with the box clear (%s), round the corner away from her with a body on its "
-			% clear + "lane (%s)" % round)
+			% clear + "lanes (%s)" % round)
 
 ## A day's rule that refuses the leg straight on (a field kept clear over the street past the box,
 ## handed in as the director hands its own): a live row turns, and a row that is leaving, which the
@@ -193,27 +195,56 @@ func _test_the_days_rule_asks_a_live_leg_and_not_a_leaving_one(t: TestRunner) ->
 func _test_what_a_car_may_drive(t: TestRunner) -> void:
 	var south := _lane(0, Vector2i.DOWN)
 	var leg := PackedVector2Array([Vector2(south, 7.5 * TILE), Vector2(south, 12.5 * TILE)])
-	t.check(_way_on(_lattice()).drives_clear(_patrol, leg), "plain carriageway is a car's")
+	t.check(_way_on(_lattice()).driven(_patrol, leg) == leg, "plain carriageway is a car's")
 	var paved := _lattice()
 	paved.add_precinct(Vector4i(1, 0, 0, 0))
 	StreetLayout.lay(paved)
-	t.check(not _way_on(paved).drives_clear(_patrol, leg), "a precinct's paving is not")
+	t.check(_way_on(paved).driven(_patrol, leg).is_empty(), "a precinct's paving is not")
 	var park := _lattice()
 	park.fill_rect(Rect2i(Vector2i(int(south / TILE), 10), Vector2i.ONE), GameEnums.TileType.PARK)
 	var convoy := EventCatalogue.by_id("military_convoy").as_sent_ahead()
-	t.check(_way_on(_lattice()).drives_clear(convoy, leg)
-			and not _way_on(park).drives_clear(convoy, leg), "nor a street a park took")
+	t.check(_way_on(_lattice()).driven(convoy, leg) == leg
+			and _way_on(park).driven(convoy, leg).is_empty(), "nor a street a park took")
 	var closed := _lattice()
-	closed.close_streets([FakeClosure.over_set(
-			{Vector2i(int(south / TILE), 10): true})] as Array[RoadClosure])
-	t.check(not _way_on(closed).drives_clear(_patrol, leg), "nor a closed street")
+	closed.close_streets([FakeClosure.over_set({Vector2i(int(south / TILE), 10): true,
+			Vector2i(int(_lane(0, Vector2i.UP) / TILE), 10): true})] as Array[RoadClosure])
+	t.check(_way_on(closed).driven(_patrol, leg).is_empty(), "nor a closed street")
 	var off := PackedVector2Array([Vector2(south, 30.5 * TILE), Vector2(south, 36.5 * TILE)])
-	t.check(not _way_on(_lattice()).drives_clear(_patrol, off), "nor off the map")
+	t.check(_way_on(_lattice()).driven(_patrol, off).is_empty(), "nor off the map")
 	var bodied := _lattice()
 	var way_on := _way_on(bodied)
-	var body: Array[Vector2i] = [Vector2i(int(south / TILE), 10)]
+	var body: Array[Vector2i] = [Vector2i(int(south / TILE), 10),
+			Vector2i(int(_lane(0, Vector2i.UP) / TILE), 10)]
 	bodied.obstruct_tiles(1, body)
-	t.check(not way_on.drives_clear(_patrol, leg), "nor past a body put down since")
+	t.check(way_on.driven(_patrol, leg).is_empty(), "nor past a body across the road put down since")
+
+## **Round a body in its lane by the street's other lane** (`driven()`), as a truck drives round
+## the crater an explosion left in one lane: southbound down the west street, with a body on one
+## tile of its own lane, the leg leaves its lane a tile before that tile, runs past it in the
+## northbound lane and is back in its own a tile past it, ending where it was going. With the
+## northbound lane's tile taken too, or with less than a tile of its own lane before the body to
+## leave it in, it has none.
+func _test_a_car_drives_round_a_body_in_its_lane(t: TestRunner) -> void:
+	var map := _lattice()
+	var way_on := _way_on(map)
+	var south := _lane(0, Vector2i.DOWN)
+	var north := _lane(0, Vector2i.UP)
+	var leg := PackedVector2Array([Vector2(south, 7.5 * TILE), Vector2(south, 12.5 * TILE)])
+	var hole: Array[Vector2i] = [Vector2i(int(south / TILE), 10)]
+	map.obstruct_tiles(1, hole)
+	var round := way_on.driven(_patrol, leg)
+	t.check(round.size() == 6 and round[0] == leg[0] and round[5] == leg[1]
+			and round[1].is_equal_approx(Vector2(south, 9.0 * TILE))
+			and round[2].is_equal_approx(Vector2(north, 10.0 * TILE))
+			and round[3].is_equal_approx(Vector2(north, 11.0 * TILE))
+			and round[4].is_equal_approx(Vector2(south, 12.0 * TILE)),
+			"round a body in its lane by the other lane, and back: %s" % round)
+	var late := PackedVector2Array([Vector2(south, 9.5 * TILE), Vector2(south, 12.5 * TILE)])
+	t.check(way_on.driven(_patrol, late).is_empty(),
+			"none with under a tile of its lane before the body to leave it in")
+	var beside: Array[Vector2i] = [Vector2i(int(north / TILE), 10)]
+	map.obstruct_tiles(2, beside)
+	t.check(way_on.driven(_patrol, leg).is_empty(), "and none with the other lane taken beside it")
 
 ## A row on foot walks straight on down its sidewalk, a street and a box (fourteen tiles), through the
 ## box it comes to; stopped short of a body; with no leg where a building or the map's edge is under

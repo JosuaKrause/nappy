@@ -13,8 +13,10 @@ extends RefCounted
 ## on foot walks straight on** down the street it is on (`_on_foot()`), and has no way on where it
 ## cannot.
 ##
-## **One check says whether a stretch of road is a car's to drive** (`drives_clear()`), asked of
-## every leg here and of the first leg the director lays (`EventDirector.leg_in_the_lane()`).
+## **One reading says how a car drives a stretch of road, or that it may not** (`driven()`), asked of
+## every leg here and of the first leg the director lays (`EventDirector.leg_in_the_lane()`): round
+## anything standing in its own lane by the street's other lane, where that lane is free past it,
+## and then asked whole of the ground (`_drives_clear()`).
 ##
 ## No stream is drawn from: a leg is a function of where the row stands, where she is and the map.
 ## Made once a walk, over the walk's through roads, and handed to the director
@@ -31,8 +33,13 @@ const LEAST_TILES := 2
 const TURN_RADIUS := Tuning.TILE_SIZE * 0.5
 ## How many straight pieces a quarter turn is driven as.
 const TURN_PIECES := 3
-## How finely `drives_clear()` asks the ground along a leg, in px.
+## How finely `_drives_clear()` asks the ground along a leg, in px.
 const ASKED_EVERY := Tuning.TILE_SIZE * 0.5
+## **How far along its street a car takes to cross into the other lane, and back again**, in px,
+## when it drives round something standing in its own (`driven()`): a tile, so the car is wholly in
+## the other lane by the near edge of the first tile it could not drive and back in its own a tile
+## past the last, and a crater a lane wide costs a car three tiles of the other lane.
+const SWERVE := float(Tuning.TILE_SIZE)
 
 var _map: CityMap
 var _navigator: Navigator
@@ -77,11 +84,25 @@ func leg_to_leave_by(row: EventDef, at: Vector2, heading: Vector2,
 		return _down_the_road(row, at, heading, her, Callable())
 	return _on_foot(row, at, heading, Callable())
 
+## **`path` as `row` drives it, or empty where it may not.** Each straight stretch of it goes round
+## whatever stands in its lane by the street's other lane, where that lane is free from a tile
+## before it to a tile past it (`_round_the_holes()`), and the path that gives is asked whole of the
+## ground (`_drives_clear()`). *(minty-lemur #785: the trucks come first among what she meets in the
+## escape, and craters are already there when she walks toward them.)* An explosion's crater takes
+## one lane of a street and leaves the other (`EventCatalogue._lane_crater()`), so a truck sent
+## down her street comes past it rather than being refused for as long as it lies between them;
+## something across both lanes still stops it.
+func driven(row: EventDef, path: PackedVector2Array) -> PackedVector2Array:
+	if path.size() < 2:
+		return PackedVector2Array()
+	var swerved := _round_the_holes(row, path)
+	return swerved if _drives_clear(row, swerved) else PackedVector2Array()
+
 ## **Whether `row` may drive `path`**: every point of it, asked every half tile, is carriageway
 ## (`CityMap.is_carriageway()`, so no street a calm zone absorbed) that is no precinct's paving
 ## (`CityMap.is_driveable_at()`), and nothing on it stops the row as it moves
 ## (`Navigator.trim()` keeps it whole: a solid, a closed street, the map's edge).
-func drives_clear(row: EventDef, path: PackedVector2Array) -> bool:
+func _drives_clear(row: EventDef, path: PackedVector2Array) -> bool:
 	if path.size() < 2:
 		return false
 	for i in range(1, path.size()):
@@ -138,11 +159,115 @@ func _down_the_road(row: EventDef, at: Vector2, heading: Vector2,
 	for out in outs:
 		if not _roads.goes_on(box, out):
 			continue
-		var leg := _through(at, way, box, out)
-		if leg.size() > 1 and drives_clear(row, leg) \
-				and (not may_take.is_valid() or bool(may_take.call(leg, row))):
+		var leg := driven(row, _through(at, way, box, out))
+		if not leg.is_empty() and (not may_take.is_valid() or bool(may_take.call(leg, row))):
 			return leg
 	return PackedVector2Array()
+
+## **`path` with each straight stretch of it taken round what stands in its lane**: a stretch is the
+## points that run on along one axis, and where one or more tiles of its lane stop `row`, it leaves
+## its lane `SWERVE` before the first, runs past them in the street's other lane and comes back
+## `SWERVE` past the last (`_swerves_on()`). Points of the stretch inside a swerve go; every other
+## point stays. A stretch with nothing in its lane, and every piece that turns, is kept as it is.
+func _round_the_holes(row: EventDef, path: PackedVector2Array) -> PackedVector2Array:
+	var mover := EventInstance.mover_for(row)
+	var out := PackedVector2Array([path[0]])
+	var start := 0
+	while start < path.size() - 1:
+		var way := _axis_of(path[start + 1] - path[start])
+		var end := start + 1
+		if way != Vector2.ZERO:
+			while end < path.size() - 1 and _axis_of(path[end + 1] - path[end]) == way:
+				end += 1
+			out.append_array(_stretch_round(path, start, end, way, mover))
+		out.append(path[end])
+		start = end
+	return out
+
+## The points strictly between `path[start]` and `path[end]`, a straight stretch driving `way`, as it
+## is driven round what stands in its lane: its own points outside every swerve, and each swerve's
+## four, in the order the stretch reaches them.
+func _stretch_round(path: PackedVector2Array, start: int, end: int, way: Vector2,
+		mover: Mover) -> PackedVector2Array:
+	var from := path[start]
+	var swerves := _swerves_on(from, path[end], way, mover)
+	var along: Array[float] = []
+	var points: Array[Vector2] = []
+	for i in range(start + 1, end):
+		var t := (path[i] - from).dot(way)
+		var inside := false
+		for swerve in swerves:
+			inside = inside or (t > swerve.x - SWERVE and t < swerve.y + SWERVE)
+		if not inside:
+			along.append(t)
+			points.append(path[i])
+	for swerve in swerves:
+		var aside := Vector2(-way.y, way.x) * swerve.z * float(Tuning.TILE_SIZE)
+		for t: float in [swerve.x - SWERVE, swerve.x, swerve.y, swerve.y + SWERVE]:
+			along.append(t)
+		points.append_array([from + way * (swerve.x - SWERVE), from + way * swerve.x + aside,
+				from + way * swerve.y + aside, from + way * (swerve.y + SWERVE)])
+	var order: Array[int] = []
+	for i in along.size():
+		order.append(i)
+	order.sort_custom(func(a: int, b: int) -> bool: return along[a] < along[b])
+	var laid := PackedVector2Array()
+	for i in order:
+		laid.append(points[i])
+	return laid
+
+## **Where the straight stretch from `from` to `to`, driving `way`, leaves its lane**: one entry for
+## each run of its lane's tiles that stop `mover`, runs closer than two swerves taken as one, as the
+## distance along the stretch to the run's near edge (`x`) and far edge (`y`) and the side of the
+## street it passes on (`z`, +1 or -1 times `way` turned a quarter clockwise). A run is passed only
+## where the stretch has `SWERVE` of its own before and after it and the street's other lane, beside
+## the run and both swerves, is carriageway `mover` may stand on; any other run is left in the
+## stretch, which `_drives_clear()` then refuses.
+func _swerves_on(from: Vector2, to: Vector2, way: Vector2, mover: Mover) -> Array[Vector3]:
+	var tile := float(Tuning.TILE_SIZE)
+	var step := Vector2i(roundi(way.x), roundi(way.y))
+	var first := _map.world_to_tile(from)
+	var span := _map.world_to_tile(to) - first
+	var tiles := absi(span.x * step.x + span.y * step.y)
+	var runs: Array[Vector2] = []
+	for k in tiles + 1:
+		var here := first + step * k
+		if not _map.in_bounds(here) or _map.passable(here, mover):
+			continue
+		var middle := (_map.tile_to_world(here) - from).dot(way)
+		if not runs.is_empty() and middle - tile * 0.5 - runs[runs.size() - 1].y < 2.0 * SWERVE:
+			runs[runs.size() - 1] = Vector2(runs[runs.size() - 1].x, middle + tile * 0.5)
+		else:
+			runs.append(Vector2(middle - tile * 0.5, middle + tile * 0.5))
+	var length := from.distance_to(to)
+	var swerves: Array[Vector3] = []
+	for run in runs:
+		if run.x - SWERVE < 0.0 or run.y + SWERVE > length:
+			continue
+		for side: float in [1.0, -1.0]:
+			if _lane_free_beside(from, way, Vector2(-way.y, way.x) * side * tile,
+					run.x - SWERVE, run.y + SWERVE, mover):
+				swerves.append(Vector3(run.x, run.y, side))
+				break
+	return swerves
+
+## Whether the lane `aside` from a stretch starting at `from` and driving `way` is carriageway
+## `mover` may stand on, every tile of it from `low` to `high` along the stretch.
+func _lane_free_beside(from: Vector2, way: Vector2, aside: Vector2, low: float, high: float,
+		mover: Mover) -> bool:
+	var t := low
+	while t <= high:
+		var here := _map.world_to_tile(from + way * t + aside)
+		if not _map.in_bounds(here) or not _map.is_carriageway(here) or not _map.passable(here, mover):
+			return false
+		t += float(Tuning.TILE_SIZE) * 0.5
+	return true
+
+## The unit axis `piece` runs along, or zero where it runs along neither or is no length at all.
+static func _axis_of(piece: Vector2) -> Vector2:
+	if is_zero_approx(piece.x) == is_zero_approx(piece.y):
+		return Vector2.ZERO
+	return piece.normalized()
 
 ## The points from `at`, driving `way`, to where a car leaves `box` by `out`: straight to the box's
 ## far edge in its own lane, or down its lane to `TURN_RADIUS` short of where its lane meets the lane

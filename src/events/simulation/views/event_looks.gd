@@ -19,7 +19,7 @@ static func for_row(event: EventInstance, look: LookSpec, body: BodySpec,
 				EventDef.Look.LEAF_BLOWER, EventDef.Look.CYCLIST, EventDef.Look.CHARGING_DOG, \
 				EventDef.Look.CHATTING_MOTHER, EventDef.Look.POSTER_CREW, \
 				EventDef.Look.POSTER_CREW_SQUARE, EventDef.Look.SKIP, EventDef.Look.IMPACT_CRATER, \
-				EventDef.Look.STEAM, EventDef.Look.LOUDSPEAKER_MAST:
+				EventDef.Look.LANE_CRATER, EventDef.Look.STEAM, EventDef.Look.LOUDSPEAKER_MAST:
 			return FigureLook.new(event, look, body, drawer, skip_draw, drawn_view)
 		EventDef.Look.DELIVERY_VAN, EventDef.Look.FIRE_ENGINE, EventDef.Look.ICE_CREAM_VAN, \
 				EventDef.Look.LORRY, EventDef.Look.POLICE_CAR, EventDef.Look.UNMARKED_VAN, \

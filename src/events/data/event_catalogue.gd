@@ -490,6 +490,7 @@ static func _build() -> Array[EventDef]:
 		# The finale — never rolled by the ordinary scheduler, placed only by `FinalePlanner` and
 		# the building (`BuildingPlan`). See "the finale" below.
 		_finale_explosion(),
+		_lane_crater(),
 		_impact_crater(),
 		_masked_pursuer(),
 		_basement_steam(),
@@ -2804,21 +2805,47 @@ static func _finale_explosion() -> EventDef:
 	row.warning(WarningSpec.lasting(Tuning.WARNING_ALONE_MAX).warned_first())
 	row.set_off_within(FINALE_EXPLOSION_SET_OFF_WITHIN)
 	row.lasts(FINALE_EXPLOSION_SECONDS)
-	row.aftermath(Aftermath.none().then("impact_crater"))
+	row.aftermath(Aftermath.none().then("lane_crater"))
 	return row.build()
 
-## What is left in the road afterwards, and it stays there for the rest of the sequence: `duration`
+## **What an explosion leaves in the road, one lane wide**, and it stays there for the rest of the
+## sequence like `impact_crater`: `duration` 0, silent, solid, and its radii `barricade`'s for
+## the same reason as that row's.
+##
+## **One lane, so the trucks come past it** *(minty-lemur #785: what she meets in the escape is
+## trucks first, then explosions; craters already there when she walks towards them; PLAYTEST-50:
+## impact craters of various sizes, 1x1, 2x2 and 3x3 tiles)*. A burst goes off on a road tile, the
+## middle of one lane of its street's two, and `impact_crater_1x1.svg` is 32px across, so
+## `point(16)` covers the middle of that lane's tile and of no other
+## (`GroundShape.tiles_under()`): the other lane stays a car's, and a truck sent down her street
+## drives round the hole in it (`WayOn.driven()`) where a crater across the whole road would
+## refuse every truck for the streets either side of it. She walks round it as round any body.
+## The 2x2 crater stays where no truck drives: across the streets the escape seals
+## (`SealPlanner`'s `finale_craters`, `impact_crater`).
+##
+## **The body is the picture**, as `impact_crater`'s: `point(16)` is half the picture's width, so
+## the ground she cannot walk on is the hole she can see.
+static func _lane_crater() -> EventDef:
+	var row := EventDraft.new("lane_crater")
+	row.scripted_on(0, 4)
+	row.look(LookSpec.of(EventDef.Look.LANE_CRATER))
+	row.body(BodySpec.solid(GroundShape.point(16.0)).unmet().parked())
+	row.field(FieldSpec.of(0.0, 40.0, 120.0))
+	row.warning(WarningSpec.lasting(0.9))
+	return row.build()
+
+## **The crater across a street the escape seals** (`SealPlanner`'s `finale_craters`, repeated
+## across the street's whole width), and it stays there for the rest of the sequence: `duration`
 ## 0 is "lasts the whole day", so a crater is a fact about the street from the moment it is made.
+## What an explosion leaves in the road is the crater a lane wide, `lane_crater`.
 ##
 ## **Silent and solid**, like the seal pictures it sits beside: a hole in the road makes no noise,
 ## and its radii are `barricade`'s (inner 40, outer 120, telegraph 0.9) because `EventDef.validate()`
 ## wants a falloff band even at zero intensity.
 ##
 ## **The body is the picture.** `impact_crater_2x2.svg` is 64px across, so `point(32)` is exactly
-## half of it and the ground she cannot walk on is the hole she can see. The 32px and 96px sources
-## stay prepared and unbound: `aftermath.leaves_behind()` names one row, a second crater row would need a
-## second explosion row to leave it, and three sizes of the same hole would be three looks no reader
-## could tell apart on the screen-edge badge.
+## half of it and the ground she cannot walk on is the hole she can see. The 32px source is
+## `lane_crater`'s and the 96px one stays prepared and unbound.
 ##
 ## **No `aftermath.scar_id()`.** A scar is how the *run* remembers a fire on day 3; the escape is the last
 ## thing that happens in a run, so a crater has nothing to persist into and recording one would only

@@ -843,6 +843,12 @@ const IMPACT_CRATER := "props/impact_crater_2x2"
 ## comment names the same point — *"Ground anchor is the canvas centre (32,32)"* — on a 64×64
 ## canvas, and `EventCatalogue._impact_crater()`'s own 32px body is half of the same width.
 const CRATER_ANCHOR := Vector2(32.0, 32.0)
+## The crater an explosion leaves in the road, a lane wide (`EventCatalogue._lane_crater()`): the
+## same hole drawn a tile across, so its 16px body is half of its width.
+const LANE_CRATER := "props/impact_crater_1x1"
+## Its centre and ground point, as `CRATER_ANCHOR` is the 2x2's: the source's own comment names it,
+## *"Ground anchor is the canvas centre (16,16)"*, on a 32×32 canvas.
+const LANE_CRATER_ANCHOR := Vector2(16.0, 16.0)
 ## The screen-edge badge of the escape city's explosion, a burst and its mushroom of smoke. Drawn
 ## only in the badge (`LookSpec.is_drawn_in_the_world()`): the explosion goes off out of her sight, and what
 ## she meets on the street afterwards is the crater, `IMPACT_CRATER`.
@@ -928,6 +934,7 @@ static func icon_for(look: EventDef.Look) -> String:
 		EventDef.Look.CHECKPOINT_GATE: return BOOM_GATE_NS_LOWERED
 		EventDef.Look.CHECKPOINT_POST: return GUARD_STANDING
 		EventDef.Look.IMPACT_CRATER: return IMPACT_CRATER
+		EventDef.Look.LANE_CRATER: return LANE_CRATER
 		EventDef.Look.EXPLOSION: return EXPLOSION
 		EventDef.Look.MASKED_PURSUER: return GUARD_LUNGING
 		EventDef.Look.STEAM: return STEAM
@@ -950,10 +957,11 @@ static func icon_for(look: EventDef.Look) -> String:
 		EventDef.Look.GUARDSMAN_GIVING_CHASE: return str(GUARD_LUNGING_BY_VIEW["front_diagonal"])
 		_: return ""
 
-## **Whether `look`'s picture is registered on its middle rather than on its feet**: the crater, a
-## hole in the road (`CRATER_ANCHOR`), drawn round the point it stands on.
+## **Whether `look`'s picture is registered on its middle rather than on its feet**: the two
+## craters, holes in the road (`CRATER_ANCHOR`, `LANE_CRATER_ANCHOR`), drawn round the point
+## they stand on.
 static func is_registered_on_its_middle(look: EventDef.Look) -> bool:
-	return look == EventDef.Look.IMPACT_CRATER
+	return look == EventDef.Look.IMPACT_CRATER or look == EventDef.Look.LANE_CRATER
 
 ## The wheels drawn under `icon_for()`'s own silhouette, `""` for a look whose silhouette is one
 ## picture. A vehicle that rolls on wheels of its own (`WHEELS_BY_LOOK`) has its side view split
@@ -1230,6 +1238,8 @@ static func family_sources(look: EventDef.Look) -> Array[String]:
 			_collect(sources, [GUARD_STANDING, GUARD_ALERT_BY_VIEW["front"]])
 		EventDef.Look.IMPACT_CRATER:
 			_collect(sources, [IMPACT_CRATER])
+		EventDef.Look.LANE_CRATER:
+			_collect(sources, [LANE_CRATER])
 		EventDef.Look.DOOR_GUARD:
 			_collect_views(sources, [GUARD_STANDING_BY_VIEW, GUARD_ALERT_BY_VIEW,
 					GUARD_LUNGING_BY_VIEW])

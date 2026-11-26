@@ -41,7 +41,7 @@ const HER := Vector2i(4, 36)
 const DAY := 13
 
 ## **A way on whose answers the test sets** (`WayOn`): whether a car may drive a leg
-## (`drives_clear()`) and whether it has a next leg from where it stands (`next_leg()`), recording
+## (`driven()`, the leg as it is handed in or none) and whether it has a next leg from where it stands (`next_leg()`), recording
 ## what it was asked and the day's rule it was told (`use_the_days_rule()`).
 class FakeWayOn extends WayOn:
 	var drives := true
@@ -58,10 +58,10 @@ class FakeWayOn extends WayOn:
 	func use_the_days_rule(may_take: Callable) -> void:
 		told_rule = may_take
 
-	## Overrides WayOn.drives_clear.
-	func drives_clear(_row: EventDef, path: PackedVector2Array) -> bool:
+	## Overrides WayOn.driven.
+	func driven(_row: EventDef, path: PackedVector2Array) -> PackedVector2Array:
 		asked_to_drive.append(path)
-		return drives
+		return path if drives else PackedVector2Array()
 
 	## Overrides WayOn.next_leg.
 	func next_leg(_row: EventDef, at: Vector2, heading: Vector2,
@@ -293,9 +293,9 @@ class _StartsAboveWayOn extends FakeWayOn:
 		super()
 		_cutoff = cutoff
 
-	## Overrides test_event_director.FakeWayOn.drives_clear.
-	func drives_clear(_row: EventDef, path: PackedVector2Array) -> bool:
-		return path.size() >= 2 and path[0].y <= _cutoff
+	## Overrides test_event_director.FakeWayOn.driven.
+	func driven(_row: EventDef, path: PackedVector2Array) -> PackedVector2Array:
+		return path if path.size() >= 2 and path[0].y <= _cutoff else PackedVector2Array()
 
 ## **Where the lane beside her has no room, the convoy comes down the crossing street at the next
 ## junction box ahead of her** (`EventDirector._across_the_next_box()`): on a street running
@@ -391,13 +391,14 @@ static func _crossroads() -> CityMap:
 ## A way on that refuses every leg setting off in the street running north-south, as a crater or a
 ## seal in her street refuses it, and lets a car drive and go on from anywhere else.
 class _OffHerStreetWayOn extends FakeWayOn:
-	## Overrides test_event_director.FakeWayOn.drives_clear.
-	func drives_clear(_row: EventDef, path: PackedVector2Array) -> bool:
-		return path.size() >= 2 and path[0].x >= Tuning.STREET_WIDTH * TILE
+	## Overrides test_event_director.FakeWayOn.driven.
+	func driven(_row: EventDef, path: PackedVector2Array) -> PackedVector2Array:
+		return path if path.size() >= 2 and path[0].x >= Tuning.STREET_WIDTH * TILE \
+				else PackedVector2Array()
 
 ## **A car's first leg is sent only where the day's way on says a car may drive it and go on from its
 ## end** (`EventDirector.leg_in_the_lane()`): for the patrol and the convoy, a way on that refuses
-## every leg (`drives_clear()` false) sites none, one with no next leg from any leg's end
+## every leg (`driven()` empty) sites none, one with no next leg from any leg's end
 ## (`next_leg()` empty) sites none, and one that answers both sites one; and what it was asked is the
 ## leg handed out, and a next leg from that leg's end, going the way the leg goes.
 func _test_a_car_is_sent_only_on_a_leg_it_may_drive_and_go_on_from(t: TestRunner) -> void:

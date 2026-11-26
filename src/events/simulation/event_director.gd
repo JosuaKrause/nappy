@@ -1575,9 +1575,9 @@ func leg_in_the_lane(def: EventDef, place: Vector2, her: Vector2,
 	var far := _past_her_by(level, going, place.distance_to(level), ends)
 	if (far - level).dot(going) < 0.0:
 		return PackedVector2Array()
-	var leg := PackedVector2Array([place, far])
 	var way := way_on()
-	if not way.drives_clear(def, leg) or way.next_leg(def, far, going, her).is_empty():
+	var leg := way.driven(def, PackedVector2Array([place, far]))
+	if leg.is_empty() or way.next_leg(def, far, going, her).is_empty():
 		return PackedVector2Array()
 	return leg
 
@@ -1618,14 +1618,10 @@ func _round_the_corner_toward(def: EventDef, place: Vector2, going: Vector2, sit
 	var on := way.next_leg(def, turn[turn.size() - 1], toward, her)
 	if on.size() < 2:
 		return PackedVector2Array()
-	var leg := PackedVector2Array([place])
-	leg.append_array(turn)
-	leg.append_array(on.slice(1))
-	var last := leg.size() - 1
-	var leaving := (leg[last] - leg[last - 1]).normalized()
-	if not way.drives_clear(def, leg) or way.next_leg(def, leg[last], leaving, her).is_empty():
-		return PackedVector2Array()
-	return leg
+	var laid := PackedVector2Array([place])
+	laid.append_array(turn)
+	laid.append_array(on.slice(1))
+	return _driven_and_going_on(def, laid, her)
 
 ## **The leg of a row warned of first in its lane** (the convoy): from `place` down the lane to
 ## `level` (the point of the lane level with her) and on through the next junction box past it by
@@ -1640,11 +1636,22 @@ func _past_her_through_the_next_box(def: EventDef, place: Vector2, level: Vector
 	var through := way.next_leg(def, level, going, her)
 	if through.size() < 2:
 		return PackedVector2Array()
-	var leg := PackedVector2Array([place])
-	leg.append_array(through)
+	var laid := PackedVector2Array([place])
+	laid.append_array(through)
+	return _driven_and_going_on(def, laid, her)
+
+## `laid` as the day's `WayOn` drives it (`WayOn.driven()`: round a crater in its lane by the
+## street's other lane), with her at `her`, or empty where it may not be driven or has no next leg
+## from its end.
+func _driven_and_going_on(def: EventDef, laid: PackedVector2Array,
+		her: Vector2) -> PackedVector2Array:
+	var way := way_on()
+	var leg := way.driven(def, laid)
+	if leg.is_empty():
+		return leg
 	var last := leg.size() - 1
 	var leaving := (leg[last] - leg[last - 1]).normalized()
-	if not way.drives_clear(def, leg) or way.next_leg(def, leg[last], leaving, her).is_empty():
+	if way.next_leg(def, leg[last], leaving, her).is_empty():
 		return PackedVector2Array()
 	return leg
 

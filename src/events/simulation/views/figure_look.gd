@@ -55,6 +55,8 @@ func _draw_figure(canvas: CanvasItem) -> void:
 			_draw_simple(EventPictures.SKIP, canvas)
 		EventDef.Look.IMPACT_CRATER:
 			_draw_crater(canvas)
+		EventDef.Look.LANE_CRATER:
+			_draw_at_anchor(canvas, EventPictures.LANE_CRATER, EventPictures.LANE_CRATER_ANCHOR)
 		EventDef.Look.STEAM:
 			_draw_simple(EventPictures.STEAM_B
 					if idle_is_stepping(EventPictures.STEAM_BILLOW_PERIOD) \
