@@ -255,7 +255,7 @@ func _test_the_notes_handover_completes_at_his_inner_radius_not_reach(t: TestRun
 	t.add_child(player)
 	player.set_physics_process(false)
 
-	var inner_radius := EventCatalogue.by_id("homeless_yeller").core_within()
+	var inner_radius := EventCatalogue.shipped().by_id("homeless_yeller").core_within()
 	var rider := FakeEvent.new()
 
 	var step := ResistanceSteps.by_index(2)
@@ -339,7 +339,7 @@ func _test_a_perform_contact_sees_its_rider_finish(t: TestRunner) -> void:
 func _test_touching_a_tasks_body_from_any_side_completes_it(t: TestRunner) -> void:
 	for id: String in ["delivery_van", "roadblock"]:
 		var step := _perform_on(7 if id == "delivery_van" else 13)
-		var row := EventCatalogue.by_id(id)
+		var row := EventCatalogue.shipped().by_id(id)
 		var instance := FakeEvent.new()
 		instance.shape = row.ground_shape()
 		instance.solid_extent = row.solid_reach()
@@ -416,8 +416,8 @@ func _test_the_dawn_draws_ignore_where_the_last_attempt_left_her(t: TestRunner) 
 ## day starts: `[contact, its guard]` at dawn, then on a mark's day
 ## `[task contact, task guard]` once she reads it from the mark's own spot with nothing on screen.
 ## `Vector2.INF` for a guard that was not placed. A guard is the one of his row the step put in the
-## street (`_new_one()`): the mark's (`EventCatalogue.mark_guard()`) or a task's
-## (`EventCatalogue.task_guard()`).
+## street (`_new_one()`): the mark's (`EventCatalogue.shipped().mark_guard()`) or a task's
+## (`EventCatalogue.shipped().task_guard()`).
 func _attempt_the_day(t: TestRunner, day: int, her: Vector2, seen: bool) -> Array[Vector2]:
 	var run: RunState = _run
 	GivenRun.completed_steps(run, _completed_through(2 * (day - 6)) \
@@ -435,8 +435,8 @@ func _attempt_the_day(t: TestRunner, day: int, her: Vector2, seen: bool) -> Arra
 	director.use_player(player)
 	_look_at(Rect2(-1.0e6, -1.0e6, 2.0e6, 2.0e6) if seen else Rect2())
 	director.set_sight(RunCity.events(_city).visible_view())
-	var mark_guard := EventCatalogue.mark_guard().id()
-	var task_guard := EventCatalogue.task_guard().id()
+	var mark_guard := EventCatalogue.shipped().mark_guard().id()
+	var task_guard := EventCatalogue.shipped().task_guard().id()
 	var marks_before := _live(mark_guard)
 	var tasks_before := _live(task_guard)
 	director.start_day(day, _rng(day, "resistance"), 300.0)
@@ -536,7 +536,7 @@ func _test_the_guard_is_seeded(t: TestRunner) -> void:
 	t.check(before.current_step() == null, "nothing is offered before day 6")
 	before.free()
 
-	var robbery := EventCatalogue.by_id("alley_robbery")
+	var robbery := EventCatalogue.shipped().by_id("alley_robbery")
 	var min_distance: float = robbery.core_within() + ContactPoint.REACH
 
 	for day: int in [6, 7, 8, 9]:
@@ -683,7 +683,7 @@ func _test_completing_the_yeller_step_sends_only_its_rider_away(t: TestRunner) -
 	var rider := director.rider()
 	t.check(rider != null and not rider.is_on_its_way_out(), "the seeded rider is shouting, not leaving")
 
-	var decoy := _least_events.spawn_extra(EventCatalogue.by_id("homeless_yeller"),
+	var decoy := _least_events.spawn_extra(EventCatalogue.shipped().by_id("homeless_yeller"),
 			_open_ground_near(rider.global_position + Vector2(600.0, 0.0)))
 	t.check(_least_map.is_walkable(_least_map.world_to_tile(decoy.global_position))
 			and decoy.global_position.distance_to(rider.global_position) > 400.0,

@@ -201,7 +201,12 @@ var _behind_her := {}
 ## way. See `ON_HER_WAY_LOOK`.
 var _since_the_last_look := 0.0
 
-func _init(map: CityMap, navigator: Navigator = null) -> void:
+## The run's catalogue (`EventCatalogue`) every row it sends, owes or routes is looked up in.
+var _rows: EventCatalogue
+
+## A director over `map`, sending and siting the rows of `rows`, the run's catalogue.
+func _init(rows: EventCatalogue, map: CityMap, navigator: Navigator = null) -> void:
+	_rows = rows
 	_map = map
 	_navigator = navigator if navigator else Navigator.new(map)
 
@@ -399,7 +404,7 @@ func _take_the_forced_row() -> void:
 	_forced = null
 	if _force_id == "":
 		return
-	var def := EventCatalogue.by_id(_force_id)
+	var def := _rows.by_id(_force_id)
 	if not def:
 		push_error("--force names no event in the catalogue: '%s'" % _force_id)
 		return
@@ -514,7 +519,7 @@ func _bag_the_next(count: int) -> void:
 ## Asked over the def's own `EventDef.spawn_mode_on()` rather than `Tuning.RUN_TAUGHT_DAY`
 ## directly, so this stays in step with whichever day the row's siting actually changes on.
 func _owe_the_sprinkled_dog(day: int) -> void:
-	var dog := EventCatalogue.by_id("charging_dog")
+	var dog := _rows.by_id("charging_dog")
 	if not dog or not dog.is_past_its_switch_on(day):
 		return
 	if _rng.randf() < CHARGING_DOG_SPRINKLE_CHANCE:
@@ -540,17 +545,18 @@ func _fill_the_route_bag(day: int, heat: int, rng: RandomNumberGenerator) -> voi
 	if not _sends_the_days_rows:
 		_route = null
 		return
-	for def in _route_rows_on(day, heat):
+	for def in _route_rows_on(_rows, day, heat):
 		_route_rows[def.id()] = def
 		_ordinary_rows[def.id()] = true
-	_route = MarbleBag.new([], ordinary_route_marbles(day, heat), hash("%d:route-bag" % rng.seed))
+	_route = MarbleBag.new([], ordinary_route_marbles(_rows, day, heat),
+			hash("%d:route-bag" % rng.seed))
 
 ## The rows the director sites on `day` — recurring, available, and `AHEAD_OF_PLAYER` or
 ## `TOWARD_PLAYER` that day, or sent ahead of her (`EventDef.is_sent_ahead()`, as the copy it sends,
 ## `EventDef.as_sent_ahead()`) — at `heat`, in the catalogue's own order.
-static func _route_rows_on(day: int, heat: int) -> Array[EventDef]:
+static func _route_rows_on(catalogue: EventCatalogue, day: int, heat: int) -> Array[EventDef]:
 	var rows: Array[EventDef] = []
-	for def in EventCatalogue.of_kind(GameEnums.EventKind.RECURRING, day, heat):
+	for def in catalogue.of_kind(GameEnums.EventKind.RECURRING, day, heat):
 		var mode := def.spawn_mode_on(day)
 		if def.is_sent_ahead():
 			rows.append(def.as_sent_ahead())
@@ -562,10 +568,10 @@ static func _route_rows_on(day: int, heat: int) -> Array[EventDef]:
 ## (`ROUTE_BAG_MARBLES_PER_WEIGHT`). A row `ROUTE_BAG_SHARE_OF` names comes as often as its share
 ## says rather than as its weight says (the weight is the dawn roll's too, on every day): the whole
 ## marbles nearest that share of the bag the other rows make with it, at least one.
-static func ordinary_route_marbles(day: int, heat: int) -> Array:
+static func ordinary_route_marbles(rows: EventCatalogue, day: int, heat: int) -> Array:
 	var weights := {}
 	var other_weights := {}
-	for def in _route_rows_on(day, heat):
+	for def in _route_rows_on(rows, day, heat):
 		weights[def.id()] = def.drawn_as_often()
 		if not ROUTE_BAG_SHARE_OF.has(def.id()):
 			other_weights[def.id()] = def.drawn_as_often()
@@ -596,7 +602,7 @@ func start_recipe_route(marbles: Array, pre_bag: Array, owed: int, first_after: 
 	_patrol_bag_left = 0
 	for id: String in marbles + pre_bag:
 		if not _route_rows.has(id):
-			_route_rows[id] = _routed(EventCatalogue.by_id(id), heat)
+			_route_rows[id] = _routed(_rows.by_id(id), heat)
 	for id: String in marbles:
 		_ordinary_rows[id] = true
 	_route = MarbleBag.new(pre_bag, marbles, hash("%d:route-bag" % _rng.seed))
@@ -635,7 +641,7 @@ func rig_her_route(ids: Array[String], size: int, heat: int = 0,
 		_siting = siting
 	var ensured := []
 	for id in ids:
-		var def := EventCatalogue.by_id(id)
+		var def := _rows.by_id(id)
 		if not def:
 			push_error("a rigged route names no event in the catalogue: '%s'" % id)
 			continue
@@ -656,8 +662,8 @@ func route_row(id: String) -> EventDef:
 ## **Today's copy of `def` at `heat` as her route's bag hands it out**: the copy the director sends
 ## (`EventDef.as_sent_ahead()`) for a row it sends ahead of her, otherwise the heated row, with
 ## ground offered where it is a place whose row names none (`_with_ground()`).
-static func _routed(def: EventDef, heat: int) -> EventDef:
-	var heated := EventCatalogue.heated(def, heat)
+func _routed(def: EventDef, heat: int) -> EventDef:
+	var heated := _rows.heated(def, heat)
 	return heated.as_sent_ahead() if heated.is_sent_ahead() else _with_ground(heated)
 
 ## A place whose own row names no ground — a loudspeaker mast, whose sites are the city's
@@ -948,7 +954,7 @@ func owe_the_return(day: int, heat: int) -> void:
 		return
 	# A scene's route holds only the rows its recipe names, so the patrol joins it here.
 	if not _route_rows.has(RETURN_PATROL):
-		var cold := EventCatalogue.by_id(RETURN_PATROL)
+		var cold := _rows.by_id(RETURN_PATROL)
 		if not cold:
 			push_error("no '%s' row in the catalogue" % RETURN_PATROL)
 			return
@@ -1254,7 +1260,7 @@ func _hand_out(next: EventDef, from_the_bag: bool) -> EventDef:
 		_handed_from_the_route()
 	_met_today[handed.id()] = int(_met_today.get(handed.id(), 0)) + 1
 	if _lesson and handed.id() == _lesson.id():
-		handed = EventCatalogue.lesson_of(handed)
+		handed = _rows.lesson_of(handed)
 		_lesson = null
 	return handed
 

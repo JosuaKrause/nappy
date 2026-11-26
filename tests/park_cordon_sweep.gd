@@ -253,7 +253,7 @@ func _walk_a_person_out(city: City, library: AtlasLibrary, director: ResistanceD
 	var area := CordonInTheWorld.park_ground(city.map(), park)
 	var line := CordonInTheWorld.tape_line(city.map(), park)
 	var spot: Vector2 = area.position + area.size * (place[0] as Vector2) + (place[1] as Vector2)
-	var busker := RunCity.events(city).spawn_extra(EventCatalogue.by_id("busker"), spot)
+	var busker := RunCity.events(city).spawn_extra(EventCatalogue.shipped().by_id("busker"), spot)
 	if not busker:
 		return {"person_placed": false, "place": place[0]}
 	var cordon := ParkCordon.new(city.map(), city.navigator(), RunCity.events(city), city,
@@ -388,7 +388,7 @@ func _measure_the_gap(city: City, director: ResistanceDirector, cordon: ParkCord
 ## something he cannot get round.
 func _play(city: City, cordon: ParkCordon, her: Array, shows: Callable, walks: bool,
 		watch_stalls: bool) -> Dictionary:
-	var row := EventCatalogue.by_id(ParkCordon.OFFICER_ROW)
+	var row := EventCatalogue.shipped().by_id(ParkCordon.OFFICER_ROW)
 	var line := CordonInTheWorld.tape_line(city.map(), CityGenerator.swing_park(city.map()))
 	var first_seen := -1.0
 	var clock := STEP

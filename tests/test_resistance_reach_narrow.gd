@@ -77,7 +77,7 @@ func _test_a_task_is_placed_near_its_mark(t: TestRunner) -> void:
 					var tile := centre + step_to
 					if edge.has(tile) or (mast and inside.has(tile)):
 						on_it = true
-				var touch := EventPlan.new(EventCatalogue.by_id("roadblock"),
+				var touch := EventPlan.new(EventCatalogue.shipped().by_id("roadblock"),
 						Vector2.ZERO).blocking_radius() + Tuning.TILE_SIZE * 1.5
 				for tile: Vector2i in wider:
 					if _city.map().tile_to_world(tile).distance_to(target) <= touch:

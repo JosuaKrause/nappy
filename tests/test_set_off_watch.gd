@@ -98,7 +98,7 @@ class Rig extends RefCounted:
 	var watch: SetOffWatch
 
 	func _init(row_id := "masked_pursuer") -> void:
-		plan = EventPlan.new(EventCatalogue.by_id(row_id), START)
+		plan = EventPlan.new(EventCatalogue.shipped().by_id(row_id), START)
 		var walk := WalkEvents.new()
 		walk.add(plan)
 		watch = SetOffWatch.new(world, streaming, board, walk)

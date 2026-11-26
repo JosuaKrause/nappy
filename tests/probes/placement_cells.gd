@@ -94,7 +94,7 @@ func run(t: TestRunner) -> void:
 			var consumed: Array[String] = []
 			var dawn: DawnContext = GameDawn.of(spec, rng, map).masts(sites).spent(consumed) \
 					.on(tree).doors(doors).standing(standing) \
-					.roadblock(EventCatalogue.by_id(guarded) if guarded != "" else null) \
+					.roadblock(EventCatalogue.shipped().by_id(guarded) if guarded != "" else null) \
 					.undrawn().planned()
 			var draw := dawn.unit_draw()
 			var units := draw.units().undrawn_within(Vector2.ZERO, INF)

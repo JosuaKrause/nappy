@@ -161,14 +161,14 @@ func _test_the_building_stands_its_events_alone(t: TestRunner) -> void:
 	t.check(simulation.events().world.navigator() == navigator,
 			"and its events move by the navigator the builder was handed")
 	var far_off := Vector2(1.0e5, 1.0e5)
-	var far_plan := EventPlan.new(EventCatalogue.by_id("loose_dog"), far_off)
+	var far_plan := EventPlan.new(EventCatalogue.shipped().by_id("loose_dog"), far_off)
 	simulation.events().start_recipe([far_plan] as Array[EventPlan], DaySpec.for_day(1), 1,
 			Vector2.ZERO)
 	t.check(simulation.events().event_of(far_plan) != null,
 			"its events stream the whole plan, since the building is walked through doors")
 	var stretch: Vector2i = CrowdStreetRig.new().a_straight_run(map, Tuning.BLOCK_SIZE)
 	var at := map.tile_to_world(Vector2i(stretch.x * CityMap.period() + 1, stretch.y + 2))
-	var yeller := simulation.events().spawn_extra(EventCatalogue.by_id("homeless_yeller"), at)
+	var yeller := simulation.events().spawn_extra(EventCatalogue.shipped().by_id("homeless_yeller"), at)
 	var answered := false
 	for pair: Array in world.excitement_sources_at(at):
 		answered = answered or pair[0] == yeller.source()
@@ -198,7 +198,7 @@ func _test_the_world_answers_her_from_the_events_then_the_crowd(t: TestRunner) -
 	var at := walker.global_position
 	var events := simulation.events()
 	events.start_recipe([] as Array[EventPlan], DaySpec.for_day(1), 1, at)
-	var yeller := events.spawn_extra(EventCatalogue.by_id("homeless_yeller"), at + Vector2(8.0, 0.0))
+	var yeller := events.spawn_extra(EventCatalogue.shipped().by_id("homeless_yeller"), at + Vector2(8.0, 0.0))
 	var order: Array[String] = []
 	for pair: Array in (made["world"] as CityDressing).excitement_sources_at(at):
 		if pair[0] == yeller.source():
@@ -238,7 +238,7 @@ func _test_both_worlds_events_report_on_the_bus_it_was_handed(t: TestRunner) -> 
 	var stretch: Vector2i = CrowdStreetRig.new().a_straight_run(map, Tuning.BLOCK_SIZE)
 	var at := map.tile_to_world(Vector2i(stretch.x * CityMap.period() + 1, stretch.y + 2))
 	var before := bus.times("event_telegraphed")
-	_simulation(made).events().spawn_extra(EventCatalogue.by_id("homeless_yeller"), at)
+	_simulation(made).events().spawn_extra(EventCatalogue.shipped().by_id("homeless_yeller"), at)
 	t.check(bus.times("event_telegraphed") == before + 1,
 			"a row put in a city's simulation says it is telegraphing on the builder's bus (%d)"
 			% (bus.times("event_telegraphed") - before))
@@ -250,7 +250,7 @@ func _test_both_worlds_events_report_on_the_bus_it_was_handed(t: TestRunner) -> 
 	run.start_run(RUN_SEED)
 	var building := builder.in_the_building(world, building_map, Navigator.new(building_map), run)
 	before = bus.times("event_telegraphed")
-	building.events().spawn_extra(EventCatalogue.by_id("homeless_yeller"), at)
+	building.events().spawn_extra(EventCatalogue.shipped().by_id("homeless_yeller"), at)
 	t.check(bus.times("event_telegraphed") == before + 1,
 			"and so does one put in the building's (%d)" % (bus.times("event_telegraphed") - before))
 	world.free()

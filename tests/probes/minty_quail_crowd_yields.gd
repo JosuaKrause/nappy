@@ -133,9 +133,9 @@ func _a_day(t: TestRunner, city: City, run: RunState, library: AtlasLibrary, see
 	if day == 3:
 		var spots := _spots(city)
 		for id in ROWS:
-			var def := EventCatalogue.by_id(id)
+			var def := EventCatalogue.shipped().by_id(id)
 			if id == "police_patrol":
-				def = EventCatalogue.heated(def, EventCatalogue.heat_levels() - 1)
+				def = EventCatalogue.shipped().heated(def, EventCatalogue.heat_levels() - 1)
 			for i in spots.size():
 				_a_row(city, player, def, spots[i], label.merged({"run": "%s spot %d" % [id, i]}))
 	var offered := director.current_step()

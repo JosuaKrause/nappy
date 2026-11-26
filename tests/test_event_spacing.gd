@@ -19,7 +19,7 @@ func run(t: TestRunner) -> void:
 	_test_no_two_events_are_drawn_inside_each_other(t)
 
 func _plan(at: Vector2, path := PackedVector2Array()) -> EventPlan:
-	return EventPlan.new(EventCatalogue.by_id("busker"), at, path)
+	return EventPlan.new(EventCatalogue.shipped().by_id("busker"), at, path)
 
 ## The points that bound a plan: the corners of its route, or the one place it stands.
 func _bounds(plan: EventPlan) -> PackedVector2Array:

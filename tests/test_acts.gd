@@ -28,7 +28,7 @@ func _test_acts_are_gated_by_day(t: TestRunner) -> void:
 	var swept := 0
 	for day in range(1, Tuning.RUN_LENGTH_DAYS + 1):
 		var act := Tuning.act_for_day(day)
-		for def in EventCatalogue.of_kind(GameEnums.EventKind.SCRIPTED, day):
+		for def in EventCatalogue.shipped().of_kind(GameEnums.EventKind.SCRIPTED, day):
 			swept += 1
 			var from_act := Tuning.act_for_day(def.own_first_day())
 			t.check(from_act <= act,
@@ -42,7 +42,7 @@ func _test_acts_are_gated_by_day(t: TestRunner) -> void:
 ## after its telegraph, against the same pulse three quarters of the way through its life, asked of
 ## the row (`EventDef.peak_through()`), which is what a live event carries once its telegraph is over.
 func _test_a_protest_grows(t: TestRunner) -> void:
-	var def := EventCatalogue.by_id("protest")
+	var def := EventCatalogue.shipped().by_id("protest")
 	var ceiling := def.peak_through(0.0, def.lasts_for(), 1.0)
 	t.check(ceiling > def.peak(), "a protest swells rather than holding")
 	t.check(def.pulses_every() > 0.0, "and beats, so the ramp is read over whole pulse periods")

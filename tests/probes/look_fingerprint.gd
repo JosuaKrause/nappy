@@ -154,26 +154,26 @@ func run(t: TestRunner) -> void:
 	t.check(seen.lines > 0, "there were pictures to print (%d)" % seen.lines)
 
 ## The rows the game stands, each with its name: the catalogue's, each one's full-heat copy
-## (`EventCatalogue.heated()`) and its copy on the last day (`EventDef.for_day()`) where either
+## (`EventCatalogue.shipped().heated()`) and its copy on the last day (`EventDef.for_day()`) where either
 ## differs from the row, and the derived rows a day makes (`out_of_the_car()`,
 ## `building_fire()`, `task_guard_sent()`).
 func _stand_the_rows() -> void:
 	var last_day := DaySpec.for_day(Tuning.RUN_LENGTH_DAYS)
 	for row in CatalogueRows.every():
 		_add_a_row(row, row.id())
-		var hot := EventCatalogue.heated(row, EventCatalogue.heat_levels() - 1)
+		var hot := EventCatalogue.shipped().heated(row, EventCatalogue.heat_levels() - 1)
 		if hot != row:
 			_add_a_row(hot, row.id() + "@heat")
 		var late := row.for_day(Tuning.RUN_LENGTH_DAYS)
 		if late != row:
 			_add_a_row(late, row.id() + "@late")
-	_add_a_row(EventCatalogue.out_of_the_car(last_day), "guardsman_out_of_the_car")
-	_add_a_row(EventCatalogue.out_of_the_car(last_day, false), "guardsman_out_of_the_car@hunts")
+	_add_a_row(EventCatalogue.shipped().out_of_the_car(last_day), "guardsman_out_of_the_car")
+	_add_a_row(EventCatalogue.shipped().out_of_the_car(last_day, false), "guardsman_out_of_the_car@hunts")
 	var first_day := DaySpec.for_day(1)
-	_add_a_row(EventCatalogue.out_of_the_car(first_day), "policeman_out_of_the_car")
-	_add_a_row(EventCatalogue.out_of_the_car(first_day, false), "policeman_out_of_the_car@hunts")
-	_add_a_row(EventCatalogue.building_fire(), "building_fire")
-	_add_a_row(EventCatalogue.task_guard_sent(), "task_guard_sent")
+	_add_a_row(EventCatalogue.shipped().out_of_the_car(first_day), "policeman_out_of_the_car")
+	_add_a_row(EventCatalogue.shipped().out_of_the_car(first_day, false), "policeman_out_of_the_car@hunts")
+	_add_a_row(EventCatalogue.shipped().building_fire(), "building_fire")
+	_add_a_row(EventCatalogue.shipped().task_guard_sent(), "task_guard_sent")
 
 func _add_a_row(row: EventDef, label: String) -> void:
 	_rows.append(row)

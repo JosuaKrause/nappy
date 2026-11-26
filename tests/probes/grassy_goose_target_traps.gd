@@ -57,7 +57,7 @@ const STOOD_CAUGHT := 2
 const A_WALK_ESCAPES := 3
 
 func run(t: TestRunner) -> void:
-	var def := EventCatalogue.by_id("robber_giving_chase")
+	var def := EventCatalogue.shipped().by_id("robber_giving_chase")
 	var starts := {}
 	var walks := {}
 	for day in DAYS:

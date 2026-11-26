@@ -41,7 +41,7 @@ func _side_she_is_on(guard: EventInstance, her: Vector2) -> int:
 	return EventFootprints.guard_side_toward(guard.runs_vertically(), her - guard.body_position())
 
 func _hot_roadblock() -> EventDef:
-	return EventCatalogue.heated(EventCatalogue.by_id("roadblock"), Tuning.RESISTANCE_GOAL)
+	return EventCatalogue.shipped().heated(EventCatalogue.shipped().by_id("roadblock"), Tuning.RESISTANCE_GOAL)
 
 ## A guard that has set off after her, her standing still beside the post: she comes inside his
 ## radius and he warns, and she stays inside it until his warning has run and he charges
@@ -520,8 +520,8 @@ func _test_his_catch_does_not_reach_through_his_own_band(t: TestRunner) -> void:
 ## - **The barrier catches nobody.** Standing right against it, at the distance the old lethal
 ##   radius would have fired from, ends nothing while the man is elsewhere.
 func _test_the_guard_leaves_the_barrier_standing_and_catches_at_a_mans_reach(t: TestRunner) -> void:
-	var reach: float = EventCatalogue.by_id("masked_pursuer").core_within()
-	var cold := EventCatalogue.by_id("roadblock")
+	var reach: float = EventCatalogue.shipped().by_id("masked_pursuer").core_within()
+	var cold := EventCatalogue.shipped().by_id("roadblock")
 	var post := Vector2(400.0, 0.0)
 
 	var band_where := WhereSheIs.nowhere()
@@ -546,7 +546,7 @@ func _test_the_guard_leaves_the_barrier_standing_and_catches_at_a_mans_reach(t: 
 			"and it takes nobody, at its own edge or standing in it")
 	band.free()
 
-	var hot := EventCatalogue.heated(cold, Tuning.RESISTANCE_GOAL)
+	var hot := EventCatalogue.shipped().heated(cold, Tuning.RESISTANCE_GOAL)
 	var guard_where := WhereSheIs.nowhere()
 	var guard := EventInstance.new()
 	guard.setup(hot, post, PackedVector2Array(), Vector2.RIGHT,

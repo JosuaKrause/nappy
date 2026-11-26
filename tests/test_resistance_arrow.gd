@@ -144,7 +144,7 @@ func _yeller_arrow_case(t: TestRunner, before: int, after: int, offsets: Array) 
 	return [director, player, tile, men]
 
 func _put_a_yeller(tile: Vector2i) -> EventInstance:
-	return _least_events.spawn_extra(EventCatalogue.by_id("homeless_yeller"),
+	return _least_events.spawn_extra(EventCatalogue.shipped().by_id("homeless_yeller"),
 			_least_map.tile_to_world(tile))
 
 ## plush-moose, "closest here always means path closeness not crow closeness": a wall of standing
@@ -370,7 +370,7 @@ func _a_mast_can_be_sited_along_her_route() -> bool:
 	var events := RunCity.events(_city)
 	var siting := SitingMaker.new(events.world, events.walk_events()).make(
 			11, _city.streets().route_tree(), events.walk_events().ground())
-	var def: EventDef = events.route_row(EventCatalogue.mast().id())
+	var def: EventDef = events.route_row(EventCatalogue.shipped().mast().id())
 	var path := _longest_route_points()
 	for i in range(0, path.size() - 1, 4):
 		var heading := (path[i + 1] - path[i]).normalized()

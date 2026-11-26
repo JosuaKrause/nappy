@@ -39,7 +39,7 @@ func _measure_caps() -> void:
 	print("\n== M99 caps: %d seeds x one day per act %s, whole day of continuous walking =="
 			% [SEEDS, ACT_SAMPLE_DAYS])
 	for id: String in TRACKED_IDS:
-		var def := EventCatalogue.by_id(id)
+		var def := EventCatalogue.shipped().by_id(id)
 		print("  %-10s max_per_day=%d weight=%.1f" % [id, def.most_in_a_day(), def.drawn_as_often()])
 
 	# act -> id -> Array[int] per-day counts
@@ -117,7 +117,7 @@ func _measure_caps() -> void:
 		print("  act %d — mean total AHEAD/TOWARD encounters/day: %.2f"
 				% [act, _mean(by_act_total_owed[act])])
 		for id: String in TRACKED_IDS:
-			var def := EventCatalogue.by_id(id)
+			var def := EventCatalogue.shipped().by_id(id)
 			print("    %-10s budgeted/day (mean)=%.2f  actually met/day (mean)=%.2f  of max_per_day=%d"
 					% [id, _mean(by_act_budgeted[act][id]), _mean(by_act_id[act][id]), def.most_in_a_day()])
 
@@ -128,7 +128,7 @@ func _measure_caps() -> void:
 		for act: int in [1, 2, 3, 4]:
 			all_met.append_array(by_act_id[act][id])
 			all_budgeted.append_array(by_act_budgeted[act][id])
-		var def := EventCatalogue.by_id(id)
+		var def := EventCatalogue.shipped().by_id(id)
 		var max_met := 0
 		for v: int in all_met:
 			max_met = maxi(max_met, int(v))

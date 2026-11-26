@@ -21,7 +21,7 @@ func run(t: TestRunner) -> void:
 	var defs: Array[EventDef] = []
 	for def in CatalogueRows.every():
 		for level in EventCatalogue.heat_levels():
-			var hot := EventCatalogue.heated(def, level)
+			var hot := EventCatalogue.shipped().heated(def, level)
 			if hot.drives() and hot.moves() and not defs.has(hot):
 				defs.append(hot)
 	var cases := 0

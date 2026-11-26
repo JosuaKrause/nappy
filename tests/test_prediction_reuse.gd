@@ -247,7 +247,7 @@ func _crowd_parity(t: TestRunner, source: CountedCrowd, at: Vector2, label: Stri
 ## must differ from the row's own (so the check cannot be passing on equal numbers) and match the
 ## reference.
 func _test_a_cored_row(t: TestRunner) -> void:
-	var row := EventCatalogue.by_id("leaf_blower")
+	var row := EventCatalogue.shipped().by_id("leaf_blower")
 	var field := row.field()
 	var inside := Vector2(-(field.core_within() * 0.5), 0.0)
 	var between := Vector2(-(field.core_within() + (field.core_reach() - field.core_within()) * 0.5), 0.0)
@@ -543,7 +543,7 @@ func _test_a_startled_body_is_projected_out_to_its_jolt_reach(t: TestRunner) -> 
 
 func _test_live_net_and_skipped_work(t: TestRunner) -> void:
 	var event := CountedEvent.new()
-	event.setup(_copy_definition(EventCatalogue.by_id("cafe_tables")), Vector2.ZERO)
+	event.setup(_copy_definition(EventCatalogue.shipped().by_id("cafe_tables")), Vector2.ZERO)
 	var crowd := CountedCrowd.new()
 	crowd.lane().ease_speed_toward(0.0, 1000.0)
 	var at := Vector2(-170.0, 0.0)
@@ -579,10 +579,10 @@ func _test_consumer_order(t: TestRunner) -> void:
 	var reference := ReferenceEvent.new()
 	var car := CountedCrowd.new(CrowdAgent.Kind.CAR)
 	var reference_car := ReferenceCrowd.new(CrowdAgent.Kind.CAR)
-	cached.setup(_copy_definition(EventCatalogue.by_id("cyclist")), Vector2.ZERO,
+	cached.setup(_copy_definition(EventCatalogue.shipped().by_id("cyclist")), Vector2.ZERO,
 			PackedVector2Array([Vector2.ZERO, Vector2(700.0, 0.0)]), Vector2.RIGHT,
 			EventSurroundings.new().hearing(cached_where))
-	reference.setup(_copy_definition(EventCatalogue.by_id("cyclist")), Vector2.ZERO,
+	reference.setup(_copy_definition(EventCatalogue.shipped().by_id("cyclist")), Vector2.ZERO,
 			PackedVector2Array([Vector2.ZERO, Vector2(700.0, 0.0)]), Vector2.RIGHT,
 			EventSurroundings.new().hearing(reference_where))
 	for source: CrowdAgent in [car, reference_car]:
@@ -650,7 +650,7 @@ func _test_halo_and_removal(t: TestRunner) -> void:
 		manager.set_physics_process(false)
 		managers.append(manager)
 		var source: EventInstance = CountedEvent.new() if cached else ReferenceEvent.new()
-		source.setup(_copy_definition(EventCatalogue.by_id("cafe_tables")), Vector2.ZERO,
+		source.setup(_copy_definition(EventCatalogue.shipped().by_id("cafe_tables")), Vector2.ZERO,
 				PackedVector2Array(), Vector2.RIGHT, EventSurroundings.new().drawn_from(atlas))
 		source.restore(EventSave.aged(3.0))
 		manager.add_child(source)

@@ -35,7 +35,7 @@ func run(t: TestRunner) -> void:
 
 func _test_the_director_reads_the_rule_off_the_walks_spec(t: TestRunner) -> void:
 	var map: CityMap = MapCache.of(SEED)
-	var def := EventCatalogue.by_id("burning_building")
+	var def := EventCatalogue.shipped().by_id("burning_building")
 	var holds_it := EventScheduler.row_ground(map, null, true).tiles_for(def)
 	var leaves_it := EventScheduler.row_ground(map, null, false).tiles_for(def)
 	t.check(holds_it != leaves_it,
@@ -63,7 +63,7 @@ func _test_the_director_reads_the_rule_off_the_walks_spec(t: TestRunner) -> void
 ## swap of the two settings in `EventsAhead.use_the_walk_of()` fails here and nowhere else.
 func _test_the_escape_buildings_spec_holds_the_streets_and_sends_no_pursuer(
 		t: TestRunner, map: CityMap) -> void:
-	var def := EventCatalogue.by_id("burning_building")
+	var def := EventCatalogue.shipped().by_id("burning_building")
 	var holds_it := EventScheduler.row_ground(map, null, true).tiles_for(def)
 	var building := DaySpec.for_section(DaySpec.Section.BUILDING, RunConfig.FINALE_LENGTH_SECONDS)
 	var asked := 0
@@ -107,7 +107,7 @@ func _test_the_escape_buildings_spec_holds_the_streets_and_sends_no_pursuer(
 ## nothing rigs it.
 func _test_the_events_ask_the_maker_they_are_handed_for_every_siting(t: TestRunner) -> void:
 	var map: CityMap = MapCache.of(SEED)
-	var def := EventCatalogue.by_id("burning_building")
+	var def := EventCatalogue.shipped().by_id("burning_building")
 	var holds_it := EventScheduler.row_ground(map, null, true).tiles_for(def)
 	var leaves_it := EventScheduler.row_ground(map, null, false).tiles_for(def)
 	t.check(holds_it != leaves_it, "the two rules differ on this city's ground (there was a rule to keep)")
@@ -118,7 +118,7 @@ func _test_the_events_ask_the_maker_they_are_handed_for_every_siting(t: TestRunn
 	var streaming := EventStreaming.new(world, spawner, WalkEvents.new())
 	var tree := FakeRouteTree.new(map)
 	var walk := FakeWalkEvents.new()
-	var fire := EventPlan.new(EventCatalogue.by_id("burning_building"), Vector2.INF)
+	var fire := EventPlan.new(EventCatalogue.shipped().by_id("burning_building"), Vector2.INF)
 	var plans: Array[EventPlan] = [fire]
 	walk.set_plans(plans)
 	var siting := FakeWalkSiting.new()
@@ -136,7 +136,7 @@ func _test_the_events_ask_the_maker_they_are_handed_for_every_siting(t: TestRunn
 				"for that day, over the day's tree")
 		t.check((maker.made[0][2] as RowGround).tiles_for(def) == holds_it,
 				"on a ground that keeps off the home street, the spec holding the home's streets")
-	var rigged := ahead.rig_her_route([EventCatalogue.mast().id()], 4)
+	var rigged := ahead.rig_her_route([EventCatalogue.shipped().mast().id()], 4)
 	t.check(not rigged.is_empty() and maker.made.size() == 1,
 			"a rigged route asks no second siting while the day has one (%d asks, %d marbles)"
 			% [maker.made.size(), rigged.size()])
@@ -144,7 +144,7 @@ func _test_the_events_ask_the_maker_they_are_handed_for_every_siting(t: TestRunn
 	walk.set_plans([] as Array[EventPlan])
 	ahead.start_day(DAY, tree)
 	var before := maker.made.size()
-	ahead.rig_her_route([EventCatalogue.mast().id()], 4)
+	ahead.rig_her_route([EventCatalogue.shipped().mast().id()], 4)
 	t.check(maker.made.size() == before + 1,
 			"a rigged route of a day with none asks the maker for one (%d asks, %d before)"
 			% [maker.made.size(), before])

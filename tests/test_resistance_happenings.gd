@@ -169,8 +169,8 @@ func _test_the_raid_waits_for_the_patrol_cars_beat_to_be_out_of_her_view(t: Test
 	var lane := corridor + Tuning.SIDEWALK_WIDTH
 	var beat_end := map.tile_to_world(
 			Vector2i(door_tile.x + ResistanceHappenings.RAID_PATROL_REACH_TILES, lane))
-	var van_box := EventFootprints.footprint_of(EventCatalogue.by_id("night_raid"))
-	var car_box := EventFootprints.footprint_of(EventCatalogue.by_id("police_patrol"))
+	var van_box := EventFootprints.footprint_of(EventCatalogue.shipped().by_id("night_raid"))
+	var car_box := EventFootprints.footprint_of(EventCatalogue.shipped().by_id("police_patrol"))
 	view.look(Rect2(beat_end + car_box.position, car_box.size), null)
 	var van_in_view := false
 	for side: int in [-1, 1]:

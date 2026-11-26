@@ -9,7 +9,7 @@ extends RefCounted
 ## Each day is planned as the game plans it (`DayPlanner._plan_a_day()`): its closures, holds,
 ## region wall and seals first, the seals and the wall's bodies handed in as standing, then
 ## `EventScheduler.build_day()` on the repainted city and its route tree at heat 0, like every
-## baseline reading, the guarded-band roadblock row handed through `EventCatalogue.heated()` as
+## baseline reading, the guarded-band roadblock row handed through `EventCatalogue.shipped().heated()` as
 ## the day does (`PlacementProbeDay`), the street trees refreshed after. Every placed plan is
 ## counted under the view of the ground it stands on (`Corridor.view_of()` for a
 ## street, `Corridor.view_of_ground()` for an alley, a lot or a junction box), by row, against

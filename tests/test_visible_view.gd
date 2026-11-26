@@ -39,7 +39,7 @@ func _test_selected_controls_keep_the_badge_view_and_spawn_view_distinct(t: Test
 	edge.use_atlas(atlas)
 	t.add_child(edge)
 	edge.setup(source, player)
-	var row := EventCatalogue.by_id("cyclist")
+	var row := EventCatalogue.shipped().by_id("cyclist")
 	var at := player.global_position
 	for rotated: bool in [false, true]:
 		controls.use_rotated(rotated)
@@ -313,10 +313,10 @@ func _test_the_badge_stays_up_for_a_thing_under_a_covered_corner(t: TestRunner) 
 		player.global_position = her
 		var bike_where := WhereSheIs.nowhere()
 		var bike := EventInstance.new()
-		bike.setup(EventCatalogue.by_id("cyclist"), start, PackedVector2Array([start, her]),
+		bike.setup(EventCatalogue.shipped().by_id("cyclist"), start, PackedVector2Array([start, her]),
 				Vector2.RIGHT,
 				EventSurroundings.new().hearing(bike_where))
-		bike.restore(EventSave.new(EventCatalogue.by_id("cyclist").telegraphs_for(), 0.0))
+		bike.restore(EventSave.new(EventCatalogue.shipped().by_id("cyclist").telegraphs_for(), 0.0))
 		bike.arrive_from_its_warning()
 		source.live.append(bike)
 		source.visible_view().look(VisibleView.around(her, null).camera_view(), TouchCover.joystick() if joystick else null)

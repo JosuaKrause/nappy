@@ -300,7 +300,7 @@ func _test_the_scene_runs_under_the_spec_it_is_handed(t: TestRunner, built: Dict
 ## the walk spec's own home-street rule, which is `tests/test_walk_siting_spec.gd`'s.)
 func _test_the_walk_is_handed_the_scenes_ground(t: TestRunner, built: Dictionary,
 		data: Dictionary, own_run: RunState) -> void:
-	var def := EventCatalogue.by_id("burning_building")
+	var def := EventCatalogue.shipped().by_id("burning_building")
 	var stood := _stand(built, data, own_run)
 	var made: SceneWorld = stood[0]
 	var runtime: SceneRecipeRuntime = stood[1]
@@ -425,7 +425,7 @@ func _test_an_authored_mast_stands_only_where_the_days_masts_may(t: TestRunner) 
 ## block, and that `MastSites.is_eligible()` accepts when no door is handed in, or `Vector2.INF`
 ## when there is none.
 func _a_site_only_a_door_rules_out(map: CityMap) -> Vector2:
-	var reach := Tuning.CHECKPOINT_EVENT_GAP + EventCatalogue.mast().field_reach()
+	var reach := Tuning.CHECKPOINT_EVENT_GAP + EventCatalogue.shipped().mast().field_reach()
 	var nowhere := PackedVector2Array([Vector2(-1.0e7, -1.0e7)])
 	for door in MastSites.possible_door_points(map):
 		var centre := map.world_to_tile(door)

@@ -24,7 +24,7 @@ func run(t: TestRunner) -> void:
 
 func _event(row: String, at: Vector2, route: PackedVector2Array) -> EventInstance:
 	var instance := EventInstance.new()
-	instance.setup(EventCatalogue.by_id(row), at, route)
+	instance.setup(EventCatalogue.shipped().by_id(row), at, route)
 	return instance
 
 func _test_a_live_event_with_a_route_is_drawn_start_to_end(t: TestRunner) -> void:

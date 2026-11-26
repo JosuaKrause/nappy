@@ -36,6 +36,7 @@ var _timing := FrameTiming.new()
 var _trace := RunTrace.new()
 var _lights: TrafficSignals = null
 var _where_protests_point := Callable()
+var _rows: EventCatalogue = null
 
 # ------------------------------------------------------------------- built with ---
 
@@ -115,6 +116,13 @@ func pointing_protests_with(where: Callable) -> EventSurroundings:
 	_where_protests_point = where
 	return self
 
+## **The run's catalogue** (`EventCatalogue`), what its events look a row up in by id: the row a
+## thing calls in or leaves behind, a door's guard, the day's rows. The composition root's own,
+## handed down from `main`; none where none was handed, and a world handed none looks no row up.
+func reading(rows: EventCatalogue) -> EventSurroundings:
+	_rows = rows
+	return self
+
 # --------------------------------------------------------------------- asked for ---
 
 ## The map it stands in: open ground where none was handed, where every street question answers "no
@@ -161,6 +169,11 @@ func drawer() -> EventDrawer:
 ## The box its look asks, or one with no screen, which shows everything.
 func drawn_view() -> DrawnView:
 	return _drawn_view
+
+## The run's catalogue its events look rows up in (`reading()`), or null where none was handed:
+## a suite's world whose events look no row up.
+func rows() -> EventCatalogue:
+	return _rows
 
 ## Whether it draws at all.
 func draws() -> bool:

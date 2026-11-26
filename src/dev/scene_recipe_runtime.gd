@@ -282,7 +282,7 @@ static func _validate_runtime(recipe: Dictionary) -> Array[String]:
 				names[label] = true
 			_position(entry.get("at"), where + ".at", errors)
 			if collection == "events":
-				if not entry.get("row") is String or not EventCatalogue.by_id(str(entry.get("row", ""))):
+				if not entry.get("row") is String or not _rows.by_id(str(entry.get("row", ""))):
 					errors.append(where + ".row is an unknown catalogue identifier")
 				if entry.has("mast_id"):
 					# A mast's identity is what the day's task and its arrow answer to, so two
@@ -373,7 +373,7 @@ static func _validate_runtime(recipe: Dictionary) -> Array[String]:
 			var subject: Variant = check.get("subject")
 			if not names.has(subject) and not (subject is String
 					and str(subject).begins_with(ROW_SUBJECT)
-					and EventCatalogue.by_id(str(subject).trim_prefix(ROW_SUBJECT))):
+					and _rows.by_id(str(subject).trim_prefix(ROW_SUBJECT))):
 				errors.append("observation.subject is not a named actor or row:<catalogue id>")
 			if not check.get("condition") in CONDITIONS:
 				errors.append("observation.condition is unsupported")
@@ -474,7 +474,7 @@ static func _validate_route_bag(recipe: Dictionary, errors: Array[String]) -> vo
 			errors.append("setup.route_bag.%s must be an array of catalogue ids" % field)
 			continue
 		for id: Variant in bag.get(field, []):
-			var def := EventCatalogue.by_id(str(id)) if id is String else null
+			var def := _rows.by_id(str(id)) if id is String else null
 			var mode := def.spawn_mode_on(day) if def else EventDef.SpawnMode.MAP
 			if not def or not def.available_on(day) or not (def.is_sent_ahead() or mode in [
 					EventDef.SpawnMode.AHEAD_OF_PLAYER, EventDef.SpawnMode.TOWARD_PLAYER]):
@@ -521,6 +521,14 @@ static func _position(value: Variant, where: String, errors: Array[String]) -> v
 
 ## The trace the army column's lines go to (`ResistanceHappenings.use_trace()`): the run's own, as
 ## `main` hands the city's.
+## Hands the scene the run's catalogue (`EventCatalogue`), the one its rows are read from: the
+## composition root's own (`main`).
+func use_rows(rows: EventCatalogue) -> void:
+	_rows = rows
+
+## The run's catalogue (`use_rows()`).
+var _rows: EventCatalogue = null
+
 func use_trace(trace: RunTrace) -> void:
 	_trace = trace
 
@@ -902,7 +910,7 @@ func _select_structures(errors: Array[String]) -> void:
 			errors.append("setup.gates: the selected street is not an eligible production checkpoint; eligible streets: %s" %
 					[region.door_segments().map(func(door: StreetNetwork.Segment) -> Vector3i: return door.key())])
 			continue
-		RegionPlanner.stand_door(_world.city_map(), segment, selected)
+		RegionPlanner.stand_door(_rows, _world.city_map(), segment, selected)
 	for entry: Dictionary in setup.get("barriers", []):
 		var key := Vector3i(int(entry.segment[0]), int(entry.segment[1]), int(entry.segment[2]))
 		var segment := _world.city_map().street_network().by_key(key)
@@ -915,7 +923,7 @@ func _select_structures(errors: Array[String]) -> void:
 			continue
 		selected.add_wall(segment)
 		# The wall's bodies say so, as the day's do (`EventPlan.stand_in_the_wall()`).
-		var bodies := SealPlanner.place_hard_on(_world.city_map(), segment, "roadblock", entry.end == "a")
+		var bodies := SealPlanner.place_hard_on(_rows, _world.city_map(), segment, "roadblock", entry.end == "a")
 		for body in bodies:
 			body.stand_in_the_wall()
 		selected.add_wall_plans(bodies)
@@ -951,10 +959,10 @@ func _authored_seals(errors: Array[String]) -> Array[EventPlan]:
 		var candidate := SealPlanner.candidate_named(str(entry.candidate))
 		if not candidate:
 			continue
-		if not SealPlanner.offers(candidate, _run.header().day(), lined.has(key)):
+		if not SealPlanner.offers(_rows, candidate, _run.header().day(), lined.has(key)):
 			errors.append("setup.seals: candidate is unavailable on this day or street")
 			continue
-		var sited := SealPlanner.seal_street(map, segment, candidate, route, trees, emptied)
+		var sited := SealPlanner.seal_street(_rows, map, segment, candidate, route, trees, emptied)
 		plans.append_array(sited.bodies())
 		sited.stand_whole(map)
 	map.set_seal_tree_pits(emptied)
@@ -976,7 +984,7 @@ func _event_plans(player_at: Vector2, errors: Array[String], calm: CalmAreas,
 		finale = FinalePlanner.route(map)
 		# The escape's seals alone, which dress the map as the game's walk does (the tree pits a
 		# seal empties, the soft seals cleared); what they place is not the scene's.
-		DayPlanner.plan_the_escape_city(map, finale,
+		DayPlanner.plan_the_escape_city(_rows, map, finale,
 				_run.calendar().day_rng(_run.header().day(), "finale"), _walk_spec, builder, false)
 		for chain in finale.chains:
 			if not chain.complete:
@@ -1011,11 +1019,11 @@ func _event_plans(player_at: Vector2, errors: Array[String], calm: CalmAreas,
 		if not _inside_extent(at):
 			errors.append("event %s is outside authored bounds" % entry.name)
 			continue
-		var def := EventCatalogue.by_id(entry.row)
+		var def := _rows.by_id(entry.row)
 		# A row at a resistance level, the shape a played day's dawn puts it in at that progress
 		# (`EventCatalogue.heated()`), for the heated rungs no ordinary authored day reaches.
 		if entry.has("heat"):
-			def = EventCatalogue.heated(def, int(entry.heat))
+			def = _rows.heated(def, int(entry.heat))
 		var plan: EventPlan
 		var why: Array[String] = []
 		if def.is_a_mast():
@@ -1024,7 +1032,7 @@ func _event_plans(player_at: Vector2, errors: Array[String], calm: CalmAreas,
 			plan = _finale_placement(def, builder, at, player_at, finale, plans,
 					int(entry.get("route_seed", 1)))
 		elif def.spawn_mode_on(_run.header().day()) != EventDef.SpawnMode.MAP:
-			var director := EventDirector.new(map)
+			var director := EventDirector.new(_rows, map)
 			var heading: Vector2 = DIRECTIONS[_object(setup, "player").get("facing", "south")]
 			var route := director.crossing_ahead_of(player_at, heading, def)
 			if not def.available_on(_run.header().day()) or not def.pursues() or route.is_empty() \
@@ -1084,7 +1092,7 @@ func _event_plans(player_at: Vector2, errors: Array[String], calm: CalmAreas,
 
 ## An authored mast stands where the day's masts may, by the checks `DawnMasts`
 ## makes of a site and nothing wider: the day is `Tuning.MAST_FIRST_DAY` or later; the tile is a
-## sidewalk or square tile `MastSites.is_eligible()` would offer (off the home street, its field
+## sidewalk or square tile `MastSites.is_eligible(_rows, )` would offer (off the home street, its field
 ## off a calm interior and off every place a region door could stand, which holds the doors this
 ## scene stands: each is a street door of the day's plan, at a point `MastSites.possible_door_points()`
 ## lists, measured at the reach of `EventCatalogue.mast()`, which is the authored row's own only while
@@ -1101,17 +1109,17 @@ func _mast_placement(def: EventDef, builder: PlanBuilder, at: Vector2,
 			or not map.tile_to_world(tile).is_equal_approx(at) \
 			or not map.tile_at(tile) in [GameEnums.TileType.SIDEWALK, GameEnums.TileType.SQUARE] \
 			or map.is_closed(tile) or map.is_held_at(tile) or map.is_on_home_block(tile) \
-			or not MastSites.is_eligible(at, map):
+			or not MastSites.is_eligible(_rows, at, map):
 		return null
 	return builder.place_at(def, tile, RandomNumberGenerator.new(), prior)
 
 ## The escape's exact actors use its own row variants (the walk's spec's
-## `DaySpec.walk_bag_rows()`), open streets, tree exclusion, spawn clearance and body spacing. No
+## `DaySpec.walk_bag_rows(_rows)`), open streets, tree exclusion, spawn clearance and body spacing. No
 ## ordinary-day corridor or offscreen director stands in for it.
 func _finale_placement(def: EventDef, builder: PlanBuilder, at: Vector2, player_at: Vector2,
 		finale: FinalePlanner.Plan, prior: Array[EventPlan],
 		route_seed: int) -> EventPlan:
-	var rows := _walk_spec.walk_bag_rows()
+	var rows := _walk_spec.walk_bag_rows(_rows)
 	if not rows.has(def.id()):
 		return null
 	def = rows[def.id()]

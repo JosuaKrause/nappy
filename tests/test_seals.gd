@@ -451,7 +451,7 @@ func _test_candidate_shapes(t: TestRunner) -> void:
 				"seal candidate %s names %d def(s), want %d for its strength"
 				% [candidate.id, candidate.def_ids.size(), wanted])
 		for id in candidate.def_ids:
-			var def := EventCatalogue.by_id(id)
+			var def := EventCatalogue.shipped().by_id(id)
 			t.check(def != null, "seal candidate %s names an unknown row %s" % [candidate.id, id])
 			if def:
 				t.check(def.obstructs_within() > 0.0,
@@ -501,7 +501,7 @@ func _test_thinning_leaves_a_walkable_line(t: TestRunner) -> void:
 		if candidate.strength != SealPlanner.Strength.SOFT:
 			continue
 		for id in candidate.def_ids:
-			var def := EventCatalogue.by_id(id)
+			var def := EventCatalogue.shipped().by_id(id)
 			if not def:
 				continue
 			checked += 1
@@ -564,7 +564,7 @@ func _test_hard_seals_cover_the_street_edge_to_edge(t: TestRunner) -> void:
 	for candidate in SealPlanner.candidates():
 		if candidate.strength != SealPlanner.Strength.HARD:
 			continue
-		var def := EventCatalogue.by_id(candidate.def_ids[0])
+		var def := EventCatalogue.shipped().by_id(candidate.def_ids[0])
 		if not def:
 			continue
 		checked += 1
@@ -596,7 +596,7 @@ func _test_whole_scene_hard_seals_place_a_single_body(t: TestRunner) -> void:
 	if not segment:
 		return
 	for id: String in ["fallen_tree", "car_accident", "burst_water_main", "collapsed_frontage"]:
-		var def := EventCatalogue.by_id(id)
+		var def := EventCatalogue.shipped().by_id(id)
 		t.check(def != null, "'%s' is a real catalogue row" % id)
 		if not def:
 			continue
@@ -613,7 +613,7 @@ func _test_whole_scene_hard_seals_place_a_single_body(t: TestRunner) -> void:
 ## wearing a green suite. Every other row has no parts to lose, so this is stated over the one that
 ## does, on the only path it is ever placed by.
 func _test_a_placed_crash_keeps_its_two_car_bodies(t: TestRunner) -> void:
-	var expected := EventCatalogue.by_id("car_accident").body().declared_pieces().size()
+	var expected := EventCatalogue.shipped().by_id("car_accident").body().declared_pieces().size()
 	var found := 0
 	for map in _maps:
 		for day in range(1, Tuning.RUN_LENGTH_DAYS + 1):
@@ -643,7 +643,7 @@ func _test_a_placed_crash_keeps_its_two_car_bodies(t: TestRunner) -> void:
 ## a guarantee about a price is a guarantee about the price she can actually get.
 func _test_squeezing_past_a_crash_costs_more_than_half_the_meter(t: TestRunner) -> void:
 	var map := _maps[0]
-	var crash := EventCatalogue.by_id("car_accident")
+	var crash := EventCatalogue.shipped().by_id("car_accident")
 	var checked := 0
 	for vertical: bool in [false, true]:
 		var tile := Vector2i(Tuning.STREET_WIDTH + 3, Tuning.STREET_WIDTH / 2) if vertical \
@@ -770,7 +770,7 @@ func _test_no_seal_reaches_over_a_building(t: TestRunner) -> void:
 ## planning (and repainting) has since moved on from.
 func _test_a_fallen_tree_seal_only_seals_a_tree_lined_street(t: TestRunner) -> void:
 	var found := 0
-	var reach := EventCatalogue.by_id("fallen_tree").obstructs_within()
+	var reach := EventCatalogue.shipped().by_id("fallen_tree").obstructs_within()
 	for map in _maps:
 		var lined := StreetTrees.segment_keys_with_trees(map)
 		for day in range(1, Tuning.RUN_LENGTH_DAYS + 1):

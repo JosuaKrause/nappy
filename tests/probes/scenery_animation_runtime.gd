@@ -124,7 +124,7 @@ class SeeingDrawer extends EventDrawer:
 func _event(id: String, vertical: bool, at: Vector2, factor: float) -> void:
 	var event := EventInstance.new()
 	var drawer := SeeingDrawer.new(_atlas)
-	event.setup(EventCatalogue.by_id(id), at, PackedVector2Array(), Vector2.RIGHT,
+	event.setup(EventCatalogue.shipped().by_id(id), at, PackedVector2Array(), Vector2.RIGHT,
 			EventSurroundings.new().on(EastWestStreet.new() if vertical else WorldMap.open_ground()) \
 				.drawn_from(_atlas) \
 				.drawing_through(drawer))

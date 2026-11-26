@@ -220,7 +220,7 @@ func _test_the_officers_are_placed_by_the_siting_they_are_handed(t: TestRunner) 
 	var park := CityGenerator.swing_park(map)
 	var swing := CordonInTheWorld.park_ground(map, park).get_center()
 	var navigator := Navigator.new(map)
-	var box := EventFootprints.footprint_of(EventCatalogue.by_id(ParkCordon.OFFICER_ROW))
+	var box := EventFootprints.footprint_of(EventCatalogue.shipped().by_id(ParkCordon.OFFICER_ROW))
 	var distances: Array[float] = []
 	for scale: float in [1.0, 3.0]:
 		var view := VisibleView.new()
@@ -341,7 +341,7 @@ func _test_the_officers_come_from_out_of_her_sight_and_walk_into_it(t: TestRunne
 	var happenings: ResistanceHappenings = fixture.happenings
 	var her := [fixture.swing]
 	var shows := _camera_on(her)
-	var row := EventCatalogue.by_id(ParkCordon.OFFICER_ROW)
+	var row := EventCatalogue.shipped().by_id(ParkCordon.OFFICER_ROW)
 	_tick(happenings, her[0], shows.is_valid())
 	var placed := CordonInTheWorld.officers(_city)
 	var unseen := 0
@@ -695,7 +695,7 @@ func _test_the_parks_people_are_walked_out_through_the_gap(t: TestRunner) -> voi
 		var park := CityGenerator.swing_park(_city.map())
 		var swing_rect := ClosurePlanner.calm_area_rect(_city.map(), park)
 		var area := _city.map().tile_rect_to_world(swing_rect)
-		person[0] = RunCity.events(_city).spawn_extra(EventCatalogue.by_id("busker"),
+		person[0] = RunCity.events(_city).spawn_extra(EventCatalogue.shipped().by_id("busker"),
 				area.position + area.size * Vector2(0.25, 0.3)))
 	var happenings: ResistanceHappenings = fixture.happenings
 	var busker: EventInstance = person[0]
@@ -712,7 +712,7 @@ func _test_the_parks_people_are_walked_out_through_the_gap(t: TestRunner) -> voi
 	if escort == null:
 		_end(fixture)
 		return
-	t.check(not shows.call(EventCatalogue.by_id(ParkCordon.OFFICER_ROW), escort.global_position),
+	t.check(not shows.call(EventCatalogue.shipped().by_id(ParkCordon.OFFICER_ROW), escort.global_position),
 			"from out of her sight")
 	var seen := {"through_tape": 0, "off_ground": 0, "crossed_at": Vector2.INF, "steps": 0,
 			"busker_left": false, "closed_with_them_inside": false, "gone_seen": false,
@@ -750,7 +750,7 @@ func _test_the_parks_people_are_walked_out_through_the_gap(t: TestRunner) -> voi
 			seen.closed_with_them_inside = _line().has_point(escort.global_position) \
 					or (walkers.has("busker") and _line().has_point(walkers.busker))
 		if escort.is_queued_for_deletion():
-			seen.gone_seen = shows.call(EventCatalogue.by_id(ParkCordon.OFFICER_ROW),
+			seen.gone_seen = shows.call(EventCatalogue.shipped().by_id(ParkCordon.OFFICER_ROW),
 					escort.global_position)
 	t.check(seen.steps > 0 and seen.through_tape == 0,
 			"neither the busker nor his escort steps across tape that is up (%d of %d steps)"
@@ -778,7 +778,7 @@ func _test_the_parks_people_are_walked_out_through_the_gap(t: TestRunner) -> voi
 func _busker_in_the_park(pace := 0.0) -> EventInstance:
 	var park := CityGenerator.swing_park(_city.map())
 	var area := _city.map().tile_rect_to_world(ClosurePlanner.calm_area_rect(_city.map(), park))
-	var row := EventCatalogue.by_id("busker")
+	var row := EventCatalogue.shipped().by_id("busker")
 	if pace > 0.0:
 		var walking := row.redraft()
 		walking.leaves_at(pace)

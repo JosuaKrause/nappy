@@ -678,7 +678,7 @@ func _test_finishing_outside_process_invalidates_the_contribution_cache(t: TestR
 ## enters `EventRouteWalk.advance()` (`path.size() > 1` is false), so it holds still at `at` for its
 ## whole life -- exactly what "standing on her" needs to hold the distance at zero throughout.
 func _test_a_cat_dash_is_selected_and_lands(t: TestRunner) -> void:
-	var def := EventCatalogue.by_id("cat_dash")
+	var def := EventCatalogue.shipped().by_id("cat_dash")
 	var cat := _rig_instance(t, def, Vector2.ZERO)
 
 	# Mid-telegraph: `TELEGRAPH_INTENSITY_FRACTION` (0.15) damps 17/s to 2.55/s, still comfortably
@@ -701,7 +701,7 @@ func _test_a_cat_dash_is_selected_and_lands(t: TestRunner) -> void:
 ## A flock's own `global_position` never moves (only its birds do), so "standing on her" is simply
 ## siting it at `Vector2.ZERO` and reading `contribution_at()` there for the whole burst.
 func _test_a_flock_is_selected_and_lands(t: TestRunner) -> void:
-	var def := EventCatalogue.by_id("pigeon_flock")
+	var def := EventCatalogue.shipped().by_id("pigeon_flock")
 	var flock_where := WhereSheIs.nowhere()
 	var flock := _rig_instance(t, def, Vector2.ZERO, flock_where)
 	t.check(flock.birds().size() == def.flock().count(),
@@ -741,7 +741,7 @@ func _test_a_flock_is_selected_and_lands(t: TestRunner) -> void:
 ## frame away on -- is drawn again on every frame (the engine's `draw` signal, which a headless run
 ## emits like any other).
 func _test_a_flocks_rim_has_a_new_body_to_trace_every_frame(t: TestRunner) -> void:
-	var def := EventCatalogue.by_id("pigeon_flock")
+	var def := EventCatalogue.shipped().by_id("pigeon_flock")
 	var flock_where := WhereSheIs.nowhere()
 	var flock := _rig_instance(t, def, Vector2.ZERO, flock_where)
 	# Standing in it, so it notices her and starts — the notice lands at the end of a frame, so it
@@ -890,7 +890,7 @@ class RimProbe:
 func _test_an_event_holds_no_rim_until_it_is_picked(t: TestRunner) -> void:
 	var clock := HaloRig.FrameClock.new()
 	t.add_child(clock)
-	var instance := _rig_instance(t, EventCatalogue.by_id("homeless_yeller"), Vector2.ZERO)
+	var instance := _rig_instance(t, EventCatalogue.shipped().by_id("homeless_yeller"), Vector2.ZERO)
 	var rim_of := instance.source().rim()
 	t.check(instance.rim() == null and not rim_of.is_held(),
 			"a live event holds no rim before anything has picked it")

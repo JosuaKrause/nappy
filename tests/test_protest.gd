@@ -77,7 +77,7 @@ func _protest(t: TestRunner, at: Vector2, recorded: RecordingEventDrawer,
 	if where.is_valid():
 		surroundings.pointing_protests_with(where)
 	var protest := EventInstance.new()
-	protest.setup(EventCatalogue.by_id("protest"), at, PackedVector2Array(), Vector2.RIGHT,
+	protest.setup(EventCatalogue.shipped().by_id("protest"), at, PackedVector2Array(), Vector2.RIGHT,
 			surroundings)
 	t.add_child(protest)
 	return protest

@@ -30,7 +30,7 @@ func run(t: TestRunner) -> void:
 # ------------------------------------------------------------------ the rig ---
 
 func _truck() -> EventDef:
-	return EventCatalogue.by_id("fire_truck")
+	return EventCatalogue.shipped().by_id("fire_truck")
 
 ## A live truck on `route`, its warning spent (`spawn_warned()` hands it over with the telegraph
 ## used up), in the tree so its body exists, stepped by hand, drawn through `drawer` when one is

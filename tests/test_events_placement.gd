@@ -151,7 +151,7 @@ func _test_the_day_is_placed_by_role(t: TestRunner) -> void:
 	# The day's poster crews are drawn by exactly these rules and handed to her walk with no
 	# position (`MarbleDraw.draw()`). What this asks is how the draw places, so the crews are
 	# read where the draw put them.
-	var crew_draft := EventCatalogue.by_id("poster_crew").redraft()
+	var crew_draft := EventCatalogue.shipped().by_id("poster_crew").redraft()
 	crew_draft.not_sited_from_her_walk()
 	var crew := crew_draft.build()
 	var walls := 0
@@ -469,7 +469,7 @@ func _test_a_pinned_row_is_only_offered_ground_it_can_be_pinned_on(t: TestRunner
 	t.check(asked >= 4, "and the catalogue has pinned rows to ask it of (%d)" % asked)
 	# The pool the roll actually draws from, for the one row the player asked about: `poster_crew`
 	# is a sidewalk row now, and the square crew is the row that stands on squares.
-	t.check(not ground.tiles_for(EventCatalogue.by_id("poster_crew")).is_empty(),
+	t.check(not ground.tiles_for(EventCatalogue.shipped().by_id("poster_crew")).is_empty(),
 			"and the sidewalk crew still has ground of its own to stand on")
 
 ## **The square's poster crew stands on squares and on nothing else.** *(2026-09-19: "we need a
@@ -489,7 +489,7 @@ func _test_a_pinned_row_is_only_offered_ground_it_can_be_pinned_on(t: TestRunner
 ## take the row there (or that none holds it), rather than the row being placed somewhere else. The count at the end is what
 ## stops it passing having placed nothing.
 func _test_the_square_poster_crew_only_ever_stands_on_a_square(t: TestRunner) -> void:
-	var def := EventCatalogue.by_id("poster_crew_square")
+	var def := EventCatalogue.shipped().by_id("poster_crew_square")
 	t.check(def != null and def.own_first_day() <= 14, "the square poster crew is in the catalogue")
 	if not def:
 		return
@@ -560,7 +560,7 @@ func _test_the_square_poster_crew_only_ever_stands_on_a_square(t: TestRunner) ->
 ## place the row on all three, which is what the refusals hold.
 func _test_a_placement_asks_the_ground_it_is_handed(t: TestRunner) -> void:
 	var day := 9
-	var def := EventCatalogue.by_id("poster_crew")
+	var def := EventCatalogue.shipped().by_id("poster_crew")
 	var map := StreetMap.full()
 	var locations := DayLocations.lay_out(map, Corridor.of(null))
 	var sidewalk := map.tiles_of_type(GameEnums.TileType.SIDEWALK)
@@ -625,7 +625,7 @@ func _test_a_recipes_drawn_row_keeps_its_route_on_its_run(t: TestRunner) -> void
 	var placed := 0
 	var would_leave := 0
 	for id: String in ["homeless_yeller", "chatting_mother"]:
-		var def := EventCatalogue.by_id(id)
+		var def := EventCatalogue.shipped().by_id(id)
 		var day := maxi(def.own_first_day(), 6)
 		for i in 3:
 			var map := MapCache.of(4242 + i * 97)
@@ -1153,7 +1153,7 @@ func _a_walk_along(map: CityMap, rect: Rect2i, horizontal: bool,
 ## placement turns up at `corridor.depth(tile) == 0`. A check that never saw an on-corridor flock
 ## would hold whether the exemption worked or not.
 func _test_a_flock_is_scenery(t: TestRunner) -> void:
-	var def := EventCatalogue.by_id("pigeon_flock")
+	var def := EventCatalogue.shipped().by_id("pigeon_flock")
 	var on_corridor := 0
 	var off_corridor := 0
 	var map := _map()

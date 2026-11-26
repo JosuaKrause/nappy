@@ -227,7 +227,7 @@ func _test_another_masked_man_comes_up_the_same_shaft(t: TestRunner) -> void:
 	player.global_position = her
 	events.use_player(player)
 	var foot := scene.map().tile_to_world(plan.stairwell_walk(part)[0])
-	t.check(foot.distance_to(her) <= EventCatalogue.by_id("masked_pursuer").sets_off_within(),
+	t.check(foot.distance_to(her) <= EventCatalogue.shipped().by_id("masked_pursuer").sets_off_within(),
 			"the first floor's door is inside his place (%.0fpx from the foot)" % foot.distance_to(her))
 
 	var warned: Array[float] = []
@@ -257,7 +257,7 @@ func _test_another_masked_man_comes_up_the_same_shaft(t: TestRunner) -> void:
 				if warned.size() < appeared.size():
 					came_unwarned += 1
 				# On the tick he comes he has taken one step of his line from the foot.
-				if instance.global_position.distance_to(foot) > EventCatalogue.by_id(
+				if instance.global_position.distance_to(foot) > EventCatalogue.shipped().by_id(
 						"masked_pursuer").speed() * STEP + 1.0:
 					first_steps_off_the_foot += 1
 			var was_leaving: bool = was_leaving_by_id.get(id, false)

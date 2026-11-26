@@ -159,7 +159,7 @@ func _test_the_guard_follows_her_to_the_roadblock_she_approaches(t: TestRunner) 
 	# or the joystick scheme's corners switching, so the search the choice before found nothing for
 	# stands until `TASK_GUARD_RETRY_SECONDS` have passed, and is then made again: counted in the
 	# director's own ticks, one `ARROW_RETARGET_SECONDS` choice at a time.
-	var robbery := EventCatalogue.by_id("alley_robbery")
+	var robbery := EventCatalogue.shipped().by_id("alley_robbery")
 	var band_edge := robbery.notice_within() + ContactPoint.body_reach(other)
 	var band_seen := Vector2.ONE * (band_edge + 48.0)
 	_view = Rect2(around - band_seen, band_seen * 2.0)
@@ -211,7 +211,7 @@ func _check_he_guards(t: TestRunner, director: ResistanceDirector, roadblock: Ev
 				"the guard is moved to %s, the same man rather than a new one" % what)
 	if guard == null:
 		return
-	var robbery := EventCatalogue.by_id("alley_robbery")
+	var robbery := EventCatalogue.shipped().by_id("alley_robbery")
 	var reach := ContactPoint.body_reach(roadblock)
 	var from_body := guard.global_position.distance_to(roadblock.body_position())
 	t.check(from_body >= robbery.core_within() + reach - 0.5
@@ -500,7 +500,7 @@ static func _open(map: CityMap, tile: Vector2i) -> bool:
 ## only once she is back at the full stand-off. Without the hold he would lunge from 60px on his
 ## first tick.
 func _test_set_on_her_inside_his_stand_off_he_holds(t: TestRunner) -> void:
-	var robbery := EventCatalogue.by_id("alley_robbery")
+	var robbery := EventCatalogue.shipped().by_id("alley_robbery")
 	var guard_where := WhereSheIs.nowhere()
 	var guard := EventInstance.new()
 	guard.setup(robbery, Vector2.ZERO, PackedVector2Array(), Vector2.RIGHT,
@@ -587,7 +587,7 @@ func _test_the_done_task_sets_the_guard_on_her_wherever_he_stands(t: TestRunner,
 		t.check(_task_guard() == guard and guard.global_position == held
 				and guard.is_waiting()
 				and guard.global_position.distance_to(touched.body_position())
-				> EventCatalogue.by_id("alley_robbery").notice_within()
+				> EventCatalogue.shipped().by_id("alley_robbery").notice_within()
 				+ ContactPoint.body_reach(touched),
 				"(%s) the guard is still at the task's own roadblock, out of the band of the one she touches (%.0fpx from it)"
 				% [what, guard.global_position.distance_to(touched.body_position())])
@@ -649,7 +649,7 @@ func _test_the_done_task_sets_the_guard_on_her_wherever_he_stands(t: TestRunner,
 ## we can do a 1s on screen and 1s off-screen warning if they were not visible")*: the waiting guard
 ## is taken out of the world unseen and sent as a task's robber is
 ## (`ResistanceDirector._send_at_her()`): the screen-edge badge alone for `Tuning.WARNING_ALONE_MAX`,
-## then he arrives charging (`EventCatalogue.task_guard_sent()`).
+## then he arrives charging (`EventCatalogue.shipped().task_guard_sent()`).
 func _test_out_of_her_view_the_done_task_sends_him_under_a_badge(t: TestRunner) -> void:
 	var city := _build_city(t, SEED)
 	var director := _start_the_day(t, city, SEED)
@@ -673,7 +673,7 @@ func _test_out_of_her_view_the_done_task_sends_him_under_a_badge(t: TestRunner) 
 			"out of her view the waiting guard is taken out of the world")
 	var warning: PendingWarning = null
 	for pending in RunCity.events(city).pending_warnings():
-		if pending.row() == EventCatalogue.task_guard_sent():
+		if pending.row() == EventCatalogue.shipped().task_guard_sent():
 			warning = pending
 	t.check(warning != null and is_equal_approx(warning.row().warned_for(), Tuning.WARNING_ALONE_MAX)
 			and warning.row().starts_by(PursuitSpec.Start.ARRIVES_CHASING),
@@ -752,10 +752,10 @@ func _test_half_in_her_sight_the_done_task_waits(t: TestRunner) -> void:
 ## How long one of this suite's hand-stepped director ticks is, in seconds.
 const STEP := 1.0 / 60.0
 
-## The badge day 13's sent task guard comes under (`EventCatalogue.task_guard_sent()`), or null.
+## The badge day 13's sent task guard comes under (`EventCatalogue.shipped().task_guard_sent()`), or null.
 static func _sent_guards_warning(city: City) -> PendingWarning:
 	for pending in RunCity.events(city).pending_warnings():
-		if pending.row() == EventCatalogue.task_guard_sent():
+		if pending.row() == EventCatalogue.shipped().task_guard_sent():
 			return pending
 	return null
 
@@ -1056,7 +1056,7 @@ func _test_a_section_across_the_city_is_confirmed(t: TestRunner) -> void:
 	var walk := RunCity.events(city).walk_events()
 	var units := walk.unit_draw().units()
 	var locations := walk.locations()
-	var def := EventCatalogue.by_id("roadblock").for_day(DAY)
+	var def := EventCatalogue.shipped().by_id("roadblock").for_day(DAY)
 	var home := map.doorstep_world_position()
 	# The route-adjacent section a roadblock stands across that is farthest from her and from her
 	# door, on ground whose unit has not drawn and the walk's reach reaches.
@@ -1138,7 +1138,7 @@ func _test_a_swap_replaces_what_the_section_holds(t: TestRunner) -> void:
 		if plan.row_id() == "roadblock" and not plan.is_door() and not plan.is_in_the_wall():
 			plan.spend()
 	var walk := RunCity.events(city).walk_events()
-	var def := EventCatalogue.by_id("roadblock").for_day(DAY)
+	var def := EventCatalogue.shipped().by_id("roadblock").for_day(DAY)
 	var chosen: Location = null
 	var held: Array[EventPlan] = []
 	# Well clear of her screen, the section and anything standing in it.
@@ -1274,7 +1274,7 @@ func _a_street_beyond(map: CityMap, centre: Vector2i, direction: Vector2i) -> bo
 	var across := Vector2i(direction.y, direction.x)
 	# Past the view a move's band test sets (the band's edge and 48px) and the guard's own half-width.
 	var reach := ContactPoint.REACH + 110.0
-	var nearest := ceili((EventCatalogue.by_id("alley_robbery").notice_within()
+	var nearest := ceili((EventCatalogue.shipped().by_id("alley_robbery").notice_within()
 			+ reach + 48.0 + 14.0) / Tuning.TILE_SIZE) + 1
 	var reaches := ResistanceDirector.task_guard_farthest(reach)
 	var farthest := floori(reaches / Tuning.TILE_SIZE)
@@ -1304,7 +1304,7 @@ static func _choose_again(director: ResistanceDirector) -> void:
 ## (`EventManager.instances()`), or null once he is gone.
 func _task_guard() -> EventInstance:
 	for instance in RunCity.events(_city).instances():
-		if instance.row_id() == EventCatalogue.task_guard().id() and not instance.is_gone():
+		if instance.row_id() == EventCatalogue.shipped().task_guard().id() and not instance.is_gone():
 			return instance
 	return null
 

@@ -16,7 +16,7 @@ extends RefCounted
 ## apart. Prints `RD day seeds placed moments`, `RV day row view count` and `RK day row kind
 ## count`, each summed over the seeds. Each day is planned as the game plans it: its closures,
 ## holds, region wall and seals first, the seals and the wall's bodies handed in as standing,
-## the guarded-band roadblock row handed through `EventCatalogue.heated()` as `DayPlanner` does,
+## the guarded-band roadblock row handed through `EventCatalogue.shipped().heated()` as `DayPlanner` does,
 ## at heat 0 like every baseline reading, and the street trees refreshed after the dawn
 ## (`PlacementProbeDay`, which both placement probes plan through).
 

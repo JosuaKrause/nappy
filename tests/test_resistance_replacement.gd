@@ -232,7 +232,7 @@ func _test_a_relocated_mark_never_lands_where_she_can_see_it_appear(t: TestRunne
 ## every mark tile of `SWEEP_SEEDS`' cities, each relocated onto with her standing on it
 ## (`_relocations_over_the_marks()`) — the closest a real guard's own spot ever gets to her.
 func _test_a_guard_never_lands_within_his_own_reach_of_her(t: TestRunner) -> void:
-	var robbery := EventCatalogue.by_id("alley_robbery")
+	var robbery := EventCatalogue.shipped().by_id("alley_robbery")
 	var checked := 0
 	for seed_value in SWEEP_SEEDS:
 		for entry in _relocations_over_the_marks(t, seed_value, _on_the_tile):
@@ -273,7 +273,7 @@ func _test_a_relocated_mark_and_its_guard_are_placed_off_screen(t: TestRunner) -
 		for i in range(0, through.size(), 2):
 			var her := map.tile_to_world(through[i])
 			_look_at(Rect2(her - Tuning.VIEW_HALF_EXTENT, Tuning.VIEW_HALF_EXTENT * 2.0))
-			var guards_before := _live(EventCatalogue.mark_guard().id())
+			var guards_before := _live(EventCatalogue.shipped().mark_guard().id())
 			var mark := _relocate_round(director, player, her, away)
 			if mark == Vector2.INF:
 				continue
@@ -281,7 +281,7 @@ func _test_a_relocated_mark_and_its_guard_are_placed_off_screen(t: TestRunner) -
 			t.check(not _box_on_screen(mark, Vector2(16.0, 16.0), her),
 					"seed %d: from %s, no part of the relocated mark at %s is on screen"
 					% [seed_value, through[i], map.world_to_tile(mark)])
-			var guard := _new_one(EventCatalogue.mark_guard().id(), guards_before)
+			var guard := _new_one(EventCatalogue.shipped().mark_guard().id(), guards_before)
 			t.check(guard != null, "seed %d: the mark relocated to %s is guarded"
 					% [seed_value, map.world_to_tile(mark)])
 			if guard != null:
@@ -538,7 +538,7 @@ func _test_the_raid_waits_until_none_of_it_would_be_drawn(t: TestRunner) -> void
 		var view := Rect2(Vector2(door.x - Tuning.VIEW_HALF_EXTENT.x,
 				top - 2.0 - Tuning.VIEW_HALF_EXTENT.y * 2.0), Tuning.VIEW_HALF_EXTENT * 2.0)
 		events.visible_view().look(view, covered)
-		var car := EventFootprints.box_of(EventCatalogue.by_id("police_patrol"))
+		var car := EventFootprints.box_of(EventCatalogue.shipped().by_id("police_patrol"))
 		var start: Vector2 = beat[0]
 		var any_feet := false
 		for at: Vector2 in Array(vans) + Array(beat):

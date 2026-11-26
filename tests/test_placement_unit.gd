@@ -72,7 +72,7 @@ func _test_two_units_are_always_ordered(t: TestRunner) -> void:
 func _test_what_it_drew_is_written_once(t: TestRunner) -> void:
 	var unit := _unit(3)
 	t.check(not unit.is_drawn() and unit.drawn().is_empty(), "a unit not drawn holds nothing")
-	var cafe := EventPlan.new(EventCatalogue.by_id("cafe_tables"), Vector2(200, 100))
+	var cafe := EventPlan.new(EventCatalogue.shipped().by_id("cafe_tables"), Vector2(200, 100))
 	var plans: Array[EventPlan] = [cafe]
 	unit.record_draw(plans)
 	plans.clear()
@@ -120,9 +120,9 @@ func _test_its_beats_are_what_her_walk_stood_on_its_locations(t: TestRunner) -> 
 			Rect2(Vector2(tiles.position) * Tuning.TILE_SIZE,
 					Vector2(tiles.size) * Tuning.TILE_SIZE), locations, 5)
 	t.check(unit.beats().is_empty(), "a unit holds no beat until her walk stands one on a location")
-	var fire := EventPlan.new(EventCatalogue.by_id("burning_building"), Vector2(200, 100))
-	var crew := EventPlan.new(EventCatalogue.by_id("poster_crew"), Vector2(260, 100))
-	var drawn := EventPlan.new(EventCatalogue.by_id("cafe_tables"), Vector2(300, 100))
+	var fire := EventPlan.new(EventCatalogue.shipped().by_id("burning_building"), Vector2(200, 100))
+	var crew := EventPlan.new(EventCatalogue.shipped().by_id("poster_crew"), Vector2(260, 100))
+	var drawn := EventPlan.new(EventCatalogue.shipped().by_id("cafe_tables"), Vector2(300, 100))
 	middle.take_for_her_walk(crew)
 	near.take_for_her_walk(fire)
 	far.record(drawn)

@@ -89,7 +89,7 @@ func _check_the_same_save(t: TestRunner, back: EventSave, saved: EventSave, what
 # -------------------------------------------------------------------- pursuit ---
 
 func _test_the_pursuit_round_trips(t: TestRunner) -> void:
-	var def := EventCatalogue.by_id("alley_robbery")
+	var def := EventCatalogue.shipped().by_id("alley_robbery")
 	var first_where := WhereSheIs.nowhere()
 	var first := _instance(t, def, Vector2.ZERO, PackedVector2Array(), first_where)
 	first_where.tell(Vector2(def.notice_within() - 10.0, 0.0))
@@ -122,7 +122,7 @@ func _is_warning(instance: EventInstance) -> bool:
 ## spent, it has moved along his line after one tick, saves nothing of its own, and one restored
 ## where it had got to stands there.
 func _test_the_set_off_run_has_no_state_of_its_own(t: TestRunner) -> void:
-	var def := EventCatalogue.by_id("masked_pursuer")
+	var def := EventCatalogue.shipped().by_id("masked_pursuer")
 	var path := PackedVector2Array([Vector2.ZERO, Vector2(0.0, -600.0)])
 	var first := _instance(t, def, Vector2.ZERO, path)
 	first.arrive_from_its_warning()
@@ -143,7 +143,7 @@ func _test_the_set_off_run_has_no_state_of_its_own(t: TestRunner) -> void:
 # ----------------------------------------------------------------------- hold ---
 
 func _test_the_hold_round_trips(t: TestRunner) -> void:
-	var def := EventCatalogue.by_id("chatting_mother")
+	var def := EventCatalogue.shipped().by_id("chatting_mother")
 	var at := Vector2(2000.0, 2000.0)
 	var first := _instance(t, def, at, PackedVector2Array([at, at + Vector2(256.0, 0.0)]))
 	first.start_chat()
@@ -159,7 +159,7 @@ func _test_the_hold_round_trips(t: TestRunner) -> void:
 ## Both in the tree, where `_ready()` builds the flock as the game does, and once they have flown: a
 ## restore that put nothing back leaves the second flock where `build()` scattered it.
 func _test_the_flock_round_trips(t: TestRunner) -> void:
-	var def := EventCatalogue.by_id("pigeon_flock")
+	var def := EventCatalogue.shipped().by_id("pigeon_flock")
 	var first_where := WhereSheIs.nowhere()
 	var first := _instance(t, def, Vector2.ZERO, PackedVector2Array(), first_where)
 	t.add_child(first)
@@ -185,7 +185,7 @@ func _test_the_flock_round_trips(t: TestRunner) -> void:
 # -------------------------------------------------------------- investigation ---
 
 func _test_the_investigation_round_trips(t: TestRunner) -> void:
-	var hot := EventCatalogue.heated(EventCatalogue.by_id("police_patrol"), Tuning.RESISTANCE_GOAL)
+	var hot := EventCatalogue.shipped().heated(EventCatalogue.shipped().by_id("police_patrol"), Tuning.RESISTANCE_GOAL)
 	var first := _instance(t, hot)
 	first.restore(EventSave.aged(2.0))
 	var state := {"officers_owed": 1, "investigated": true, "left_her_once": true}
@@ -200,7 +200,7 @@ func _test_the_investigation_round_trips(t: TestRunner) -> void:
 # -------------------------------------------------------------------- officer ---
 
 func _test_the_officer_round_trips(t: TestRunner) -> void:
-	var first := _instance(t, EventCatalogue.by_id("policeman_giving_chase"))
+	var first := _instance(t, EventCatalogue.shipped().by_id("policeman_giving_chase"))
 	first.restore(EventSave.aged(3.0))
 	var state := {"trail": PackedVector2Array([Vector2(10.0, 0.0), Vector2(20.0, 0.0)]),
 			"stopped_ago": 1.0}
@@ -218,7 +218,7 @@ func _test_the_officer_round_trips(t: TestRunner) -> void:
 # ------------------------------------------------------------------ departure ---
 
 func _test_the_departure_round_trips(t: TestRunner) -> void:
-	var def := EventCatalogue.by_id("charging_dog")
+	var def := EventCatalogue.shipped().by_id("charging_dog")
 	var first_where := WhereSheIs.nowhere()
 	var first := _instance(t, def, Vector2.ZERO, PackedVector2Array(), first_where)
 	first_where.tell(Vector2(200.0, 0.0))
@@ -233,7 +233,7 @@ func _test_the_departure_round_trips(t: TestRunner) -> void:
 # ---------------------------------------------------------------- unreachable ---
 
 func _test_the_unreachable_dog_round_trips(t: TestRunner) -> void:
-	var def := EventCatalogue.by_id("loose_dog")
+	var def := EventCatalogue.shipped().by_id("loose_dog")
 	var first_where := WhereSheIs.nowhere()
 	var first := _instance(t, def, Vector2.ZERO, PackedVector2Array(), first_where)
 	first_where.tell(Vector2(Tuning.OUT_OF_SIGHT + 400.0, 0.0))
@@ -251,7 +251,7 @@ func _test_the_unreachable_dog_round_trips(t: TestRunner) -> void:
 # ----------------------------------------------------------------------- take ---
 
 func _test_the_take_round_trips(t: TestRunner) -> void:
-	var def := EventCatalogue.by_id("abduction")
+	var def := EventCatalogue.shipped().by_id("abduction")
 	var first_where := WhereSheIs.nowhere()
 	var first := _instance(t, def, Vector2.ZERO, PackedVector2Array(), first_where)
 	first_where.tell(Vector2(def.heard_within() - 20.0, 0.0))
@@ -267,7 +267,7 @@ func _test_the_take_round_trips(t: TestRunner) -> void:
 ## The route and how far along it are the event's own body, which `restore()` carries; the walk
 ## itself keeps nothing.
 func _test_the_route_walk_has_no_state_of_its_own(t: TestRunner) -> void:
-	var def := EventCatalogue.by_id("dog_walker")
+	var def := EventCatalogue.shipped().by_id("dog_walker")
 	var path := PackedVector2Array([Vector2.ZERO, Vector2(600.0, 0.0)])
 	var first := _instance(t, def, Vector2.ZERO, path)
 	_advance(first, def.telegraphs_for() + 2.0)
@@ -287,7 +287,7 @@ func _test_the_route_walk_has_no_state_of_its_own(t: TestRunner) -> void:
 ## cut is a body put down on its road behind where it had got to, on the map both cars drive, as
 ## `tests/test_world_passability.gd` puts one down, so `restore()` itself is what begins the departure.
 func _test_a_departure_begun_on_resume_is_not_written_over(t: TestRunner) -> void:
-	var def := EventCatalogue.by_id("police_patrol")
+	var def := EventCatalogue.shipped().by_id("police_patrol")
 	var tile := float(Tuning.TILE_SIZE)
 	var map := CityMap.new(Vector2i(24, 3))
 	map.fill_rect(Rect2i(0, 0, 24, 3), GameEnums.TileType.ROAD)
@@ -324,7 +324,7 @@ func _test_a_departure_begun_on_resume_is_not_written_over(t: TestRunner) -> voi
 ## Through `EventManager`'s own streaming on a plan, the way a day puts it in the world: what the
 ## behaviours saved going out is on the plan, and comes back on the instance that streams in.
 func _test_the_manager_streams_a_behaviours_state(t: TestRunner) -> void:
-	var def := EventCatalogue.by_id("alley_robbery")
+	var def := EventCatalogue.shipped().by_id("alley_robbery")
 	var at := Vector2(5000.0, 5000.0)
 	var world := WorldContext.new()
 	t.add_child(world)
@@ -364,7 +364,7 @@ func _test_the_manager_streams_a_behaviours_state(t: TestRunner) -> void:
 ## **A roadblock's spent guard and the post he left come back across a stream-out**
 ## (`EventBarrierPost`), as only the barrier; a barrier whose guards both stand carries nothing.
 func _test_the_barrier_post_round_trips(t: TestRunner) -> void:
-	var def := EventCatalogue.heated(EventCatalogue.by_id("roadblock"), EventDef.HEAT_HUNTS_LEVEL)
+	var def := EventCatalogue.shipped().heated(EventCatalogue.shipped().by_id("roadblock"), EventDef.HEAT_HUNTS_LEVEL)
 	var first_where := WhereSheIs.nowhere()
 	var first := _instance(t, def, Vector2.ZERO, PackedVector2Array(), first_where)
 	# In the tree, where its band's body is put down and its guard can walk out of it.
@@ -403,9 +403,9 @@ func _test_the_barrier_post_round_trips(t: TestRunner) -> void:
 ## it is let go; nothing else is.
 func _test_a_car_is_composed_of_its_vehicle(t: TestRunner) -> void:
 	var patrol_where := WhereSheIs.nowhere()
-	var patrol := _instance(t, EventCatalogue.by_id("police_patrol"), Vector2.ZERO,
+	var patrol := _instance(t, EventCatalogue.shipped().by_id("police_patrol"), Vector2.ZERO,
 			PackedVector2Array(), patrol_where)
-	var robber := _instance(t, EventCatalogue.by_id("alley_robbery"))
+	var robber := _instance(t, EventCatalogue.shipped().by_id("alley_robbery"))
 	patrol_where.tell(Vector2(0.0, 5000.0))
 	_advance(patrol, 0.5)
 	t.check(patrol.drives() and not robber.drives() and patrol.global_position == Vector2.ZERO,
@@ -419,7 +419,7 @@ func _test_a_car_is_composed_of_its_vehicle(t: TestRunner) -> void:
 ## A waiting robber stays waiting at any bearing while she is outside his notice radius
 ## (`EventDef.notice_within()`, 180px): he is only watching the street, not noticing her.
 func _test_a_robber_out_of_his_radius_keeps_waiting(t: TestRunner) -> void:
-	var def := EventCatalogue.by_id("alley_robbery")
+	var def := EventCatalogue.shipped().by_id("alley_robbery")
 	var instance_where := WhereSheIs.nowhere()
 	var instance := EventInstance.new()
 	instance.setup(def, Vector2.ZERO, PackedVector2Array(), Vector2.RIGHT,
@@ -435,7 +435,7 @@ func _test_a_robber_out_of_his_radius_keeps_waiting(t: TestRunner) -> void:
 ## Once she is inside the notice radius one step of the pursuit has him notice her and turn to
 ## face her exactly, which every later picture of him reads.
 func _test_a_robber_who_notices_her_turns_to_face_her_exactly(t: TestRunner) -> void:
-	var def := EventCatalogue.by_id("alley_robbery")
+	var def := EventCatalogue.shipped().by_id("alley_robbery")
 	var instance_where := WhereSheIs.nowhere()
 	var instance := EventInstance.new()
 	instance.setup(def, Vector2.ZERO, PackedVector2Array(), Vector2.RIGHT,

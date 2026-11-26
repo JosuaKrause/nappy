@@ -80,7 +80,7 @@ func run(t: TestRunner) -> void:
 	var count := rows.size()
 	for row in rows:
 		for level in range(1, EventCatalogue.heat_levels()):
-			_variant("%s@heat%d" % [row.id(), level], EventCatalogue.heated(row, level))
+			_variant("%s@heat%d" % [row.id(), level], EventCatalogue.shipped().heated(row, level))
 		for day in range(1, Tuning.RUN_LENGTH_DAYS + 1):
 			_variant("%s@day%d" % [row.id(), day], row.for_day(day))
 		for level in range(0, EventCatalogue.heat_levels()):
@@ -97,18 +97,18 @@ func run(t: TestRunner) -> void:
 		# `EventDirector._with_ground()` is private and has no public road to its copy; a probe is not a
 		# suite, so it makes the call itself.
 		_variant("%s@ground" % row.id(), EventDirector._with_ground(row))
-	_variant("escape_roadblock", EventCatalogue.escape_roadblock())
-	_variant("building_fire", EventCatalogue.building_fire())
-	_variant("explosion_outside", EventCatalogue.explosion_outside())
-	_variant("lesson_dog", EventCatalogue.lesson_of(EventCatalogue.by_id("charging_dog")))
-	_variant("task_guard", EventCatalogue.task_guard())
-	_variant("task_guard_sent", EventCatalogue.task_guard_sent())
-	_variant("neighbor_heading_home", EventCatalogue.neighbor_heading_home())
+	_variant("escape_roadblock", EventCatalogue.shipped().escape_roadblock())
+	_variant("building_fire", EventCatalogue.shipped().building_fire())
+	_variant("explosion_outside", EventCatalogue.shipped().explosion_outside())
+	_variant("lesson_dog", EventCatalogue.shipped().lesson_of(EventCatalogue.shipped().by_id("charging_dog")))
+	_variant("task_guard", EventCatalogue.shipped().task_guard())
+	_variant("task_guard_sent", EventCatalogue.shipped().task_guard_sent())
+	_variant("neighbor_heading_home", EventCatalogue.shipped().neighbor_heading_home())
 	for day in range(1, Tuning.RUN_LENGTH_DAYS + 1):
 		var spec := DaySpec.for_day(day)
-		_variant("on_foot@day%d" % day, EventCatalogue.on_foot_on(spec))
-		_variant("out_of_the_car@day%d" % day, EventCatalogue.out_of_the_car(spec))
-		_variant("out_of_the_car_goes@day%d" % day, EventCatalogue.out_of_the_car(spec, false))
+		_variant("on_foot@day%d" % day, EventCatalogue.shipped().on_foot_on(spec))
+		_variant("out_of_the_car@day%d" % day, EventCatalogue.shipped().out_of_the_car(spec))
+		_variant("out_of_the_car_goes@day%d" % day, EventCatalogue.shipped().out_of_the_car(spec, false))
 	for seed_value in SEEDS:
 		var map := CityGenerator.generate(seed_value)
 		for day in DAYS:

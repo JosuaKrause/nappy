@@ -237,7 +237,7 @@ func _measure() -> void:
 					single_culprit_bands += 1
 					var solo: Body = culprits[0]
 					if solo.source == Source.CANDIDATE_LOOP:
-						var def := EventCatalogue.by_id(solo.id)
+						var def := EventCatalogue.shipped().by_id(solo.id)
 						if def and EventScheduler.leaves_no_line_along_a_sidewalk(def):
 							rule_scope_singles += 1
 				for culprit: Body in culprits:

@@ -231,7 +231,7 @@ func _ask_a_look_alike(t: TestRunner, seed_value: int, held: Dictionary) -> void
 			far = at
 	var step := director.current_step()
 	if far != Vector2.INF and step != null and not step.is_pickup:
-		var decoy := RunCity.events(_city).spawn_extra(EventCatalogue.by_id(step.task_event_id), far)
+		var decoy := RunCity.events(_city).spawn_extra(EventCatalogue.shipped().by_id(step.task_event_id), far)
 		player.global_position = far
 		director.tick(STEP)
 		if director.rider() == decoy:
@@ -248,7 +248,7 @@ func _ask_a_look_alike(t: TestRunner, seed_value: int, held: Dictionary) -> void
 ## list, which runs over the city row by row.
 func _fronts_across_the_city() -> Array[Vector2i]:
 	var fronts := EventScheduler.row_ground(_city.map()).tiles_for(
-			EventCatalogue.by_id("burning_building"))
+			EventCatalogue.shipped().by_id("burning_building"))
 	var found: Array[Vector2i] = []
 	for k in SCARS_A_CITY:
 		if not fronts.is_empty():

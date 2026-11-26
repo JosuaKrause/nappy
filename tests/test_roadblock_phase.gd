@@ -66,7 +66,7 @@ class _Ground extends RoadblockGround:
 			for plan in stood:
 				if _of[plan] == refused_once[section]:
 					return null
-		var plan := EventPlan.new(EventCatalogue.by_id("roadblock"), section.centre())
+		var plan := EventPlan.new(EventCatalogue.shipped().by_id("roadblock"), section.centre())
 		_of[plan] = section
 		return plan
 

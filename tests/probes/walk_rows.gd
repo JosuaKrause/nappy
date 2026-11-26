@@ -323,7 +323,7 @@ class _Day extends RefCounted:
 		the_day.planned_at = Time.get_ticks_usec()
 		var dawn: DawnContext = GameDawn.of(spec, rng, map).masts(sites).spent(consumed) \
 				.on(tree).doors(doors).standing(standing) \
-				.roadblock(EventCatalogue.by_id(guarded) if guarded != "" else null) \
+				.roadblock(EventCatalogue.shipped().by_id(guarded) if guarded != "" else null) \
 				.undrawn().planned()
 		the_day.map = map
 		the_day.tree = tree
@@ -691,7 +691,7 @@ static func _unit_draw_reaching(dawn: DawnContext, reach: float) -> UnitDraw:
 	var beside_the_routes := dawn.roadblock_row()
 	var beside_id := beside_the_routes.id() if beside_the_routes != null else ""
 	var rows := {}
-	for def in EventCatalogue.of_kind(GameEnums.EventKind.RECURRING, day, dawn.heat()):
+	for def in EventCatalogue.shipped().of_kind(GameEnums.EventKind.RECURRING, day, dawn.heat()):
 		if def.is_drawn_by_units(day, beside_id):
 			rows[def.id()] = def.for_day(day)
 	var ground := dawn.ground()

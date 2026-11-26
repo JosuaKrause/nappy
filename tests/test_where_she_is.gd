@@ -64,7 +64,7 @@ func _test_a_forgotten_word_is_nowhere_for_every_handle(t: TestRunner) -> void:
 ## down on foot (an officer let out, a successor set off in a step, a door's guard) has the way to
 ## her at once, before the next word.
 func _test_an_event_made_after_the_tick_word_knows_where_she_is_at_once(t: TestRunner) -> void:
-	var out := EventCatalogue.out_of_the_car(DaySpec.for_day(8))
+	var out := EventCatalogue.shipped().out_of_the_car(DaySpec.for_day(8))
 	var told := WhereSheIs.nowhere()
 	told.tell(Vector2(80.0, 0.0))
 	var man := _instance(out, told)
@@ -83,7 +83,7 @@ func _instance(def: EventDef, where: WhereSheIs) -> EventInstance:
 ## (`EventInstance.notice_her_at()`, an order) and a source told her motion (`set_her_motion()`)
 ## leave the point his handle hears where the tick's word put it.
 func _test_an_event_hears_a_point_only_through_the_tick(t: TestRunner) -> void:
-	var def := EventCatalogue.by_id("alley_robbery")
+	var def := EventCatalogue.shipped().by_id("alley_robbery")
 	var told := WhereSheIs.nowhere()
 	told.tell(Vector2(80.0, 0.0))
 	var robber := _instance(def, told)

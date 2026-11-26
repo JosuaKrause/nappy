@@ -164,7 +164,7 @@ func _test_slices_stand_at_their_own_feet(t: TestRunner) -> void:
 func _test_a_spread_is_drawn_in_slices_ahead_of_its_instance(t: TestRunner) -> void:
 	var atlas := AtlasLibrary.new()
 	atlas.acquire(&"events")
-	var def := EventCatalogue.by_id("construction")
+	var def := EventCatalogue.shipped().by_id("construction")
 	for vertical: bool in [false, true]:
 		var what := "end-on" if vertical else "broadside"
 		var world := WorldContext.new()
@@ -222,7 +222,7 @@ func _test_the_slices_go_with_their_event(t: TestRunner) -> void:
 	var world := WorldContext.new()
 	t.add_child(world)
 	var instance := EventInstance.new()
-	instance.setup(EventCatalogue.by_id("construction"), Vector2(200.0, 200.0),
+	instance.setup(EventCatalogue.shipped().by_id("construction"), Vector2(200.0, 200.0),
 			PackedVector2Array(), Vector2.RIGHT,
 			EventSurroundings.new().on(WorldMap.open_ground()) \
 				.drawn_in(world) \
@@ -284,7 +284,7 @@ func _test_every_long_picture_is_drawn_in_slices(t: TestRunner) -> void:
 			t.add_child(world)
 			var instance := EventInstance.new()
 			var drawer := RecordingEventDrawer.new(atlas)
-			instance.setup(EventCatalogue.by_id(id), Vector2(300.0, 300.0),
+			instance.setup(EventCatalogue.shipped().by_id(id), Vector2(300.0, 300.0),
 					PackedVector2Array(), Vector2.RIGHT,
 					EventSurroundings.new().on(_ground_in(vertical)) \
 						.drawn_in(world) \

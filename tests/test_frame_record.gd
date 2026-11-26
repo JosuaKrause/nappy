@@ -440,7 +440,7 @@ func _test_slow_frames_outside_callbacks_and_with_scenery(t: TestRunner) -> void
 ## a time (`_one_drawn_frame()`).
 func _test_a_timed_body_runs_once(t: TestRunner) -> void:
 	var record := FrameRecord.new()
-	var def := EventCatalogue.by_id("protest")
+	var def := EventCatalogue.shipped().by_id("protest")
 	var untimed_view := _SlowView.new()
 	var untimed_event := _event(t, def, untimed_view)
 	var scratch := FrameLedger.new(4)

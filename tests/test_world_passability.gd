@@ -322,7 +322,7 @@ func _test_a_walk_goes_round_what_was_put_down(t: TestRunner) -> void:
 ## notices her one tile into an alley, a square or a park as it does on the sidewalk, along a line
 ## its own driving would never take.
 func _test_a_car_sees_her_off_street_ground(t: TestRunner) -> void:
-	var patrol := EventCatalogue.by_id("police_patrol")
+	var patrol := EventCatalogue.shipped().by_id("police_patrol")
 	t.check(patrol.drives(), "the patrol is a car that drives")
 	for ground: GameEnums.TileType in [GameEnums.TileType.ALLEY, GameEnums.TileType.SQUARE,
 			GameEnums.TileType.PARK, GameEnums.TileType.SIDEWALK]:
@@ -347,7 +347,7 @@ func _test_a_car_sees_her_off_street_ground(t: TestRunner) -> void:
 ## A cat whose run a solid cut short crouches longer by the run it lost, so it reaches the middle of
 ## its crossing when a whole run would have: when she, walked up by its lead, gets there.
 func _test_a_cut_crossing_still_meets_her_line_on_time(t: TestRunner) -> void:
-	var cat := EventCatalogue.by_id("cat_dash")
+	var cat := EventCatalogue.shipped().by_id("cat_dash")
 	var whole := float(Tuning.STREET_WIDTH) * TILE
 	var on_time := cat.telegraphs_for() + whole / cat.speed()
 	for run: float in [whole, whole * 0.5, TILE]:
@@ -389,7 +389,7 @@ func _sited_ahead_of(director: EventDirector, her: Vector2, heading: Vector2) ->
 ## moves by the map's navigator, so the run it sites never goes through the body, and on a map with
 ## nothing standing there the same director sites the whole run.
 func _test_a_director_handed_only_the_map_sites_round_what_stands_there(t: TestRunner) -> void:
-	var cat := EventCatalogue.by_id("cat_dash")
+	var cat := EventCatalogue.shipped().by_id("cat_dash")
 	var mover := EventInstance.mover_for(cat)
 	var her := _centre(Vector2i(5, 20))
 	var heading := Vector2.RIGHT
@@ -522,7 +522,7 @@ func _barrier_body_at(city: City, at: Vector2) -> StaticBody2D:
 ## and runs clear between, never out of or into a lot.
 func _test_the_cat_crossing_never_ends_in_a_lot(t: TestRunner, city: City) -> void:
 	var map := city.map()
-	var cat := EventCatalogue.by_id("cat_dash")
+	var cat := EventCatalogue.shipped().by_id("cat_dash")
 	var mover := EventInstance.mover_for(cat)
 	var director := _a_director_owing_the_cat(map)
 	var sited := 0
@@ -567,7 +567,7 @@ func _test_the_cat_crossing_never_ends_in_a_lot(t: TestRunner, city: City) -> vo
 ## ground it may stand on, and it gets away from her.
 func _test_a_departure_leaves_round_a_building(t: TestRunner, city: City) -> void:
 	var map := city.map()
-	var dog := EventCatalogue.by_id("loose_dog")
+	var dog := EventCatalogue.shipped().by_id("loose_dog")
 	var start := Vector2.INF
 	var into := Vector2.ZERO
 	for tile in map.tiles_of_type(GameEnums.TileType.SIDEWALK):
@@ -667,7 +667,7 @@ func _test_every_row_that_moves_stays_off_blocked_ground(t: TestRunner, city: Ci
 ## step of his enters ground his mover may not, and he walks.
 func _test_the_far_guard_of_a_roadblock_stays_off_blocked_ground(t: TestRunner, city: City) -> void:
 	var map := city.map()
-	var row := EventCatalogue.escape_roadblock()
+	var row := EventCatalogue.shipped().escape_roadblock()
 	var mover := EventInstance.mover_for(row)
 	var at := _a_start_for(map, row, mover, map.doorstep_world_position())
 	t.check(at != Vector2.INF, "there is ground to stand a roadblock on")

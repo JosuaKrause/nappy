@@ -383,7 +383,7 @@ func summon_what_has_been_sighted(plans: Array[EventPlan]) -> void:
 ## sight is summoned again (`PendingWarning.when_withdrawn()`).
 func _summon_the_sighted_row(source: EventDef, at: Vector2,
 		sighted_by: EventPlan = null) -> bool:
-	var summoned := EventCatalogue.by_id(source.calls_in())
+	var summoned := world.rows().by_id(source.calls_in())
 	if not summoned:
 		push_error("event '%s' summons unknown '%s' on sight" % [source.id(), source.calls_in()])
 		return false
@@ -440,7 +440,7 @@ func successor_of(instance: EventInstance) -> EventInstance:
 	var id := instance.take_what_it_leaves()
 	if id == "":
 		return null
-	var def := EventCatalogue.by_id(id)
+	var def := world.rows().by_id(id)
 	if not def:
 		push_error("event '%s' spawns unknown '%s'" % [instance.row_id(), id])
 		return null

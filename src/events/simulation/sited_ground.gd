@@ -13,6 +13,7 @@ extends RefCounted
 ## the weight was for.
 
 var _map: CityMap
+var _rows: EventCatalogue
 var _ground: RowGround
 var _fronts: Dictionary
 ## A row -> the set of tiles it may stand on, asked of the ground once a row.
@@ -22,7 +23,9 @@ var _mast_may_stand := {}
 ## Where a region door could ever stand, for `_a_mast_may_stand()`; empty until first asked.
 var _door_points := PackedVector2Array()
 
-func _init(map: CityMap, ground: RowGround, fronts: Dictionary) -> void:
+## `rows` is the run's catalogue, which the mast's reach is read off.
+func _init(rows: EventCatalogue, map: CityMap, ground: RowGround, fronts: Dictionary) -> void:
+	_rows = rows
 	_map = map
 	_ground = ground
 	_fronts = fronts
@@ -67,5 +70,5 @@ func _a_mast_may_stand(tile: Vector2i) -> bool:
 	if not _mast_may_stand.has(tile):
 		if _door_points.is_empty():
 			_door_points = MastSites.possible_door_points(_map)
-		_mast_may_stand[tile] = MastSites.is_eligible(_map.tile_to_world(tile), _map, _door_points)
+		_mast_may_stand[tile] = MastSites.is_eligible(_rows, _map.tile_to_world(tile), _map, _door_points)
 	return _mast_may_stand[tile]

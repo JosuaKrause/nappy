@@ -39,7 +39,7 @@ func run(t: TestRunner) -> void:
 ## `day`'s mark touched at `mark_step_index`, the same way the matching `_director_on_..._perform()`
 ## test helper reaches the perform step, then `SEEDS_TO_SWEEP` cities swept for `row_id`'s own draw.
 func _measure(t: TestRunner, row_id: String, day: int, mark_step_index: int) -> void:
-	var def := EventCatalogue.by_id(row_id)
+	var def := EventCatalogue.shipped().by_id(row_id)
 	if not def:
 		print("| %s | — | row not found |  |  |  |" % row_id)
 		return

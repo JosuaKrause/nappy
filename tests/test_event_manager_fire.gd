@@ -233,7 +233,7 @@ func _test_the_engine_waits_on_its_road_to_the_fire(t: TestRunner) -> void:
 	# The same place on a straight road, walked a long way up it toward where the engine comes from:
 	# the stretch between her and the fire goes out of view behind her long before she stops, and
 	# the place stays ahead of her rather than dropping in behind her there.
-	var truck := EventCatalogue.by_id("fire_truck")
+	var truck := EventCatalogue.shipped().by_id("fire_truck")
 	var kerb := Vector2.ZERO
 	var her := Vector2(Tuning.TILE_SIZE * 1.5, 0.0)
 	var behind_her := 0
@@ -284,7 +284,7 @@ func _branches_on(day: int, position: Vector2) -> Array[int]:
 ## the same view and the same fire, it does both.
 func _test_the_fire_under_a_covered_corner_is_not_sighted(t: TestRunner) -> void:
 	var events := _stage.events()
-	var def := EventCatalogue.by_id("burning_building")
+	var def := EventCatalogue.shipped().by_id("burning_building")
 	var at := CrowdLanes.arterial_pavement(_stage.map())
 	var sighted: Array[String] = []
 	var on_sighted := func(id: String) -> void: sighted.append(id)

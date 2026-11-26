@@ -568,13 +568,13 @@ func _test_the_scarred_building_shows_burnt(t: TestRunner) -> void:
 
 	var sites := {}
 	for tile in EventScheduler.row_ground(city.map()).tiles_for(
-			EventCatalogue.by_id("burning_building")):
+			EventCatalogue.shipped().by_id("burning_building")):
 		sites[tile] = true
 	t.check(sites.size() > 100,
 			"seed %d: there are fronts for the fire to catch on (%d)" % [FIRE_SEED, sites.size()])
 	# Every site holds a street fire of its own on the city's map, found and drawn as the game does,
 	# all drawn by the same three frames.
-	var def := EventCatalogue.by_id("burning_building")
+	var def := EventCatalogue.shipped().by_id("burning_building")
 	var fires := {}
 	for tile: Vector2i in sites:
 		if _building_at(city, tile + Vector2i.UP):
@@ -657,7 +657,7 @@ func _test_the_scarred_building_shows_burnt(t: TestRunner) -> void:
 	t.check(city.map().has_power_station(), "seed %d has a power station" % FIRE_SEED)
 	var station_fronts := 0
 	var lane_of_fronts := EventScheduler.row_ground(city.map()).tiles_for(
-			EventCatalogue.by_id("cafe_tables"), EventDef.Pavement.AT_THE_FRONT)
+			EventCatalogue.shipped().by_id("cafe_tables"), EventDef.Pavement.AT_THE_FRONT)
 	for tile in lane_of_fronts:
 		if station.has_point(tile + Vector2i.UP):
 			station_fronts += 1

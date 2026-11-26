@@ -40,7 +40,7 @@ static func _set_of(tiles: Array[Vector2i]) -> Dictionary:
 
 ## A crew stands in front of a blank wall: of the tiles its lane offers, the ones that are fronts.
 func _test_a_crew_is_offered_only_the_fronts_of_its_lane(t: TestRunner) -> void:
-	var crew := EventCatalogue.by_id("poster_crew")
+	var crew := EventCatalogue.shipped().by_id("poster_crew")
 	var lane: Array[Vector2i] = [Vector2i(10, 10), Vector2i(11, 10), Vector2i(12, 10), Vector2i(13, 10)]
 	var ground := _Ground.new()
 	ground.answers["%s:%d" % [crew.id(), EventDef.Pavement.AT_THE_FRONT]] = _set_of(lane)
@@ -61,7 +61,7 @@ func _test_a_crew_is_offered_only_the_fronts_of_its_lane(t: TestRunner) -> void:
 ## be: every tile the narrowing accepts is one, and the ground holds tiles it refuses.
 func _test_a_mast_is_offered_only_what_a_mast_site_may_be(t: TestRunner) -> void:
 	var map := CityGenerator.generate(SEED)
-	var mast := EventCatalogue.mast()
+	var mast := EventCatalogue.shipped().mast()
 	var sidewalks: Array[Vector2i] = []
 	var every := 0
 	for tile in map.tiles_of_type(GameEnums.TileType.SIDEWALK):
@@ -90,7 +90,7 @@ func _test_a_mast_is_offered_only_what_a_mast_site_may_be(t: TestRunner) -> void
 
 ## Any other row is offered its ground as the walk gives it.
 func _test_any_other_row_is_offered_what_the_ground_offers(t: TestRunner) -> void:
-	var tables := EventCatalogue.by_id("cafe_tables")
+	var tables := EventCatalogue.shipped().by_id("cafe_tables")
 	var ground := _Ground.new()
 	ground.answers["%s:%d" % [tables.id(), -1]] = _set_of([Vector2i(3, 4), Vector2i(5, 6)] as Array[Vector2i])
 	var sited := SitedGround.new(null, ground, {Vector2i(3, 4): true})
@@ -101,7 +101,7 @@ func _test_any_other_row_is_offered_what_the_ground_offers(t: TestRunner) -> voi
 ## `prepare()` does the row's one scan now; every later ask, of the set or of a tile, reaches the
 ## ground no more.
 func _test_prepare_asks_the_ground_once_and_a_later_ask_asks_no_more(t: TestRunner) -> void:
-	var tables := EventCatalogue.by_id("cafe_tables")
+	var tables := EventCatalogue.shipped().by_id("cafe_tables")
 	var ground := _Ground.new()
 	ground.answers["%s:%d" % [tables.id(), -1]] = _set_of([Vector2i(3, 4)] as Array[Vector2i])
 	var sited := SitedGround.new(null, ground, {})

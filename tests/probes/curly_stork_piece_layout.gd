@@ -140,7 +140,7 @@ func _plan(map: CityMap, day: int, i: int) -> Array[EventPlan]:
 	var consumed: Array[String] = []
 	var placements := GameDawn.of(spec, rng, map).masts(sites).spent(consumed).on(tree) \
 			.doors(doors).standing(standing) \
-			.roadblock(EventCatalogue.by_id(guarded) if guarded != "" else null).plan().placements()
+			.roadblock(EventCatalogue.shipped().by_id(guarded) if guarded != "" else null).plan().placements()
 	var all: Array[EventPlan] = []
 	all.append_array(placements)
 	for plan in standing:

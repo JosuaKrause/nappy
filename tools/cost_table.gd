@@ -92,13 +92,13 @@ func _ready() -> void:
 # ------------------------------------------------------------------ row selection ---
 
 ## Every catalogue row, in catalogue order rather than sorted: a new row appended to
-## `EventCatalogue._build()` appends here too, which is what "fixed row order" means for a table
+## `EventCatalogue.shipped()._build()` appends here too, which is what "fixed row order" means for a table
 ## that is meant to diff cleanly when one row's numbers move rather than when the whole table gets
 ## re-sorted under it. `curfew_announce` and `loudspeaker` are masts now, with a real place and a
 ## real edge like any other row's — see `docs/EVENTS.md`, "No row is `city_wide`".
 func _included_rows() -> Array[EventDef]:
 	var out: Array[EventDef] = []
-	for def in EventCatalogue.all():
+	for def in EventCatalogue.shipped().all():
 		out.append(def)
 	return out
 
@@ -323,7 +323,7 @@ func _header_text() -> String:
 	var lines := PackedStringArray()
 	lines.append("# What an event costs")
 	lines.append("")
-	lines.append("Computed from the real catalogue (`EventCatalogue.all()`, catalogue order) and " +
+	lines.append("Computed from the real catalogue (`EventCatalogue.shipped().all()`, catalogue order) and " +
 			"the real `Tuning` constants below — never a second copy of the falloff or the decay. " +
 			"Regenerate with `tools/cost-table.sh`; `tools/cost-table.sh --check` compares this file " +
 			"against a fresh run and names every row and column that moved, old → new, without " +

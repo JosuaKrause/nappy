@@ -44,7 +44,7 @@ const PHASE_SAMPLES := 8
 const LEAD := 500.0
 
 func run(t: TestRunner) -> void:
-	var def := EventCatalogue.by_id("homeless_yeller")
+	var def := EventCatalogue.shipped().by_id("homeless_yeller")
 	var reach_awake := _handover_net_averaged(def, false, Tuning.EXCITEMENT_DECAY_WALKING, 1.0)
 	var reach_asleep := _handover_net_averaged(def, false, Tuning.EXCITEMENT_DECAY_WALKING,
 			Baby.SLEEPING_SENSITIVITY)

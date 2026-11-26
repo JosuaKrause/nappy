@@ -8,7 +8,7 @@ extends RefCounted
 ## `prepared()` makes the city `BASE + i * STEP` and plans its day's closures, holds, region
 ## wall and seals (`City.start_day()`, `DayPlanner._plan_a_day()`), the seals and the wall's
 ## bodies stood as the day's standing. `placements()` then plans the dawn with the day's
-## guarded-band roadblock row through `EventCatalogue.heated()` as `DayPlanner` hands it, and
+## guarded-band roadblock row through `EventCatalogue.shipped().heated()` as `DayPlanner` hands it, and
 ## refreshes the street trees (`City.refresh_street_trees()`) once the dawn has placed, where
 ## the game refreshes them (`DayDirector`, after `EventManager.start_day()`).
 ##
@@ -109,7 +109,7 @@ func placements() -> Array[EventPlan]:
 	var rng := RandomNumberGenerator.new()
 	rng.seed = hash("placement_view_mix:%d:%d" % [_i, _day])
 	var guarded := ResistanceSteps.guarded_row_on(_day)
-	var beside: EventDef = EventCatalogue.heated(EventCatalogue.by_id(guarded), HEAT) \
+	var beside: EventDef = EventCatalogue.shipped().heated(EventCatalogue.shipped().by_id(guarded), HEAT) \
 			if guarded != "" else null
 	var consumed: Array[String] = []
 	var placed := GameDawn.of(_spec, rng, map).masts(_sites).spent(consumed).heat(HEAT).on(_tree) \

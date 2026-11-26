@@ -52,7 +52,7 @@ func _rig(t: TestRunner, at: Vector2) -> Dictionary:
 	t.add_child(source)
 	var her := Node2D.new()
 	t.add_child(her)
-	var convoy := StandIns.Coming.new(EventCatalogue.by_id("military_convoy"), _convoy_box())
+	var convoy := StandIns.Coming.new(EventCatalogue.shipped().by_id("military_convoy"), _convoy_box())
 	convoy.position = at
 	convoy.arrive_from_its_warning()
 	source.bring(convoy)
@@ -77,7 +77,7 @@ static func _in_sight(at: Vector2) -> bool:
 ## the row (`EventFootprints.drawn_box_of()`, what `EventInstance.drawn_box()` asks): a change to its
 ## picture or its footprint moves the box both the edge and `_in_sight()` are checked against.
 static func _convoy_box() -> Rect2:
-	return EventFootprints.drawn_box_of(EventCatalogue.by_id("military_convoy"), true)
+	return EventFootprints.drawn_box_of(EventCatalogue.shipped().by_id("military_convoy"), true)
 
 ## Whether the convoy's badge is on the edge.
 static func _up(edge: DangerEdge) -> bool:

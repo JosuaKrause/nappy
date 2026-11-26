@@ -1188,7 +1188,7 @@ func _report(tally: Dictionary, shapes: Dictionary, cut_shapes: Dictionary, exam
 		return int(blame[a]) > int(blame[b]))
 	for i in mini(12, ranked.size()):
 		var id: String = ranked[i]
-		var def := EventCatalogue.by_id(id)
+		var def := EventCatalogue.shipped().by_id(id)
 		var reach := "" if not def else \
 				" (intensity %.1f over %.0fpx, denies %.0fpx, body %.0fpx%s)" \
 				% [def.peak(), def.heard_within(), def.line_reach(),

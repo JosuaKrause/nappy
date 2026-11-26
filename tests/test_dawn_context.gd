@@ -38,7 +38,7 @@ static func _context(spec: DaySpec, heat := 0) -> DawnContext:
 	return context
 
 ## **The rows of a day at a heat are the catalogue's own**, the very objects the heat chose
-## (`EventCatalogue.of_kind()`): a context that dropped the heat answers the cold rows.
+## (`EventCatalogue.shipped().of_kind()`): a context that dropped the heat answers the cold rows.
 func _test_a_day_is_handed_the_catalogues_rows_as_the_heat_puts_them(t: TestRunner) -> void:
 	var day := 8
 	var heat := Tuning.RESISTANCE_GOAL
@@ -46,7 +46,7 @@ func _test_a_day_is_handed_the_catalogues_rows_as_the_heat_puts_them(t: TestRunn
 	var heated := 0
 	for kind in KINDS:
 		var asked := context.catalogue_rows(kind)
-		var expected := EventCatalogue.of_kind(kind, day, heat)
+		var expected := EventCatalogue.shipped().of_kind(kind, day, heat)
 		t.check(asked == expected, "a day at heat %d is handed the catalogue's rows of kind %d"
 				% [heat, kind])
 		for def in expected:
@@ -60,7 +60,7 @@ func _test_a_walk_with_a_bag_of_its_own_is_handed_none(t: TestRunner) -> void:
 	t.check(not spec.walk_bag().is_empty(), "the escape city's spec has a bag of its own")
 	var rows := 0
 	for kind in KINDS:
-		rows += EventCatalogue.of_kind(kind, spec.day_number(), 0).size()
+		rows += EventCatalogue.shipped().of_kind(kind, spec.day_number(), 0).size()
 	t.check(rows > 0, "the catalogue has rows on the escape city's day (%d), so none is a choice"
 			% rows)
 	var context := _context(spec)

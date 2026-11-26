@@ -256,8 +256,8 @@ func _test_each_patrol_comes_within_its_rigged_bag(t: TestRunner) -> void:
 func _test_a_marble_spent_unmet_counts_against_the_patrols_bag(t: TestRunner) -> void:
 	var map := _map()
 	var limited: EventDef = null
-	for id: String in EventDirector.ordinary_route_marbles(RETURN_DAY, 0):
-		var def := EventCatalogue.by_id(id)
+	for id: String in EventDirector.ordinary_route_marbles(EventCatalogue.shipped(), RETURN_DAY, 0):
+		var def := EventCatalogue.shipped().by_id(id)
 		if limited == null or def.most_in_a_day() < limited.most_in_a_day():
 			limited = def
 	var marbles := []

@@ -83,7 +83,7 @@ static func plans(day: int, seed_value: int) -> Array[EventPlan]:
 	var key := "%d:%d" % [day, seed_value]
 	var out: Array[EventPlan] = []
 	for row_id in (MOMENTS[key] as String).split(" ", false):
-		out.append(EventPlan.new(EventCatalogue.by_id(row_id), Vector2.INF))
+		out.append(EventPlan.new(EventCatalogue.shipped().by_id(row_id), Vector2.INF))
 	for placed: Array in PLACED.get(key, []):
-		out.append(EventPlan.new(EventCatalogue.by_id(placed[0]), placed[1]))
+		out.append(EventPlan.new(EventCatalogue.shipped().by_id(placed[0]), placed[1]))
 	return out

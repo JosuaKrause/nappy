@@ -47,7 +47,7 @@ func meet(t: TestRunner, walk: Array, pace: String, badge := false,
 	for plan in events.plans():
 		if plan.row_id() == "masked_pursuer":
 			foot = plan.placed_at()
-	var sets_off := EventCatalogue.by_id("masked_pursuer").sets_off_within()
+	var sets_off := EventCatalogue.shipped().by_id("masked_pursuer").sets_off_within()
 	var origin: Vector2i = f.waypoint("stairwell_right") - InteriorMap.STAIRWELL_TOP_LANDING_LOCAL
 	var door: Vector2i = (f.door("stairwell_right:landing_first") as InteriorMapPlan.Door).tile
 	var packed: PackedScene = load("res://scenes/player/stroller.tscn")

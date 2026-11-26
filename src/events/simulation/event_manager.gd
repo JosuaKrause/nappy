@@ -110,8 +110,8 @@ func _init(surroundings: EventSurroundings = null) -> void:
 	_ahead = EventsAhead.new(world, _streaming, _spawner, _warnings, _walk_events)
 	_ahead.use_sitings(SitingMaker.new(world, _walk_events))
 	_set_off = SetOffWatch.new(world, _streaming, _warnings, _walk_events)
-	_checkpoints = CheckpointController.new(world, _spawner.spawn, EventCatalogue.door_guard(),
-			EventCatalogue.charger_timing().warning())
+	_checkpoints = CheckpointController.new(world, _spawner.spawn, world.rows().door_guard(),
+			world.rows().charger_timing().warning())
 	_encounters = EncounterWatch.new(world.reports())
 	_sources = EventSources.new(world, _checkpoints)
 	_checkpoints.door_crossed.connect(func(at: Vector2, axis: Vector2, inspected: bool) -> void:
@@ -119,6 +119,11 @@ func _init(surroundings: EventSurroundings = null) -> void:
 	_checkpoints.takes_her_in.connect(_take_her_in)
 	_checkpoints.holds_her.connect(_hold_her)
 	_checkpoints.lets_her_out.connect(_let_her_out)
+
+## **The run's catalogue** its world's events are read from (`EventWorld.rows()`): what the
+## resistance it sends events for reads its rows from too.
+func rows() -> EventCatalogue:
+	return world.rows()
 
 ## Takes the one reference on the baked page every `EventInstance` draws from — the whole catalogue,
 ## the checkpoint kit and the crater on one page (`EventPictures.ATLAS_GROUP`), for the manager's
@@ -170,7 +175,7 @@ func setup(run: RunState, streets: DayStreets = null, poster_walls: PosterWalls 
 	world.work_out_mast_sites(map)
 	world.use_plan_builder(PlanBuilder.new(map, EventInstance.mover_for,
 			StreetInvalidation.room_around))
-	var director := EventDirector.new(map, world.navigator())
+	var director := EventDirector.new(world.rows(), map, world.navigator())
 	_spawn_siting = SpawnSiting.new(map, world.navigator(), visible_view,
 			streets.siting_region if streets else Callable())
 	_ahead.use_director(director, _spawn_siting)

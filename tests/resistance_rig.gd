@@ -344,10 +344,10 @@ func _relocate_round(director: ResistanceDirector, player: Stroller, here: Vecto
 	var after := director.contact_position()
 	return after if after.distance_to(before) > 0.5 else Vector2.INF
 
-## The feet of the chalk mark's guard as the street has him (the live `EventCatalogue.mark_guard()`
+## The feet of the chalk mark's guard as the street has him (the live `EventCatalogue.shipped().mark_guard()`
 ## among the test city's instances), or `Vector2.INF` when none stands, or more than one.
 func _marks_guard_feet() -> Vector2:
-	var guards := _live(EventCatalogue.mark_guard().id())
+	var guards := _live(EventCatalogue.shipped().mark_guard().id())
 	return guards[0].global_position if guards.size() == 1 else Vector2.INF
 
 ## **Every mark tile of the city of `seed_value`, relocated to in turn** (`_relocate_round()`), on
@@ -429,7 +429,7 @@ func _mark_tiles() -> Array[Vector2i]:
 ## passage, `Vector2.INF` off an alley.
 static func _guard_spot_of(map: CityMap, mark: Vector2) -> Vector2:
 	var tile := map.world_to_tile(mark)
-	var robbery := EventCatalogue.mark_guard()
+	var robbery := EventCatalogue.shipped().mark_guard()
 	var spot := AlleyMarks.expected_guard_spot(map, tile, mark,
 			robbery.core_within() + ContactPoint.REACH)
 	if spot != Vector2.INF:

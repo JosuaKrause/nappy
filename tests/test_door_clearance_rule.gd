@@ -6,7 +6,7 @@ extends RefCounted
 const PLACED: Array[EventPlan] = []
 
 func run(t: TestRunner) -> void:
-	var cafe := EventCatalogue.by_id("cafe_tables")
+	var cafe := EventCatalogue.shipped().by_id("cafe_tables")
 	var door := Vector2(2000, 2000)
 	var rule := DoorClearanceRule.new(PackedVector2Array([door]))
 	var limit := Tuning.CHECKPOINT_EVENT_GAP + cafe.field_reach()

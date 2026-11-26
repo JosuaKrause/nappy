@@ -100,7 +100,7 @@ func _one_day(day: int) -> int:
 		var consumed: Array[String] = []
 		var guarded_row: EventDef = null
 		if guarded != "":
-			guarded_row = EventCatalogue.heated(EventCatalogue.by_id(guarded), HEAT)
+			guarded_row = EventCatalogue.shipped().heated(EventCatalogue.shipped().by_id(guarded), HEAT)
 		var placements := GameDawn.of(spec, rng, map).masts(sites).spent(consumed).on(tree) \
 				.heat(HEAT).doors(doors).standing(standing) \
 				.roadblock(guarded_row).plan().placements()

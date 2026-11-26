@@ -133,11 +133,11 @@ static func _seconds(value: float) -> String:
 ## with the camera on her.
 static func gold_encounters() -> Array[Dictionary]:
 	var list: Array[Dictionary] = []
-	var dog := EventSpawner.as_warned(EventCatalogue.by_id("charging_dog"))
+	var dog := EventSpawner.as_warned(EventCatalogue.shipped().by_id("charging_dog"))
 	for heading: Vector2 in [Vector2.UP, Vector2.RIGHT]:
 		list.append({"def": dog, "how": "day 3, %s" % _axis(heading), "heading": heading})
 	for id: String in ["robber_giving_chase", "van_guard_giving_chase"]:
-		var def := EventCatalogue.by_id(id)
+		var def := EventCatalogue.shipped().by_id(id)
 		list.append({"def": def, "how": "from above", "heading": Vector2.UP})
 		list.append({"def": def, "how": "from beside", "heading": Vector2.RIGHT})
 	return list
@@ -237,7 +237,7 @@ static func encounters() -> Array[Dictionary]:
 
 	# `cat_dash`: `EventDirector.crossing_ahead_of()` — across her line, `ahead_of_player_lead()` in
 	# front of her, from one side `CROSSING_REACH_TILES` away.
-	var cat := EventCatalogue.by_id("cat_dash")
+	var cat := EventCatalogue.shipped().by_id("cat_dash")
 	for heading: Vector2 in [up, right]:
 		var centre := heading * cat.ahead_of_player_lead()
 		var across := Vector2(-heading.y, heading.x) \
@@ -250,7 +250,7 @@ static func encounters() -> Array[Dictionary]:
 	# dashes across it. With no map its path is the flat 64px crossing
 	# `EventInstance._alley_crossing_path()` falls back to, across X — so she walks up the
 	# alley along Y.
-	var mouse := EventCatalogue.by_id("alley_mouse")
+	var mouse := EventCatalogue.shipped().by_id("alley_mouse")
 	list.append({"def": mouse, "how": "waits in an alley, dashes across it",
 			"path": PackedVector2Array(), "spawn": Vector2.ZERO,
 			"her": Vector2(0.0, mouse.notice_within() + 200.0), "heading": up, "warm": 0.0})
@@ -258,7 +258,7 @@ static func encounters() -> Array[Dictionary]:
 	# `military_convoy` as a `MAP` mover: streamed in at `EVENT_STREAM_RADIUS` and driving straight
 	# down her street — the closest the city can bring one at her. Not warned of before it exists,
 	# it carries no badge: its lead is the sight of it down the street, not a siting rule.
-	var convoy := EventCatalogue.by_id("military_convoy")
+	var convoy := EventCatalogue.shipped().by_id("military_convoy")
 	var streamed_from := Vector2(0.0, -Tuning.EVENT_STREAM_RADIUS)
 	list.append({"def": convoy, "how": "streamed in down her street",
 			"path": PackedVector2Array([streamed_from, streamed_from + Vector2(0.0, 4000.0)]),
@@ -266,7 +266,7 @@ static func encounters() -> Array[Dictionary]:
 
 	# `loose_dog` does not telegraph: sent down her line unannounced (`EventsAhead.
 	# _send_down_her_line()`), created at once just out of sight, its telegraph spent.
-	var loose := EventCatalogue.by_id("loose_dog")
+	var loose := EventCatalogue.shipped().by_id("loose_dog")
 	for heading: Vector2 in [up, right]:
 		var place := PendingWarning.down_her_line(null, loose, Vector2.ZERO, heading)
 		list.append({"def": loose, "how": "unannounced, down her line, %s" % _axis(heading),
@@ -277,7 +277,7 @@ static func encounters() -> Array[Dictionary]:
 	# Warned of before it exists. `cyclist`: `EventsAhead._warn_down_her_line()`, the place just
 	# out of sight down her line, created on a route back down it past her.
 	for id: String in ["cyclist"]:
-		var def := EventCatalogue.by_id(id)
+		var def := EventCatalogue.shipped().by_id(id)
 		for heading: Vector2 in [up, right]:
 			var where := func(her: Vector2) -> Vector2:
 				return PendingWarning.down_her_line(null, def, her, heading)
@@ -289,7 +289,7 @@ static func encounters() -> Array[Dictionary]:
 	# `fire_truck`: warned the moment the fire is seen, on its road up from the kerb it stops at.
 	# She is on the sidewalk beside that road, a little past the kerb it stops at, looking up the
 	# road it comes down — so it drives at her and stops behind her.
-	var truck := EventCatalogue.by_id("fire_truck")
+	var truck := EventCatalogue.shipped().by_id("fire_truck")
 	var kerb := Vector2(-Tuning.TILE_SIZE * 1.5, 150.0)
 	var truck_where := func(her: Vector2) -> Vector2:
 		return PendingWarning.on_its_route(truck, her, kerb, Vector2.DOWN, 4000.0)
@@ -311,7 +311,7 @@ static func encounters() -> Array[Dictionary]:
 	list.append(_warned(column, "day 13's column, warned in its lane", lane_where, lane_route, up))
 
 	# `pigeon_flock`: waits, quiet, until she is within `EventDef.notice_within()`, then goes up.
-	var flock := EventCatalogue.by_id("pigeon_flock")
+	var flock := EventCatalogue.shipped().by_id("pigeon_flock")
 	list.append({"def": flock, "how": "waits on the sidewalk", "path": PackedVector2Array(),
 			"spawn": Vector2.ZERO, "her": Vector2(0.0, flock.notice_within() + 200.0),
 			"heading": up, "warm": 0.0})
@@ -319,7 +319,7 @@ static func encounters() -> Array[Dictionary]:
 	# `charging_dog`: day 3's own, sent by the director down her heading and warned first
 	# (`EventsAhead._warn_down_her_heading()`), created just out of sight with its approach still to
 	# run; and every later day's, a `MAP` row waiting for her (`EventDef.for_day()`).
-	var dog := EventCatalogue.by_id("charging_dog")
+	var dog := EventCatalogue.shipped().by_id("charging_dog")
 	var sent_dog := EventSpawner.as_warned(dog)
 	for heading: Vector2 in [up, right]:
 		var dog_where := func(her: Vector2) -> Vector2:
@@ -339,7 +339,7 @@ static func encounters() -> Array[Dictionary]:
 	# of the north sidewalk (offset 1), walking east; the car is in whichever road lane
 	# `CrowdLanes.road_lane()` says runs west.
 	# The copy the director sends ahead of her (`EventDef.as_sent_ahead()`), at no heat.
-	var patrol := EventCatalogue.by_id("police_patrol").as_sent_ahead()
+	var patrol := EventCatalogue.shipped().by_id("police_patrol").as_sent_ahead()
 	var lane := CrowdLanes.road_lane(false, -1.0)
 	var lateral := float(lane - 1) * Tuning.TILE_SIZE
 	var patrol_at := PendingWarning.in_its_lane(patrol, Vector2.ZERO, Vector2(0.0, lateral),
@@ -350,21 +350,21 @@ static func encounters() -> Array[Dictionary]:
 
 	# `door_guard`: steps out of the hut beside her, at the door geometry
 	# `tests/test_checkpoints.gd` walks — 32px along the street, 48px across.
-	var guard := EventCatalogue.by_id("door_guard")
+	var guard := EventCatalogue.shipped().by_id("door_guard")
 	var guard_at := Vector2(32.0, 48.0)
 	list.append({"def": guard, "how": "steps out of the hut beside her",
 			"path": PackedVector2Array(), "spawn": guard_at, "her": Vector2(1.0, 0.0),
 			"heading": (guard_at - Vector2(1.0, 0.0)).normalized(), "warm": 0.0})
 
 	# `alley_robbery`: waits in the alley until she is within `EventDef.notice_within()`.
-	var robber := EventCatalogue.by_id("alley_robbery")
+	var robber := EventCatalogue.shipped().by_id("alley_robbery")
 	list.append({"def": robber, "how": "waits in an alley", "path": PackedVector2Array(),
 			"spawn": Vector2.ZERO, "her": Vector2(0.0, robber.notice_within() + 200.0),
 			"heading": up, "warm": 0.0})
 
 	# `masked_pursuer`: waits at the foot of the stairwell until she is in it, stands out his
 	# notice, then runs up the shaft — her line.
-	var masked := EventCatalogue.by_id("masked_pursuer")
+	var masked := EventCatalogue.shipped().by_id("masked_pursuer")
 	list.append({"def": masked, "how": "waits at the foot of the stairwell",
 			"path": PackedVector2Array([Vector2.ZERO, Vector2(0.0, -1600.0)]),
 			"her": Vector2(0.0, -(masked.notice_within() + 100.0)), "heading": Vector2.DOWN,

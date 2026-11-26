@@ -55,7 +55,7 @@ func run(t: TestRunner) -> void:
 ## the latest of `SENT`.
 func _test_the_dog_walker_is_created_at_a_drawn_point_of_its_bark(t: TestRunner) -> void:
 	var made := await _sent("dog_walker", t)
-	var def := EventCatalogue.by_id("dog_walker")
+	var def := EventCatalogue.shipped().by_id("dog_walker")
 	t.check(made.size() >= SENT, "%d dog walkers are sent down her line (%d)" % [SENT, made.size()])
 	var past := true
 	var earliest := INF
@@ -74,7 +74,7 @@ func _test_the_dog_walker_is_created_at_a_drawn_point_of_its_bark(t: TestRunner)
 ## read within the two ticks the manager may have stepped it by when it is first seen.
 func _test_the_loose_dog_is_created_at_the_loud_of_its_beat_on_her(t: TestRunner) -> void:
 	var made := await _sent("loose_dog", t)
-	var def := EventCatalogue.by_id("loose_dog")
+	var def := EventCatalogue.shipped().by_id("loose_dog")
 	var aged := EventSpawner.age_when_warned(def)
 	var tick := FAST_SCALE / Engine.physics_ticks_per_second
 	var off: Array[float] = []

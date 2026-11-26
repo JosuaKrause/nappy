@@ -152,7 +152,7 @@ func _the_day_leaves_no_room_for(foot: Vector2) -> bool:
 		for body in region_plan.door_plans():
 			doors.append(body.placed_at())
 	return not DoorClearanceRule.clear_of_the_doors(foot, PackedVector2Array(), doors,
-			EventCatalogue.mast().field_reach())
+			EventCatalogue.shipped().mast().field_reach())
 
 ## Plans `day` on the test city in the real day order (closures, then events), from the run's own
 ## scars: what the game does at that day's dawn.

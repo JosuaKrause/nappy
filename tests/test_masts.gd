@@ -51,13 +51,13 @@ func run(t: TestRunner) -> void:
 ## dawn's own choice of them is `test_events_scheduler.gd`'s.
 func _start(with_the_announcement := false) -> void:
 	var plans: Array[EventPlan] = []
-	var loudspeaker := EventCatalogue.mast()
+	var loudspeaker := EventCatalogue.shipped().mast()
 	for site in _sites():
 		var mast := EventPlan.new(loudspeaker, site.foot())
 		mast.stand_as_a_mast(site.id())
 		plans.append(mast)
 		if with_the_announcement:
-			var announcement := EventPlan.new(EventCatalogue.by_id("curfew_announce"), site.foot())
+			var announcement := EventPlan.new(EventCatalogue.shipped().by_id("curfew_announce"), site.foot())
 			announcement.stand_as_a_mast(site.id())
 			plans.append(announcement)
 	# The focus is far off the map, so nothing streams in until a test walks to a mast.
@@ -71,8 +71,8 @@ func _start(with_the_announcement := false) -> void:
 func _test_no_row_is_city_wide(t: TestRunner) -> void:
 	t.check(EventDraft.new("").build().get("city_wide") == null,
 			"EventDef carries no city_wide field any more")
-	var loudspeaker := EventCatalogue.by_id("loudspeaker")
-	var curfew := EventCatalogue.by_id("curfew_announce")
+	var loudspeaker := EventCatalogue.shipped().by_id("loudspeaker")
+	var curfew := EventCatalogue.shipped().by_id("curfew_announce")
 	t.check(loudspeaker.heard_within() > loudspeaker.core_within(),
 			"the loudspeaker has an edge a route can go round")
 	t.check(curfew.heard_within() > curfew.core_within(),
@@ -97,7 +97,7 @@ func _test_a_mast_never_reaches_the_doorstep_or_a_calm_interior(t: TestRunner) -
 	var checked := 0
 	for seed_value: int in SITE_SEEDS:
 		var map := MapCache.of(seed_value)
-		var reach := EventCatalogue.by_id("loudspeaker").heard_within()
+		var reach := EventCatalogue.shipped().by_id("loudspeaker").heard_within()
 		var doorstep := map.doorstep_world_position()
 		var home := map.home_world_position()
 		var home_margin := MastSites.MAST_HOME_STREET_MARGIN * float(CityMap.period()) * Tuning.TILE_SIZE
@@ -161,7 +161,7 @@ func _test_a_door_a_recipe_stands_is_a_point_a_mast_keeps_clear_of(t: TestRunner
 # ------------------------------------------------------------------- field ---
 
 func _test_the_field_is_zero_outside_its_reach_and_falls_off_inside_it(t: TestRunner) -> void:
-	var def := EventCatalogue.by_id("loudspeaker")
+	var def := EventCatalogue.shipped().by_id("loudspeaker")
 	t.check(is_zero_approx(def.emission_at_distance(def.heard_within() + 1.0)),
 			"the field is zero just past its own outer radius")
 	var at_inner := def.emission_at_distance(def.core_within())
@@ -340,7 +340,7 @@ func _test_a_queued_mast_is_never_generated_inside_a_lethal_field(t: TestRunner)
 	manager.setup(run)
 	t.add_child(manager)
 	var map := _map
-	var lorry_def := EventCatalogue.by_id("reversing_lorry")
+	var lorry_def := EventCatalogue.shipped().by_id("reversing_lorry")
 	var walled: Array[Rect2i] = []
 	var lorry_tile := Vector2i(-1, -1)
 	for tile in map.tiles_of_type(GameEnums.TileType.SIDEWALK):

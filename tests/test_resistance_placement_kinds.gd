@@ -60,7 +60,7 @@ func _test_the_burnt_shell_task_rides_the_recorded_scar(t: TestRunner) -> void:
 	var near_fronts: Array[Vector2i] = []
 	var far_fronts: Array[Vector2i] = []
 	for tile in EventScheduler.row_ground(_city.map()).tiles_for(
-			EventCatalogue.by_id("burning_building")):
+			EventCatalogue.shipped().by_id("burning_building")):
 		var distance := _city.map().tile_to_world(tile).distance_to(doorstep)
 		if distance < Tuning.EVENT_STREAM_RADIUS:
 			near_fronts.append(tile)
@@ -214,7 +214,7 @@ func _test_every_front_the_fire_catches_on_has_a_door_on_a_sidewalk(t: TestRunne
 	_build_city_in_a_new_run(t)
 	var size := float(Tuning.TILE_SIZE)
 	var fronts := EventScheduler.row_ground(_city.map()).tiles_for(
-			EventCatalogue.by_id("burning_building"))
+			EventCatalogue.shipped().by_id("burning_building"))
 	var on_a_door := 0
 	var wrong: Array[Vector2i] = []
 	var behind_tile := {}
@@ -286,7 +286,7 @@ func _test_the_burnt_shell_task_falls_back_with_no_recorded_scar(t: TestRunner) 
 	var shell := rider.global_position
 	var shell_tile := _city.map().world_to_tile(shell)
 	var fronts := EventScheduler.row_ground(_city.map()).tiles_for(
-			EventCatalogue.by_id("burning_building"))
+			EventCatalogue.shipped().by_id("burning_building"))
 	t.check(shell_tile in fronts,
 			"the shell stands at %s, a front day 3's fire could have caught on" % shell_tile)
 	var recorded := 0
@@ -510,7 +510,7 @@ func _test_a_completed_marks_own_contact_and_guard_survive_to_the_day_end(t: Tes
 	for guard in guards:
 		t.check(not guard.is_gone() and is_instance_valid(guard),
 				"the mark's own guard stays too, not retired for the door")
-	t.check(_live(EventCatalogue.task_guard().id()).is_empty(),
+	t.check(_live(EventCatalogue.shipped().task_guard().id()).is_empty(),
 			"the door stands no guard of its own: its trap comes to her once she crosses")
 
 	# The door's task expiring (its deadline, or its rider gone) ends the task, not the day:
@@ -859,12 +859,12 @@ func _two_masts_round_a_mark(map: CityMap) -> Array:
 					far.append(site)
 		var builder := GamePlanBuilder.over(map)
 		for a in near:
-			var first := builder.place_at(EventCatalogue.mast(), a,
+			var first := builder.place_at(EventCatalogue.shipped().mast(), a,
 					RandomNumberGenerator.new(), [] as Array[EventPlan])
 			if first == null:
 				continue
 			for b in far:
-				var second := builder.place_at(EventCatalogue.mast(), b,
+				var second := builder.place_at(EventCatalogue.shipped().mast(), b,
 						RandomNumberGenerator.new(), [first] as Array[EventPlan])
 				if second != null:
 					return [mark, first, second]
@@ -1162,7 +1162,7 @@ func _boarded_among(state: CityState, candidates: Array[Vector2i]) -> Array[Vect
 ## the road and leaves nothing behind it. It comes once she nears the main road, or at
 ## `ResistanceHappenings.COLUMN_BY` wherever she is, and once.
 func _test_the_column_comes_down_the_main_road(t: TestRunner) -> void:
-	var convoy := EventCatalogue.by_id("military_convoy")
+	var convoy := EventCatalogue.shipped().by_id("military_convoy")
 	_build_city_in_a_new_run(t)
 	var state := _run.attempt_spend().block_arcs()
 	state.reset()

@@ -153,7 +153,7 @@ static func _lot(cells: int) -> PlacementUnit:
 static func _rows(ids: Array[String]) -> Dictionary:
 	var rows := {}
 	for id in ids:
-		rows[id] = EventCatalogue.by_id(id)
+		rows[id] = EventCatalogue.shipped().by_id(id)
 	return rows
 
 ## `unit` drawn from `bag` among `among`, its rows the marbles' and the catalogue's.
@@ -257,7 +257,7 @@ func _test_a_row_the_layout_cannot_hold_is_refused_as_it_comes_up(t: TestRunner)
 func _test_across_from_a_drawn_row_the_draw_is_mostly_empty(t: TestRunner) -> void:
 	var fill := {"cafe_tables": 10, "market_stall": 10, "leaf_blower": 10, "homeless_yeller": 2,
 			ViewBag.EMPTY: 30}
-	var mother := EventPlan.new(EventCatalogue.by_id("chatting_mother"), Vector2(-640, -640))
+	var mother := EventPlan.new(EventCatalogue.shipped().by_id("chatting_mother"), Vector2(-640, -640))
 	var empty := {true: 0, false: 0}
 	var sidewalks := 0
 	var only_the_yeller := true
@@ -315,7 +315,7 @@ func _test_one_of_a_row_in_a_unit(t: TestRunner) -> void:
 func _test_a_rows_weight_is_the_largest_of_its_locations(t: TestRunner) -> void:
 	var street := _street()
 	var at := street.locations()
-	at[7].take(EventPlan.new(EventCatalogue.by_id("busker"), at[7].centre()))
+	at[7].take(EventPlan.new(EventCatalogue.shipped().by_id("busker"), at[7].centre()))
 	at[2].record(null)
 	var ground := _Ground.new()
 	ground.weights = {
@@ -390,7 +390,7 @@ func _test_a_row_that_travels_a_sidewalk_takes_one_location(t: TestRunner) -> vo
 func _test_every_open_location_ends_drawn(t: TestRunner) -> void:
 	var lot := _lot(3)
 	var held := lot.locations()[0]
-	held.take(EventPlan.new(EventCatalogue.by_id("busker"), held.centre()))
+	held.take(EventPlan.new(EventCatalogue.shipped().by_id("busker"), held.centre()))
 	var locations := _Locations.new()
 	_drawn(lot, _Bag.new(["cafe_tables"] as Array[String]), _Ground.new(), locations)
 	var empties := 0
@@ -414,7 +414,7 @@ func _test_a_location_that_held_a_beat_while_its_unit_filled_in_reads_drawn_once
 		t: TestRunner) -> void:
 	var lot := _lot(3)
 	var held := lot.locations()[0]
-	var beat := EventPlan.new(EventCatalogue.by_id("busker"), held.centre())
+	var beat := EventPlan.new(EventCatalogue.shipped().by_id("busker"), held.centre())
 	held.take_for_her_walk(beat)
 	_drawn(lot, _Bag.new([] as Array[String]), _Ground.new(), _Locations.new())
 	t.check(held.is_drawn() and held.beat() == beat,
@@ -425,7 +425,7 @@ func _test_a_location_that_held_a_beat_while_its_unit_filled_in_reads_drawn_once
 
 ## The plans handed in are what every ask is judged among first, and the list is not added to.
 func _test_the_plans_handed_in_are_left_as_handed(t: TestRunner) -> void:
-	var given := EventPlan.new(EventCatalogue.by_id("roadblock"), Vector2(-500, -500))
+	var given := EventPlan.new(EventCatalogue.shipped().by_id("roadblock"), Vector2(-500, -500))
 	var among: Array[EventPlan] = [given]
 	var ground := _Ground.new()
 	_drawn(_street(), _Bag.new(["cafe_tables", "busker"] as Array[String]), ground,

@@ -116,9 +116,9 @@ func _a_day(t: TestRunner, city: City, run: RunState, library: AtlasLibrary, see
 	if OS.get_environment("PROBE_NO_ROWS") == "" and ROW_DAYS.has(day):
 		spots = _spots(city)
 	for id in ROWS:
-		var def := EventCatalogue.by_id(id)
+		var def := EventCatalogue.shipped().by_id(id)
 		if id == "police_patrol":
-			def = EventCatalogue.heated(def, EventCatalogue.heat_levels() - 1)
+			def = EventCatalogue.shipped().heated(def, EventCatalogue.heat_levels() - 1)
 		for i in spots.size():
 			for mode: String in ["stands", "walks away", "runs away"]:
 				_a_row(city, player, def, spots[i], mode, "%s row %s spot %d %s" % [label, id, i,
@@ -223,7 +223,7 @@ func _the_cordon(city: City, library: AtlasLibrary, director: ResistanceDirector
 	happenings.cordon.clear()
 	var area := city.map().tile_rect_to_world(ClosurePlanner.calm_area_rect(city.map(), park))
 	var before := RunCity.events(city).instances().duplicate()
-	var busker := RunCity.events(city).spawn_extra(EventCatalogue.by_id("busker"),
+	var busker := RunCity.events(city).spawn_extra(EventCatalogue.shipped().by_id("busker"),
 			area.position + area.size * Vector2(0.25, 0.3))
 	var cordon := ParkCordon.new(city.map(), city.navigator(), RunCity.events(city), city,
 			library, park, RunCity.spawn_siting(city),

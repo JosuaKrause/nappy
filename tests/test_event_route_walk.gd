@@ -39,7 +39,7 @@ func run(t: TestRunner) -> void:
 
 ## The convoy the director sends, on a two-tile route east, live past its telegraph.
 static func _convoy(where: WhereSheIs, way_on: WayOn) -> EventInstance:
-	var def := EventCatalogue.by_id("military_convoy").as_sent_ahead()
+	var def := EventCatalogue.shipped().by_id("military_convoy").as_sent_ahead()
 	var instance := EventInstance.new()
 	var path := PackedVector2Array([Vector2.ZERO, Vector2(2.0 * TILE, 0.0)])
 	instance.setup(def, path[0], path, Vector2.RIGHT, EventSurroundings.new().hearing(where))
@@ -103,7 +103,7 @@ func _test_told_none_it_ends_its_route_whatever_its_row(t: TestRunner) -> void:
 ## A row that paces a beat (the raid's car, the patrol pacing) told a way on never asks: its route
 ## folds back and forth and has no end to go on from.
 func _test_a_pacing_row_never_asks(t: TestRunner) -> void:
-	var patrol := EventCatalogue.by_id("police_patrol")
+	var patrol := EventCatalogue.shipped().by_id("police_patrol")
 	var folding := patrol.redraft()
 	folding.route(patrol.route().pacing())
 	var pacing := folding.build()

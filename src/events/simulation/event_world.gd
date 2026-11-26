@@ -206,13 +206,17 @@ func has_player() -> bool:
 func surroundings() -> EventSurroundings:
 	return _surroundings
 
+## The run's catalogue every part of the world looks its rows up in (`EventSurroundings.rows()`).
+func rows() -> EventCatalogue:
+	return _surroundings.rows()
+
 ## **Works out the run's mast sites on `map`**, once, when the manager is handed its city: a mast's
 ## location is known from the start of the run (inbox #1185 in gentle-owl; `docs/EVENTS.md`, "The three views and
 ## the placement order"). The sites are the city's as built and are kept for the run: worked out on
 ## a later day's paint, a calm area grown or a tile changed can let a newly eligible candidate win
 ## the pick, so they are worked out once, here, and never again.
 func work_out_mast_sites(map: CityMap) -> void:
-	_mast_sites = MastSites.compute(map)
+	_mast_sites = MastSites.compute(rows(), map)
 
 ## The run's mast sites, as `work_out_mast_sites()` found them; empty before.
 func mast_sites() -> Array[MastSites.Site]:

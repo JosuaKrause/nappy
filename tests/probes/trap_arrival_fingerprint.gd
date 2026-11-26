@@ -112,7 +112,7 @@ func _a_day(t: TestRunner, city: City, run: RunState, seed_value: int, day: int)
 		elif ResistanceDirector._sets_a_trap_on_her(task):
 			director._set_the_trap_on_her(task)
 		printed += _run_out(city, director, player, "%s own trap" % label, Vector2.ZERO)
-	var robber := EventCatalogue.by_id("robber_giving_chase")
+	var robber := EventCatalogue.shipped().by_id("robber_giving_chase")
 	for spot in _spots(city):
 		for front_door: bool in [false, true]:
 			_stand(city, player, spot)

@@ -177,7 +177,7 @@ func _heading_for_sector(sector: int) -> Vector2:
 ## eight headings, rather than once per family that calls it.
 func _test_select_view_holds_and_mirrors(t: TestRunner) -> void:
 	var instance := FakeEvent.new()
-	var look := instance.look_for(EventCatalogue.by_id("busker"))
+	var look := instance.look_for(EventCatalogue.shipped().by_id("busker"))
 	for sector in range(8):
 		# Started from the opposite sector every time, so a pass here is never an accident of the
 		# previous iteration's hold agreeing with this one.
@@ -197,7 +197,7 @@ func _test_select_view_holds_and_mirrors(t: TestRunner) -> void:
 ## its last facing" contract the walkers get, reached the same way `Stroller` reaches it.
 func _test_select_view_zero_heading_holds(t: TestRunner) -> void:
 	var instance := FakeEvent.new()
-	var look := instance.look_for(EventCatalogue.by_id("busker"))
+	var look := instance.look_for(EventCatalogue.shipped().by_id("busker"))
 	look.face(Vector2.RIGHT)
 	var view := look.select_view(Vector2.ZERO)
 	t.check(view == "side" and not look.is_mirrored(),
@@ -221,7 +221,7 @@ func _test_cafe_sitters_face_their_own_tables(t: TestRunner) -> void:
 	for picture: String in EventPictures.CAFE_SITTER_BY_VIEW_B.values():
 		sitters[picture] = true
 	for spread_vertical: bool in [false, true]:
-		var instance: EventInstance = await DrawnEvent.stand(t, EventCatalogue.by_id("cafe_tables"),
+		var instance: EventInstance = await DrawnEvent.stand(t, EventCatalogue.shipped().by_id("cafe_tables"),
 				spread_vertical)
 		var drawer: RecordingEventDrawer = DrawnEvent.drawer_of(instance)
 		var axis := Vector2.DOWN if spread_vertical else Vector2.RIGHT
@@ -309,7 +309,7 @@ func _test_roadblock_barrier_is_end_on_down_a_column(t: TestRunner) -> void:
 ## either axis with a recording drawer handed in gives both: the band's segments and end posts on
 ## its slices, and the posted guards on its band.
 func _test_roadblock_guard_stands_clear_of_the_band(t: TestRunner) -> void:
-	var def := EventCatalogue.by_id("roadblock")
+	var def := EventCatalogue.shipped().by_id("roadblock")
 	for vertical: bool in [false, true]:
 		var axis := "end-on" if vertical else "broadside"
 		var instance: EventInstance = await DrawnEvent.stand(t, def, vertical)
@@ -367,7 +367,7 @@ func _test_roadblock_guard_stands_clear_of_the_band(t: TestRunner) -> void:
 ## drawer handed in.
 func _test_a_spread_covers_the_ground_its_body_closes(t: TestRunner) -> void:
 	for id: String in ["roadblock", "construction"]:
-		var def := EventCatalogue.by_id(id)
+		var def := EventCatalogue.shipped().by_id(id)
 		for vertical: bool in [false, true]:
 			var what := "%s %s" % [id, "end-on" if vertical else "broadside"]
 			var picture := EventPictures.roadblock_segment_texture(vertical) if id == "roadblock" \
@@ -474,7 +474,7 @@ func _test_state_pairs_stay_visually_distinct(t: TestRunner) -> void:
 func _test_setup_resets_the_view_to_the_exact_siting(t: TestRunner) -> void:
 	var sited: Array[EventInstance] = []
 	for sector in range(8):
-		sited.append(DrawnEvent.build(t, EventCatalogue.by_id("busker"), false, null, null,
+		sited.append(DrawnEvent.build(t, EventCatalogue.shipped().by_id("busker"), false, null, null,
 				Vector2.ZERO, _heading_for_sector(sector)))
 	await DrawnEvent.frames(t)
 	for sector in range(8):
@@ -503,7 +503,7 @@ func _test_setup_resets_the_view_to_the_exact_siting(t: TestRunner) -> void:
 ## nothing next to a man watching *her*, so `robber_waiting_heading()` asks the event for the
 ## line to her (`sight_line_to_her()`).
 func _test_robber_waiting_faces_her(t: TestRunner) -> void:
-	var def := EventCatalogue.by_id("alley_robbery")
+	var def := EventCatalogue.shipped().by_id("alley_robbery")
 	var instance := FakeEvent.new()
 	instance.waiting = true
 	var look := instance.look_for(def)
@@ -520,7 +520,7 @@ func _test_robber_waiting_faces_her(t: TestRunner) -> void:
 	instance.free()
 
 func _test_robber_waiting_falls_back_to_its_siting_with_no_player(t: TestRunner) -> void:
-	var def := EventCatalogue.by_id("alley_robbery")
+	var def := EventCatalogue.shipped().by_id("alley_robbery")
 	var instance := FakeEvent.new()
 	instance.waiting = true
 	instance.heading = _heading_for_sector(6)
@@ -532,7 +532,7 @@ func _test_robber_waiting_falls_back_to_its_siting_with_no_player(t: TestRunner)
 # ------------------------------------------------------------------- state predicates ---
 
 func _test_cat_state_predicate_selects_the_telegraph_posture(t: TestRunner) -> void:
-	var def := EventCatalogue.by_id("cat_dash")
+	var def := EventCatalogue.shipped().by_id("cat_dash")
 	var instance := EventInstance.new()
 	instance.setup(def, Vector2.ZERO)
 	t.check(instance.is_telegraphing(), "a cat starts in its crouch")
@@ -542,7 +542,7 @@ func _test_cat_state_predicate_selects_the_telegraph_posture(t: TestRunner) -> v
 	instance.free()
 
 func _test_chatting_mother_state_predicate_selects_the_conversation_posture(t: TestRunner) -> void:
-	var def := EventCatalogue.by_id("chatting_mother")
+	var def := EventCatalogue.shipped().by_id("chatting_mother")
 	var instance := EventInstance.new()
 	instance.setup(def, Vector2.ZERO)
 	t.check(not instance.is_chatting(), "she is only strolling until spoken to")
@@ -556,7 +556,7 @@ func _test_chatting_mother_state_predicate_selects_the_conversation_posture(t: T
 ## (`SetOffWatch`), so he comes with his telegraph spent, running, and has no wait or notice to be
 ## drawn standing through. Created as `EventStreaming.set_off()` creates him.
 func _test_masked_man_is_drawn_lunging_from_the_tick_he_comes(t: TestRunner) -> void:
-	var def := EventCatalogue.by_id("masked_pursuer")
+	var def := EventCatalogue.shipped().by_id("masked_pursuer")
 	var instance_where := WhereSheIs.nowhere()
 	var instance := EventInstance.new()
 	instance.setup(def, Vector2.ZERO, PackedVector2Array([Vector2.ZERO, Vector2(0.0, -600.0)]),
@@ -621,7 +621,7 @@ func _is_drawn_from(pictures: Array[String], by_view: Dictionary, also_by_view :
 			return by_view.values().has(picture) or also_by_view.values().has(picture))
 
 func _test_the_waiting_dog_rests_stands_alert_and_gallops(t: TestRunner) -> void:
-	var def := EventCatalogue.by_id("charging_dog").for_day(Tuning.RUN_TAUGHT_DAY + 1)
+	var def := EventCatalogue.shipped().by_id("charging_dog").for_day(Tuning.RUN_TAUGHT_DAY + 1)
 	var instance_where := WhereSheIs.nowhere()
 	var instance := _drawn_at_the_origin(t, def, instance_where)
 	_hold(instance, instance_where, Vector2(def.notice_within() + 60.0, 0.0), 1.0)
@@ -674,7 +674,7 @@ func _test_the_waiting_dog_rests_stands_alert_and_gallops(t: TestRunner) -> void
 ## **The day-3 dog's telegraph is its approach**, so it is drawn galloping at her for all of it and
 ## never stands: the same row handed to the director with no trigger to have waited behind.
 func _test_the_day_3_dog_gallops_through_its_approach(t: TestRunner) -> void:
-	var def := EventCatalogue.by_id("charging_dog")
+	var def := EventCatalogue.shipped().by_id("charging_dog")
 	t.check(def.notice_within() <= 0.0, "on the teaching day the dog does not wait")
 	var instance_where := WhereSheIs.nowhere()
 	var instance := _drawn_at_the_origin(t, def, instance_where)
@@ -688,7 +688,7 @@ func _test_the_day_3_dog_gallops_through_its_approach(t: TestRunner) -> void:
 	instance.free()
 
 func _test_the_robber_waits_walks_alert_and_lunges(t: TestRunner) -> void:
-	var def := EventCatalogue.by_id("alley_robbery")
+	var def := EventCatalogue.shipped().by_id("alley_robbery")
 	var instance_where := WhereSheIs.nowhere()
 	var instance := EventInstance.new()
 	instance.setup(def, Vector2.ZERO, PackedVector2Array(), Vector2.RIGHT,
@@ -752,7 +752,7 @@ func _test_the_robber_waits_walks_alert_and_lunges(t: TestRunner) -> void:
 	# The sent robber arrives chasing, with no notice to be alert through.
 	var sent_where := WhereSheIs.nowhere()
 	var sent := EventInstance.new()
-	sent.setup(EventCatalogue.by_id("robber_giving_chase"), Vector2.ZERO, PackedVector2Array(),
+	sent.setup(EventCatalogue.shipped().by_id("robber_giving_chase"), Vector2.ZERO, PackedVector2Array(),
 			Vector2.RIGHT,
 			EventSurroundings.new().hearing(sent_where) \
 				.drawing_through(DrawnEvent.recording(sent, RecordingEventDrawer.new())))
@@ -762,7 +762,7 @@ func _test_the_robber_waits_walks_alert_and_lunges(t: TestRunner) -> void:
 	sent.free()
 
 func _test_the_roadblock_guard_raises_his_hand_at_his_post(t: TestRunner) -> void:
-	var hot := EventCatalogue.heated(EventCatalogue.by_id("roadblock"), EventDef.HEAT_HUNTS_LEVEL)
+	var hot := EventCatalogue.shipped().heated(EventCatalogue.shipped().by_id("roadblock"), EventDef.HEAT_HUNTS_LEVEL)
 	var guard_where := WhereSheIs.nowhere()
 	var guard := _drawn_at_the_origin(t, hot, guard_where)
 	var her := Vector2(0.0, hot.notice_within() - 10.0)
@@ -797,7 +797,7 @@ func _test_the_door_guard_raises_his_hand_at_the_hut_and_charges_at_once(t: Test
 	# (`EventInstance.is_its_guard_warning()`, raised by
 	# `CheckpointController.warn_at_the_doors()`); the man set on her once it has run with her still across charges from his first frame
 	# (`PursuitSpec.Start.CHARGES_AT_ONCE`).
-	var def := EventCatalogue.by_id("door_guard")
+	var def := EventCatalogue.shipped().by_id("door_guard")
 	t.check(def.starts_by(PursuitSpec.Start.CHARGES_AT_ONCE) and is_zero_approx(def.telegraphs_for()),
 			"the door guard owes no notice of his own")
 	var guard_where := WhereSheIs.nowhere()
@@ -810,7 +810,7 @@ func _test_the_door_guard_raises_his_hand_at_the_hut_and_charges_at_once(t: Test
 			and await _drawn_from(t, guard, [EventPictures.GUARD_LUNGING_BY_VIEW]),
 			"set on her, he lunges from his first frame")
 	guard.free()
-	var hut := _drawn_at_the_origin(t, EventCatalogue.by_id("checkpoint_hut"),
+	var hut := _drawn_at_the_origin(t, EventCatalogue.shipped().by_id("checkpoint_hut"),
 			WhereSheIs.nowhere())
 	var alert: String = EventPictures.GUARD_ALERT_BY_VIEW["front"]
 	var resting := await _painted_pictures(t, hut)
@@ -825,7 +825,7 @@ func _test_the_door_guard_raises_his_hand_at_the_hut_and_charges_at_once(t: Test
 ## **The man a vehicle lets out raises his hand and stands still, then charges.** *(Inbox #764 in minty-lemur, the
 ## player: van guardsmen about to charge hold up their hands; events that spawn with the sole purpose
 ## of charging show an indicator that they are about to, with the same heads-up as off-screen
-## chargers.)* Every copy `EventCatalogue.out_of_the_car()` makes — out of a patrol car or a hunting
+## chargers.)* Every copy `EventCatalogue.shipped().out_of_the_car()` makes — out of a patrol car or a hunting
 ## van, the policeman through day 8 and the guardsman from day 9 — stands where he got out in his
 ## alert (`policeman_alert_*` or `guard_alert_*`) for `Tuning.WARNING_ALONE_MAX` while she walks
 ## away, and then lunges.
@@ -834,7 +834,7 @@ func _test_the_man_out_of_a_vehicle_raises_his_hand_then_charges(t: TestRunner) 
 			"guardsman_giving_chase": Tuning.REGION_WALL_FIRST_DAY}
 	for id: String in day_of.keys():
 		for stops: bool in [true, false]:
-			var def := EventCatalogue.out_of_the_car(DaySpec.for_day(day_of[id]), stops)
+			var def := EventCatalogue.shipped().out_of_the_car(DaySpec.for_day(day_of[id]), stops)
 			var name := "%s out of %s" % [id, "a patrol car" if stops else "a hunting van"]
 			t.check(def.pursuit().stands_for_its_notice() and def.starts_by(PursuitSpec.Start.SETS_OFF_BESIDE_HER)
 					and is_equal_approx(def.telegraphs_for(), Tuning.WARNING_ALONE_MAX),
@@ -885,7 +885,7 @@ func _drawn_from(t: TestRunner, instance: EventInstance, families: Array) -> boo
 ## their screen-edge badge alone.
 func _test_no_guard_who_arrives_charging_takes_the_alert(t: TestRunner) -> void:
 	for id: String in ["van_guard_giving_chase", "policeman_giving_chase", "guardsman_giving_chase"]:
-		var def := EventCatalogue.by_id(id)
+		var def := EventCatalogue.shipped().by_id(id)
 		t.check(def.starts_by(PursuitSpec.Start.ARRIVES_CHASING) and not def.pursuit().stands_for_its_notice(),
 				"'%s' arrives charging and does not stand for a notice" % id)
 		var instance_where := WhereSheIs.nowhere()
@@ -950,7 +950,7 @@ func _test_vehicle_views_match_facings_csv_per_sector(t: TestRunner) -> void:
 		var side_faces_west: bool = VEHICLE_SIDE_FACES_WEST[name]
 		var expected_mirror: Array = VEHICLE_MIRROR_BY_SECTOR[name]
 		var instance := FakeEvent.new()
-		var look := instance.look_for(EventCatalogue.by_id(VEHICLE_DEF_ID[name]))
+		var look := instance.look_for(EventCatalogue.shipped().by_id(VEHICLE_DEF_ID[name]))
 		for sector in range(8):
 			# Started from the opposite sector every time — the same discipline
 			# `_test_select_view_holds_and_mirrors` uses — so a pass is never an accident of the
@@ -975,7 +975,7 @@ func _test_vehicle_views_match_facings_csv_per_sector(t: TestRunner) -> void:
 func _test_kerb_parked_vans_keep_their_axis_chosen_view(t: TestRunner) -> void:
 	for name: String in ["delivery_van", "ice_cream_van"]:
 		var instance := FakeEvent.new()
-		var look := instance.look_for(EventCatalogue.by_id(name))
+		var look := instance.look_for(EventCatalogue.shipped().by_id(name))
 		t.check(look.select_view(Vector2.ZERO) == "side",
 				"%s's own default east facing still lands on the side view" % name)
 		instance.free()
@@ -985,7 +985,7 @@ func _test_kerb_parked_vans_keep_their_axis_chosen_view(t: TestRunner) -> void:
 ## front, back and diagonal views are never actually reachable in play; binding it onto the shared
 ## table must not change that.
 func _test_reversing_lorry_only_ever_faces_the_side_view(t: TestRunner) -> void:
-	var def := EventCatalogue.by_id("reversing_lorry")
+	var def := EventCatalogue.shipped().by_id("reversing_lorry")
 	for face: Vector2 in [Vector2.RIGHT, Vector2.LEFT]:
 		var instance := FakeEvent.new()
 		instance.heading = face
@@ -1037,9 +1037,9 @@ func _test_vehicle_views_are_grounded_at_the_canvas_bottom(t: TestRunner) -> voi
 ## directly. `fallen_tree` shares the row's single-body geometry (`docs/EVENTS.md`, "Seal
 ## pictures") and keeps the ordinary shadow, so that answer is the only difference between the two.
 func _test_burst_water_main_draws_no_body_shadow(t: TestRunner) -> void:
-	t.check(not EventCatalogue.by_id("burst_water_main").look().casts_a_shadow(),
+	t.check(not EventCatalogue.shipped().by_id("burst_water_main").look().casts_a_shadow(),
 			"burst_water_main opts out of the body shadow every other seal draws")
-	t.check(EventCatalogue.by_id("fallen_tree").look().casts_a_shadow(),
+	t.check(EventCatalogue.shipped().by_id("fallen_tree").look().casts_a_shadow(),
 			"fallen_tree, burst_water_main's same-geometry sibling, keeps the ordinary body shadow")
 
 ## **The riot van and the moving van cast one oval per wheel pair, under a body of their own**
@@ -1049,7 +1049,7 @@ func _test_burst_water_main_draws_no_body_shadow(t: TestRunner) -> void:
 ## at every sector, and the moving van side on and end on, cast two ovals together no wider than the
 ## picture drawn for that view, where the night raid's scene is wider than the riot van.
 func _test_a_scene_shaped_van_casts_its_shadow_under_its_wheels(t: TestRunner) -> void:
-	var raid := EventCatalogue.by_id("night_raid")
+	var raid := EventCatalogue.shipped().by_id("night_raid")
 	var raid_side := EventPictures.native_size(EventPictures.RIOT_VAN_BY_VIEW["side"]).x
 	t.check(_outlines_bounds([raid.ground_shape().shadow_outline(Vector2.ZERO)]).size.x
 			> raid_side, "the night raid's scene is wider than the riot van's side picture")
@@ -1066,7 +1066,7 @@ func _test_a_scene_shaped_van_casts_its_shadow_under_its_wheels(t: TestRunner) -
 				"the riot van at sector %d casts two ovals no wider than its %.0fpx picture (%d, %.1fpx)"
 				% [sector, drawn, outlines.size(), width])
 		instance.free()
-	var moving := EventCatalogue.by_id("moving_van")
+	var moving := EventCatalogue.shipped().by_id("moving_van")
 	for side_on: bool in [true, false]:
 		var instance := FakeEvent.new()
 		instance.side_on = side_on
@@ -1171,7 +1171,7 @@ func _test_every_moving_vehicle_has_wheels_on_its_own_canvas(t: TestRunner) -> v
 ## ground (not striding, as a real one answers a tick it stood), the body is back down on its
 ## wheels.
 func _test_a_moving_vehicle_bobs_on_its_wheels_and_a_stopped_one_sits_still(t: TestRunner) -> void:
-	var def := EventCatalogue.by_id("police_patrol")
+	var def := EventCatalogue.shipped().by_id("police_patrol")
 	var instance := FakeEvent.new()
 	instance.travels = true
 	instance.approaching_at = def.approach_speed()
@@ -1203,7 +1203,7 @@ func _test_a_moving_vehicle_bobs_on_its_wheels_and_a_stopped_one_sits_still(t: T
 ## **Only the vehicles changed.** A dog walker has no wheels, and its bob is still the stride's own
 ## lift — taller than a vehicle's, since it is a step rather than a sway.
 func _test_a_walking_event_keeps_its_stride_bob(t: TestRunner) -> void:
-	var def := EventCatalogue.by_id("dog_walker")
+	var def := EventCatalogue.shipped().by_id("dog_walker")
 	var instance := FakeEvent.new()
 	instance.travels = true
 	instance.approaching_at = def.approach_speed()
@@ -1243,7 +1243,7 @@ func _test_a_vehicle_badge_draws_its_wheels(t: TestRunner) -> void:
 ## asset size and the real `obstructs_within()`, and in which order each slice draws its post and
 ## its segment.
 func _test_a_spread_cap_matches_what_it_obstructs(t: TestRunner) -> void:
-	var def := EventCatalogue.by_id("construction")
+	var def := EventCatalogue.shipped().by_id("construction")
 	var half := maxf(11.0, def.obstructs_within())
 	var cap_size := EventPictures.native_size(EventPictures.BARRIER_END)
 	t.check(cap_size.y > cap_size.x * 2.0,
@@ -1334,7 +1334,7 @@ static func _posts_drawn(drawn: Array, segment: String, behind: bool,
 ## whole picture (`EventPictures.wide_scene_texture()`), and that picture spans the row's own
 ## obstruction along its run.
 func _test_a_whole_scene_spans_its_obstruction(t: TestRunner) -> void:
-	var tree := EventCatalogue.by_id("fallen_tree")
+	var tree := EventCatalogue.shipped().by_id("fallen_tree")
 	var half := maxf(11.0, tree.obstructs_within())
 	for is_vertical: bool in [false, true]:
 		var texture := EventPictures.wide_scene_texture(EventDef.Look.FALLEN_TREE, is_vertical)

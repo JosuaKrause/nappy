@@ -194,7 +194,7 @@ func _walk_a_day(map: CityMap, director: EventDirector, day: int) -> Array[Strin
 func _intended_shares(day: int) -> Dictionary:
 	var shares := {}
 	var total := 0.0
-	for def in EventCatalogue.of_kind(GameEnums.EventKind.RECURRING, day):
+	for def in EventCatalogue.shipped().of_kind(GameEnums.EventKind.RECURRING, day):
 		var mode := def.spawn_mode_on(day)
 		if mode != EventDef.SpawnMode.AHEAD_OF_PLAYER and mode != EventDef.SpawnMode.TOWARD_PLAYER \
 				and not def.is_sent_ahead():

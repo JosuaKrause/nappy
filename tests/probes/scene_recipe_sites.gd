@@ -25,7 +25,7 @@ func run(_t: TestRunner) -> void:
 			doors.append(body.placed_at())
 			if body.row_id() == "checkpoint_hut":
 				print("GATE ", body.placed_at())
-		var def := EventCatalogue.by_id("leaf_blower" if day == 1 else "military_convoy")
+		var def := EventCatalogue.shipped().by_id("leaf_blower" if day == 1 else "military_convoy")
 		var tiles: Array[Vector2i] = []
 		var ground := EventScheduler.row_ground(map, corridor)
 		tiles.assign(ground.offers_for_role(def, EventScheduler.role_for(def, day)).keys())
@@ -52,7 +52,7 @@ func run(_t: TestRunner) -> void:
 	var finale := FinalePlanner.route(map)
 	DayPlanner.plan_the_escape_city(map, finale, own_run.calendar().day_rng(14, "finale"), _city_spec(),
 			GamePlanBuilder.over(map))
-	var guards := EventCatalogue.heated(EventCatalogue.by_id("roadblock"), Tuning.RESISTANCE_GOAL)
+	var guards := EventCatalogue.shipped().heated(EventCatalogue.shipped().by_id("roadblock"), Tuning.RESISTANCE_GOAL)
 	print("ESCAPE_EXIT ", FinalePlanner.service_exit_world_position(map))
 	var found := 0
 	var escape_ground := EventScheduler.row_ground(map, null, false)
@@ -65,7 +65,7 @@ func run(_t: TestRunner) -> void:
 		found += 1
 		if found >= 12:
 			break
-	var dog := EventCatalogue.by_id("charging_dog")
+	var dog := EventCatalogue.shipped().by_id("charging_dog")
 	print("DOG_LEAD ", Offscreen.lead(Vector2.RIGHT,
 			dog.chase_speed() + Tuning.WALK_SPEED, dog.warned_for()))
 

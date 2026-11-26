@@ -79,7 +79,7 @@ func run(t: TestRunner) -> void:
 		t.add_child(holder)
 		var drawer := CountingDrawer.new(atlas)
 		var instance := EventInstance.new()
-		instance.setup(EventCatalogue.by_id(id), Vector2.ZERO, PackedVector2Array(), heading,
+		instance.setup(EventCatalogue.shipped().by_id(id), Vector2.ZERO, PackedVector2Array(), heading,
 				EventSurroundings.new().on(EastWestStreet.new() if vertical else WorldMap.open_ground()) \
 					.drawn_from(atlas) \
 					.drawing_through(drawer))

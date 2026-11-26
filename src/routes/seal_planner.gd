@@ -290,7 +290,7 @@ static func _candidate(id: String, strength: int, def_ids: Array[String],
 ## (`DayStreets.tutorial_walk_left_open()`, handed on by `DayPlanner`), null on every other day:
 ## its lesson streets carry no seal, so the same walk leads her to the park she used, spoiled. See
 ## the class doc.
-static func plan_day(map: CityMap, spec: DaySpec, route: RouteSource,
+static func plan_day(rows: EventCatalogue, map: CityMap, spec: DaySpec, route: RouteSource,
 		rng: RandomNumberGenerator, skip: Dictionary = {},
 		held: HeldStreets = null, tutorial: TutorialRoute = null,
 		left_open: TutorialRoute = null) -> Array[EventPlan]:
@@ -338,7 +338,7 @@ static func plan_day(map: CityMap, spec: DaySpec, route: RouteSource,
 		if mouths.has(key) and _may_seal_off_the_walk(map, spec, route, segment):
 			var ends: Array = mouths[key]
 			for at_a: bool in ends:
-				var at_mouth := _seal_a_mouth(map, segment, at_a, pictures, day, rng, trees)
+				var at_mouth := _seal_a_mouth(rows, map, segment, at_a, pictures, day, rng, trees)
 				if not at_mouth:
 					continue
 				planned.append_array(at_mouth.bodies())
@@ -352,10 +352,10 @@ static func plan_day(map: CityMap, spec: DaySpec, route: RouteSource,
 			continue
 		if thinned and not _seals_this_street(rng):
 			continue
-		var candidate := _pick_candidate(pictures, day, rng, lined.has(key))
+		var candidate := _pick_candidate(rows, pictures, day, rng, lined.has(key))
 		if not candidate:
 			continue
-		var sited := seal_street(map, segment, candidate, route, trees, emptied)
+		var sited := seal_street(rows, map, segment, candidate, route, trees, emptied)
 		if candidate.strength == Strength.SOFT:
 			soft_pairs.append(sited)
 		else:
@@ -364,7 +364,7 @@ static func plan_day(map: CityMap, spec: DaySpec, route: RouteSource,
 				held.hold(key, HeldStreets.Why.SEAL)
 	map.set_seal_tree_pits(emptied)
 	planned.append_array(_thin_soft_pairs(map, soft_pairs, rng))
-	planned.append_array(_seal_alley_mouths(map, route, spec, rng, skip, tutorial))
+	planned.append_array(_seal_alley_mouths(rows, map, route, spec, rng, skip, tutorial))
 	return planned
 
 # --------------------------------------------------------- the tutorial route ---
@@ -411,19 +411,19 @@ static func _mouths_of(tutorial: TutorialRoute) -> Dictionary:
 ## rather than a dead end a few seconds later, which is day 2's lesson. It stands as near the
 ## route's junction box as it can while its body, and her own beside it, stay out of the box
 ## (`_mouth_along_tile()`), so it never narrows the route's own line through the junction.
-static func _seal_a_mouth(map: CityMap, segment: StreetNetwork.Segment, at_a: bool,
+static func _seal_a_mouth(rows: EventCatalogue, map: CityMap, segment: StreetNetwork.Segment, at_a: bool,
 		pictures: Array[Candidate], day: int, rng: RandomNumberGenerator,
 		trees: Dictionary) -> SitedSeal:
 	var precinct := TutorialRoute.is_a_precinct(map, segment)
 	var eligible: Array[Candidate] = []
 	for candidate in pictures:
-		if offers(candidate, day, false) and _seals_a_tutorial_mouth(candidate, precinct):
+		if offers(rows, candidate, day, false) and _seals_a_tutorial_mouth(candidate, precinct):
 			eligible.append(candidate)
 	if eligible.is_empty():
 		return null
 	var picked := eligible[rng.randi_range(0, eligible.size() - 1)]
-	var along := _mouth_along_tile(segment, at_a, _reach_of(picked), trees)
-	return SitedSeal.new(segment, picked, along, _place(map, segment, picked, along))
+	var along := _mouth_along_tile(segment, at_a, _reach_of(rows, picked), trees)
+	return SitedSeal.new(segment, picked, along, _place(rows, map, segment, picked, along))
 
 ## Whether `candidate` may seal a side street's mouth on the tutorial route: the burst water main
 ## across a precinct, a soft pair less `TUTORIAL_MOUTH_LEFT_OUT` anywhere else.
@@ -434,10 +434,10 @@ static func _seals_a_tutorial_mouth(candidate: Candidate, precinct: bool) -> boo
 
 ## How far from a body's centre `candidate` keeps her centre: its widest row's
 ## `obstructs_within()` and her own body.
-static func _reach_of(candidate: Candidate) -> float:
+static func _reach_of(rows: EventCatalogue, candidate: Candidate) -> float:
 	var reach := 0.0
 	for id in candidate.def_ids:
-		reach = maxf(reach, EventCatalogue.by_id(id).obstructs_within())
+		reach = maxf(reach, rows.by_id(id).obstructs_within())
 	return reach + Tuning.PLAYER_BODY_RADIUS
 
 ## **The stub of a side street off the tutorial route**: the tiles of `segment` from its `at_a`
@@ -445,13 +445,13 @@ static func _reach_of(candidate: Candidate) -> float:
 ## ground she can step into from the route's junction box before the seal. `TutorialRoute.for_city()`
 ## refuses a route whose stubs open onto open ground, which would be a way off past the seal.
 ## `trees` is `StreetTrees.footprint_tiles()`, which a seal steps past.
-static func tutorial_mouth_stub(map: CityMap, segment: StreetNetwork.Segment, at_a: bool,
+static func tutorial_mouth_stub(rows: EventCatalogue, map: CityMap, segment: StreetNetwork.Segment, at_a: bool,
 		trees: Dictionary) -> Rect2i:
 	var precinct := TutorialRoute.is_a_precinct(map, segment)
 	var reach := 0.0
 	for candidate in candidates():
 		if _seals_a_tutorial_mouth(candidate, precinct):
-			reach = maxf(reach, _reach_of(candidate))
+			reach = maxf(reach, _reach_of(rows, candidate))
 	var along := _mouth_along_tile(segment, at_a, reach, trees)
 	var mouth := segment.mouth_rect(at_a)
 	var depth := absi(along - (mouth.position.x if segment.horizontal else mouth.position.y))
@@ -593,11 +593,11 @@ static func _seals_this_street(rng: RandomNumberGenerator) -> bool:
 ## rather than a preference — so a tree in the road is always one of that street's own.
 const FALLEN_TREE_SEAL_ID := "fallen_tree_seal"
 
-static func _pick_candidate(pictures: Array[Candidate], day: int, rng: RandomNumberGenerator,
+static func _pick_candidate(rows: EventCatalogue, pictures: Array[Candidate], day: int, rng: RandomNumberGenerator,
 		street_has_trees: bool) -> Candidate:
 	var eligible: Array[Candidate] = []
 	for candidate in pictures:
-		if offers(candidate, day, street_has_trees):
+		if offers(rows, candidate, day, street_has_trees):
 			eligible.append(candidate)
 	if eligible.is_empty():
 		return null
@@ -607,16 +607,16 @@ static func _pick_candidate(pictures: Array[Candidate], day: int, rng: RandomNum
 ## (`EventDef.own_first_day()`), and a fallen tree only on a street with trees of its own
 ## (`street_has_trees`, `FALLEN_TREE_SEAL_ID`). What `plan_day()` draws a street's picture from, and
 ## what a scene recipe's authored seal is held to (`SceneRecipeRuntime`).
-static func offers(candidate: Candidate, day: int, street_has_trees: bool) -> bool:
+static func offers(rows: EventCatalogue, candidate: Candidate, day: int, street_has_trees: bool) -> bool:
 	if candidate.id == FALLEN_TREE_SEAL_ID and not street_has_trees:
 		return false
-	return _eligible(candidate, day)
+	return _eligible(rows, candidate, day)
 
-static func _eligible(candidate: Candidate, day: int) -> bool:
+static func _eligible(rows: EventCatalogue, candidate: Candidate, day: int) -> bool:
 	if day < candidate.first_day:
 		return false
 	for id in candidate.def_ids:
-		var def := EventCatalogue.by_id(id)
+		var def := rows.by_id(id)
 		if not def or day < def.own_first_day():
 			return false
 	return true
@@ -669,12 +669,12 @@ class SitedSeal extends RefCounted:
 ## moved position is asked the same question of `route`, and a move that would close the walk is
 ## refused — the seal stands in the tree instead, which is a picture overlapping a picture rather
 ## than a city with no way through it.
-static func seal_street(map: CityMap, segment: StreetNetwork.Segment, candidate: Candidate,
+static func seal_street(rows: EventCatalogue, map: CityMap, segment: StreetNetwork.Segment, candidate: Candidate,
 		route: RouteSource, trees: Dictionary, emptied: Array[Vector2i]) -> SitedSeal:
 	var along := _seal_along_tile(map, segment, candidate, trees, emptied)
 	if route.walks_the_street(segment, along):
 		along = -1
-	return SitedSeal.new(segment, candidate, along, _place(map, segment, candidate, along))
+	return SitedSeal.new(segment, candidate, along, _place(rows, map, segment, candidate, along))
 
 ## Where along `segment` this seal's bodies stand, as a tile coordinate on the street's own along
 ## axis — and, for a fallen tree, which pit that empties.
@@ -721,18 +721,18 @@ static func _crosses_a_tree(segment: StreetNetwork.Segment, along: int,
 			return true
 	return false
 
-static func _place(map: CityMap, segment: StreetNetwork.Segment,
+static func _place(rows: EventCatalogue, map: CityMap, segment: StreetNetwork.Segment,
 		candidate: Candidate, along: int) -> Array[EventPlan]:
 	if candidate.strength == Strength.HARD:
-		return _place_hard(map, segment, candidate.def_ids[0], along)
-	return _place_soft(map, segment, candidate.def_ids, along)
+		return _place_hard(rows, map, segment, candidate.def_ids[0], along)
+	return _place_soft(rows, map, segment, candidate.def_ids, along)
 
 ## A hard seal: the named row, repeated across the street's whole width so nothing can slip past
 ## on either side of it. See `_hard_positions` for how many copies that takes and why the count
 ## is a function of the row's own `obstructs_within()` rather than a fixed number.
-static func _place_hard(map: CityMap, segment: StreetNetwork.Segment,
+static func _place_hard(rows: EventCatalogue, map: CityMap, segment: StreetNetwork.Segment,
 		def_id: String, along: int = -1) -> Array[EventPlan]:
-	var def := sealed_variant(EventCatalogue.by_id(def_id), true)
+	var def := sealed_variant(rows.by_id(def_id), true)
 	var planned: Array[EventPlan] = []
 	for at in _hard_positions(map, segment, def, along):
 		planned.append(EventPlan.new(def, at))
@@ -762,9 +762,9 @@ static func _place_hard(map: CityMap, segment: StreetNetwork.Segment,
 ## four rather than six. The choice is carried on the placement: `_no_wall_guards` builds a
 ## redraft of the shared def with its look's guard sides emptied —
 ## `_draw_roadblock()` never has to guess a body's position back out of where it happens to stand.
-static func place_hard_on(map: CityMap, segment: StreetNetwork.Segment, def_id: String,
+static func place_hard_on(rows: EventCatalogue, map: CityMap, segment: StreetNetwork.Segment, def_id: String,
 		at_a: bool) -> Array[EventPlan]:
-	var candidate := EventCatalogue.by_id(def_id)
+	var candidate := rows.by_id(def_id)
 	var sealed := sealed_draft(candidate, true)
 	# A solid body of a point of `Tuning.TILE_SIZE` is what a body this narrow actually is here,
 	# whatever shape the row carries as a catalogue candidate; the rest of what its body says is kept.
@@ -793,13 +793,13 @@ static func _no_wall_guards(def: EventDef) -> EventDef:
 ## like `delivery_van` already wants to be, and where any other row's own auto-centring
 ## (`BodyStance._centred_on_the_pavement_band`) puts it regardless of which of the pavement's
 ## two lanes this names.
-static func _place_soft(map: CityMap, segment: StreetNetwork.Segment,
+static func _place_soft(rows: EventCatalogue, map: CityMap, segment: StreetNetwork.Segment,
 		def_ids: Array[String], along: int = -1) -> Array[EventPlan]:
 	var tiles := _cross_section_tiles(segment, along)
 	var side_a := tiles[Tuning.SIDEWALK_WIDTH - 1]
 	var side_b := tiles[Tuning.STREET_WIDTH - Tuning.SIDEWALK_WIDTH]
-	var def_a := sealed_variant(EventCatalogue.by_id(def_ids[0]), false)
-	var def_b := sealed_variant(EventCatalogue.by_id(def_ids[1]), false)
+	var def_a := sealed_variant(rows.by_id(def_ids[0]), false)
+	var def_b := sealed_variant(rows.by_id(def_ids[1]), false)
 	var planned: Array[EventPlan] = []
 	planned.append(EventPlan.new(def_a, map.tile_to_world(side_a)))
 	planned.append(EventPlan.new(def_b, map.tile_to_world(side_b)))
@@ -996,15 +996,15 @@ static func positions_across(world: Rect2, horizontal: bool, radius_in: float) -
 ## the ordinary rule leaves it open, and past the route's first block it would be a way off the
 ## route no seal closes. Its other mouth is left as the day would leave it, which is open, since
 ## the alley reaches the tree.
-static func _seal_alley_mouths(map: CityMap, route: RouteSource, spec: DaySpec,
+static func _seal_alley_mouths(rows: EventCatalogue, map: CityMap, route: RouteSource, spec: DaySpec,
 		rng: RandomNumberGenerator, skip: Dictionary = {},
 		tutorial: TutorialRoute = null) -> Array[EventPlan]:
 	var planned: Array[EventPlan] = []
 	var day := spec.day_number()
-	var def_id := _alley_mouth_def(_pictures_for(spec), day)
+	var def_id := _alley_mouth_def(rows, _pictures_for(spec), day)
 	if def_id == "":
 		return planned
-	var mouth_def := sealed_variant(EventCatalogue.by_id(def_id), true)
+	var mouth_def := sealed_variant(rows.by_id(def_id), true)
 	var every := spec.seals_off_every_other_street()
 	# On a day the region wall stands, the same share `_seals_this_street` keeps of the streets,
 	# folded into the one roll each qualifying alley already gets rather than rolled a second time.
@@ -1086,7 +1086,7 @@ static func alley_mouth_wall(map: CityMap, rect: Rect2i, vertical: bool, at_star
 ## alley and over the roofs. *(Inbox #785 in minty-lemur, 2026-10-18: "does the escape use the same
 ## placement rules as the regular game? it doesn't seem like it does. it should, though. I saw wood
 ## on the roof for example")*
-static func _alley_mouth_def(pictures: Array[Candidate], day: int) -> String:
+static func _alley_mouth_def(rows: EventCatalogue, pictures: Array[Candidate], day: int) -> String:
 	var any_soft := false
 	for candidate in pictures:
 		any_soft = any_soft or candidate.strength == Strength.SOFT
@@ -1095,20 +1095,20 @@ static func _alley_mouth_def(pictures: Array[Candidate], day: int) -> String:
 		if any_soft and candidate.strength != Strength.SOFT:
 			continue
 		for id in candidate.def_ids:
-			var def := EventCatalogue.by_id(id)
+			var def := rows.by_id(id)
 			if def and day >= def.own_first_day():
 				ids.append(id)
-	return _widest_that_fits_a_mouth(ids)
+	return _widest_that_fits_a_mouth(rows, ids)
 
 ## Of `ids`, the row with the widest `obstructs_within()` whose body still fits a through-alley's
 ## mouth — `Tuning.ALLEY_WIDTH_TILES` across, so twice its radius no wider than that — or `""` when
 ## none does. The first of equals, in `ids`' own order.
-static func _widest_that_fits_a_mouth(ids: Array[String]) -> String:
+static func _widest_that_fits_a_mouth(rows: EventCatalogue, ids: Array[String]) -> String:
 	var mouth := float(Tuning.ALLEY_WIDTH_TILES * Tuning.TILE_SIZE)
 	var best_id := ""
 	var best_radius := 0.0
 	for id in ids:
-		var def := EventCatalogue.by_id(id)
+		var def := rows.by_id(id)
 		if not def or def.obstructs_within() * 2.0 > mouth:
 			continue
 		if def.obstructs_within() > best_radius:

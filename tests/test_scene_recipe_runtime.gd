@@ -286,17 +286,17 @@ func _test_a_stretch_recipes_runtime_refusals(t: TestRunner) -> void:
 ## `hold` reproduces a plain walk away, so it is refused for every row whose departure is anything
 ## else, with a reason that fits the row.
 func _test_hold_is_for_a_straight_departure(t: TestRunner) -> void:
-	t.check(SceneRecipeRuntime.hold_refusal(EventCatalogue.by_id("charging_dog")) == "",
+	t.check(SceneRecipeRuntime.hold_refusal(EventCatalogue.shipped().by_id("charging_dog")) == "",
 			"a dog may be held")
 	for row: String in ["fire_truck", "delivery_van", "roadblock"]:
-		t.check(SceneRecipeRuntime.hold_refusal(EventCatalogue.by_id(row)) != "",
+		t.check(SceneRecipeRuntime.hold_refusal(EventCatalogue.shipped().by_id(row)) != "",
 				"%s is refused" % row)
 	var flock := ""
 	for def: EventDef in CatalogueRows.every():
 		if def.is_a_flock() and not def.pursues():
 			flock = SceneRecipeRuntime.hold_refusal(def)
 	t.check(flock.contains("does not pursue"), "a flock is refused for not pursuing: %s" % flock)
-	var message := SceneRecipeRuntime.hold_refusal_message("post", EventCatalogue.by_id("roadblock"))
+	var message := SceneRecipeRuntime.hold_refusal_message("post", EventCatalogue.shipped().by_id("roadblock"))
 	t.check(message.contains("post") and message.contains("roadblock") and not message.contains("%s"),
 			"the refusal names the event and the row: %s" % message)
 
@@ -326,7 +326,7 @@ func _test_a_held_departure_places_its_move(t: TestRunner) -> void:
 	RunCity.show_her_to_the_walls_and_the_blackout(city, player)
 	# Where the director would send the dog at her: the lead straight ahead of her, facing south, on
 	# ground the dog may stand on; she stands on the first sidewalk tile that gives one.
-	var row := EventCatalogue.by_id("charging_dog")
+	var row := EventCatalogue.shipped().by_id("charging_dog")
 	var lead := Offscreen.lead(Vector2.DOWN, row.chase_speed() + Tuning.WALK_SPEED, row.warned_for())
 	var her := Vector2.INF
 	for tile in city.map().tiles_of_type(GameEnums.TileType.SIDEWALK):
@@ -383,20 +383,20 @@ func _test_a_held_departure_places_its_move(t: TestRunner) -> void:
 ## no radius to skip and for one that sets off beside her on its own clock.
 func _test_charging_is_for_a_pursuer_that_waits(t: TestRunner) -> void:
 	t.check(SceneRecipeRuntime.charging_refusal(
-			EventCatalogue.heated(EventCatalogue.by_id("roadblock"), Tuning.RESISTANCE_GOAL)) == "",
+			EventCatalogue.shipped().heated(EventCatalogue.shipped().by_id("roadblock"), Tuning.RESISTANCE_GOAL)) == "",
 			"the hunting roadblock's guard may start charging")
-	t.check(SceneRecipeRuntime.charging_refusal(EventCatalogue.by_id("roadblock")) != "",
+	t.check(SceneRecipeRuntime.charging_refusal(EventCatalogue.shipped().by_id("roadblock")) != "",
 			"the cold roadblock has no radius to skip")
-	t.check(SceneRecipeRuntime.charging_refusal(EventCatalogue.by_id("fire_truck")).contains("wait"),
+	t.check(SceneRecipeRuntime.charging_refusal(EventCatalogue.shipped().by_id("fire_truck")).contains("wait"),
 			"a row that does not wait is refused")
 	t.check(_errors.errors_of(t, {"setup": {"day": 7, "events": [{"name": "g",
 			"row": "roadblock", "at": [0, 0], "charging": 1}]}}).size() > 0, "charging must be a boolean")
 
 ## `relentless` keeps a pursuer from giving up because she ran, so a row that does not pursue is refused.
 func _test_relentless_is_for_a_pursuer(t: TestRunner) -> void:
-	t.check(SceneRecipeRuntime.relentless_refusal(EventCatalogue.by_id("charging_dog")) == "",
+	t.check(SceneRecipeRuntime.relentless_refusal(EventCatalogue.shipped().by_id("charging_dog")) == "",
 			"a pursuer may be kept coming")
-	t.check(SceneRecipeRuntime.relentless_refusal(EventCatalogue.by_id("pigeon_flock")).contains("pursue"),
+	t.check(SceneRecipeRuntime.relentless_refusal(EventCatalogue.shipped().by_id("pigeon_flock")).contains("pursue"),
 			"a row that does not pursue is refused")
 	t.check(_errors.errors_of(t, {"setup": {"day": 7, "events": [{"name": "g",
 			"row": "roadblock", "at": [0, 0], "relentless": 1}]}}).size() > 0, "relentless must be a boolean")
@@ -491,7 +491,7 @@ func _test_a_world_with_no_city_is_refused(t: TestRunner) -> void:
 ## `heat` changes the row a recipe installs, not only what its schema accepts: the same patrol car
 ## on the same road is the cold patrol with no trigger, and at `EventDef.HEAT_INVESTIGATES_LEVEL` the
 ## investigating copy that stops for her from the catalogue's heated notice, the shape a played
-## day's dawn gives it (`EventCatalogue.heated()`). Installed through the runtime's own `install()`
+## day's dawn gives it (`EventCatalogue.shipped().heated()`). Installed through the runtime's own `install()`
 ## against a real city in a run of its own, and read off the plans the scene's events were started
 ## on (`EventManager.plans()`), so a field the runtime read and then ignored would fail here.
 func _test_heat_installs_the_heated_row(t: TestRunner) -> void:
@@ -527,7 +527,7 @@ func _test_heat_installs_the_heated_row(t: TestRunner) -> void:
 		runtime.free()
 	var cold: EventDef = installed.get(null)
 	var hot: EventDef = installed.get(EventDef.HEAT_INVESTIGATES_LEVEL)
-	var stops_within := EventCatalogue.heated(EventCatalogue.by_id("police_patrol"),
+	var stops_within := EventCatalogue.shipped().heated(EventCatalogue.shipped().by_id("police_patrol"),
 			EventDef.HEAT_INVESTIGATES_LEVEL).notice_within()
 	t.check(cold != null and not cold.investigates() and is_zero_approx(cold.notice_within()),
 			"with no heat the recipe installs the cold patrol, no trigger")
@@ -559,8 +559,8 @@ func _test_the_per_day_cap_binds_only_a_row_no_unit_draws(t: TestRunner) -> void
 	var player: Stroller = STROLLER_SCENE.instantiate()
 	t.add_child(player)
 	var baby: Baby = player.get_node("Baby")
-	var drawn := EventCatalogue.by_id("chatting_mother")
-	var not_drawn := EventCatalogue.by_id("roadblock")
+	var drawn := EventCatalogue.shipped().by_id("chatting_mother")
+	var not_drawn := EventCatalogue.shipped().by_id("roadblock")
 	var cap := not_drawn.most_in_a_day()
 	t.check(drawn.is_drawn_by_units(13, "roadblock") and drawn.most_in_a_day() < 3
 			and not not_drawn.is_drawn_by_units(13, "roadblock"),

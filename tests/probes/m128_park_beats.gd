@@ -74,7 +74,7 @@ func _busker_never_fills_the_day(t: TestRunner) -> void:
 	RunCity.build(city, run, map)
 
 	var busker_at: Vector2 = map.tile_rect_to_world(CityMap.block_rect(block)).get_center()
-	var real := EventCatalogue.by_id("busker")
+	var real := EventCatalogue.shipped().by_id("busker")
 	var standing_at := busker_at + Vector2(real.core_within(), 0.0)
 
 	print("\n== time to a full sleep meter, standing at inner_radius from the busker's own core ==")
@@ -205,7 +205,7 @@ func _pulse_mean_multiplier() -> float:
 ## `DawnSpoilers._denial_radius()` reads live off `EventCatalogue`, so "after" is asked of the
 ## real def; "before" is the same formula asked of the M117 numbers, kept as constants above.
 func _busker_denial_and_inner_floor(t: TestRunner) -> void:
-	var def := EventCatalogue.by_id("busker")
+	var def := EventCatalogue.shipped().by_id("busker")
 	var before_denial := _denial_radius(OLD_BUSKER_INTENSITY, OLD_BUSKER_INNER, OLD_BUSKER_OUTER)
 	var after_denial := DawnSpoilers._denial_radius(def)
 
@@ -261,7 +261,7 @@ func _busker_street_side(t: TestRunner) -> void:
 	var before_draft := EventDraft.new("")
 	before_draft.field(FieldSpec.of(OLD_BUSKER_INTENSITY, OLD_BUSKER_INNER, OLD_BUSKER_OUTER))
 	var before_def := before_draft.build()
-	var after_def := EventCatalogue.by_id("busker")
+	var after_def := EventCatalogue.shipped().by_id("busker")
 	var samples := 0
 	var before_total := 0.0
 	var after_total := 0.0

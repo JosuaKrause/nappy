@@ -171,7 +171,7 @@ func _test_the_drawing_shows_every_badge_the_model_lists(t: TestRunner) -> void:
 	var source := _Source.new()
 	var player := Node2D.new()
 	t.add_child(player)
-	var def := EventCatalogue.by_id("fire_truck")
+	var def := EventCatalogue.shipped().by_id("fire_truck")
 	for i in 6:
 		var at := Vector2(400.0 + 10.0 * i, -60.0 + 24.0 * i)
 		var warning := PendingWarning.new(def,

@@ -77,9 +77,7 @@ static func drawn_box_of(row: EventDef, spread_vertical: bool) -> Rect2:
 ## a check that it is out of sight stricter.
 static func footprint_of(row: EventDef) -> Rect2:
 	var box := _own_footprint_of(row)
-	if row.leaves_behind() == "":
-		return box
-	var left := EventCatalogue.by_id(row.leaves_behind())
+	var left := row.left_behind()
 	if left == null:
 		return box
 	var its := _own_footprint_of(left)

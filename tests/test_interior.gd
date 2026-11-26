@@ -1400,7 +1400,7 @@ func _test_the_basement_events_stand_on_the_corridor_she_has_to_walk(t: TestRunn
 		t.check(on_the_floor and dash[0].distance_to(dash[dash.size() - 1]) > 16.0,
 				"and darts across its passage on the floor, wall to wall (%s)" % dash)
 
-	var steam := EventCatalogue.by_id("basement_steam")
+	var steam := EventCatalogue.shipped().by_id("basement_steam")
 	var vents := BuildingEvents.vents(events)
 	t.check(vents.size() == BuildingPlan.FINALE_STEAM_PERIODS.size(),
 			"the corridor has one vent per period in `Tuning` (%d)" % vents.size())
@@ -1489,7 +1489,7 @@ func _test_the_vents_blow_on_their_own_clocks_and_give_notice_first(t: TestRunne
 	rng.seed = 4242
 	var run := _rig.fresh_run()
 	var events := BuildingEvents.events_in(t, scene, rng, run)
-	var steam := EventCatalogue.by_id("basement_steam")
+	var steam := EventCatalogue.shipped().by_id("basement_steam")
 	t.check(steam.telegraphs_for()
 			>= (steam.obstructs_within() + Tuning.PLAYER_BODY_RADIUS) / Tuning.WALK_SPEED,
 			"the notice (%.2fs) covers walking out from under the body (%.2fs)"
@@ -1560,7 +1560,7 @@ func _test_a_vent_never_closes_around_her(t: TestRunner) -> void:
 	rng.seed = 4242
 	var run := _rig.fresh_run()
 	var events := BuildingEvents.events_in(t, scene, rng, run)
-	var steam := EventCatalogue.by_id("basement_steam")
+	var steam := EventCatalogue.shipped().by_id("basement_steam")
 	var vents := BuildingEvents.vents(events)
 	t.check(not vents.is_empty(), "there are vents to stand in")
 	if vents.is_empty():
@@ -1628,7 +1628,7 @@ func _test_no_pocket_between_two_vents_outlasts_the_noise(t: TestRunner) -> void
 	var rng := RandomNumberGenerator.new()
 	rng.seed = 4242
 	var events := BuildingEvents.events_in(t, scene, rng, _rig.fresh_run())
-	var steam := EventCatalogue.by_id("basement_steam")
+	var steam := EventCatalogue.shipped().by_id("basement_steam")
 	var vents := BuildingEvents.vents(events)
 	var pairs := 0
 	for i in range(1, vents.size()):
@@ -1659,7 +1659,7 @@ func _test_no_pocket_between_two_vents_outlasts_the_noise(t: TestRunner) -> void
 func _test_one_blow_of_steam_costs_forty_to_fifty_points(t: TestRunner) -> void:
 	const STEP := 1.0 / 60.0
 	const STAND_AT := 30.0
-	var steam := EventCatalogue.by_id("basement_steam")
+	var steam := EventCatalogue.shipped().by_id("basement_steam")
 	var blow_where := WhereSheIs.nowhere()
 	var blow := EventInstance.new()
 	# Set up before it joins the tree, the order `EventSpawner.create()` uses: `_ready()` reads the
@@ -1948,7 +1948,7 @@ func _test_an_explosion_flashes_every_hallway_window(t: TestRunner) -> void:
 	t.check(_lit(windows) == 0, "all of them, with none left lit (%d)" % _lit(windows))
 	# Every coming of a row from outside lights them, not only a repeat: a plan that comes once, in
 	# the world from its first frame, lights them as it is put there.
-	var once := EventPlan.new(EventCatalogue.explosion_outside(),
+	var once := EventPlan.new(EventCatalogue.shipped().explosion_outside(),
 			scene.start_world_position())
 	once.come_again_every(0.0)
 	GivenPlanner.hand_in(events, [once] as Array[EventPlan])

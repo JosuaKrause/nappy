@@ -170,7 +170,7 @@ func _read_the_mark_at(city: City, director: ResistanceDirector, player: Strolle
 	director.set_sight(RunCity.events(city).visible_view())
 	var step := _roadblock_step()
 	director._step = step
-	var def := EventCatalogue.by_id(step.task_event_id)
+	var def := EventCatalogue.shipped().by_id(step.task_event_id)
 	var reaches: Array[float] = [ResistanceDirector.NEAR_THE_MARK]
 	reaches.append_array(ResistanceDirector.ROADBLOCK_WIDER_REACH)
 	var paths := director._paths_reach_between(at, 0.0, reaches.back())

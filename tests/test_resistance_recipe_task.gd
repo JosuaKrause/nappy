@@ -47,7 +47,7 @@ class MastQueue:
 	func queue_a_mast(offered: Array[Vector2i]) -> EventPlan:
 		if offered.is_empty():
 			return null
-		var plan := EventPlan.new(EventCatalogue.mast(), _map.tile_to_world(offered[0]))
+		var plan := EventPlan.new(EventCatalogue.shipped().mast(), _map.tile_to_world(offered[0]))
 		plan.stand_as_a_mast(DawnMasts.added_mast_id(plan.placed_at()))
 		_masts.append(plan)
 		return plan
@@ -193,9 +193,9 @@ func _test_a_mark_one_tile_in_keeps_its_guard_as_far_as_at_the_mouth(t: TestRunn
 	t.check(errors.is_empty(), "the mark is accepted: %s" % [errors])
 	var guards: Array[Vector2] = []
 	for instance in stand.events.instances():
-		if instance.row_id() == EventCatalogue.mark_guard().id() and not instance.is_gone():
+		if instance.row_id() == EventCatalogue.shipped().mark_guard().id() and not instance.is_gone():
 			guards.append(instance.global_position)
-	var robbery := EventCatalogue.mark_guard()
+	var robbery := EventCatalogue.shipped().mark_guard()
 	var for_the_mouth := AlleyMarks.expected_guard_spot(map, MOUTH, at_mouth,
 			robbery.core_within() + ContactPoint.REACH)
 	t.check(guards.size() == 1 and for_the_mouth != Vector2.INF, "the mark's guard stands in the street")

@@ -98,7 +98,7 @@ func _test_after_a_small_marble_only_small_ones_until_its_section_is_full(t: Tes
 func _test_a_street_part_of_which_is_held_starts_with_what_is_left(t: TestRunner) -> void:
 	var street := _street()
 	var held := street.locations()[3]
-	var cafe := EventPlan.new(EventCatalogue.by_id("cafe_tables"), held.centre())
+	var cafe := EventPlan.new(EventCatalogue.shipped().by_id("cafe_tables"), held.centre())
 	held.take(cafe)
 	street.locations()[0].record(null)
 	var room := UnitRoom.of(street)

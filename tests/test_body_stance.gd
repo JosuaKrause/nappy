@@ -73,7 +73,7 @@ func run(t: TestRunner) -> void:
 
 func _test_the_crash_lies_across_a_north_south_street(t: TestRunner) -> void:
 	var map := NorthSouthStreet.new()
-	var row := EventCatalogue.by_id("car_accident")
+	var row := EventCatalogue.shipped().by_id("car_accident")
 	var stood := BodyStance.of(map, row, _AT, Vector2.RIGHT).center()
 	var pieces := BodyStance.of(map, row, _AT, Vector2.RIGHT).pieces()
 	var parts: Array[BodyPiece] = row.body().pieces()
@@ -89,7 +89,7 @@ func _test_the_crash_lies_across_a_north_south_street(t: TestRunner) -> void:
 
 func _test_the_crash_lies_down_an_east_west_street(t: TestRunner) -> void:
 	var map: WorldMap = EastWestStreet.new()
-	var row := EventCatalogue.by_id("car_accident")
+	var row := EventCatalogue.shipped().by_id("car_accident")
 	var stood := BodyStance.of(map, row, _AT, Vector2.RIGHT).center()
 	var pieces := BodyStance.of(map, row, _AT, Vector2.RIGHT).pieces()
 	var parts: Array[BodyPiece] = row.body().pieces()
@@ -102,7 +102,7 @@ func _test_the_crash_lies_down_an_east_west_street(t: TestRunner) -> void:
 				"piece %d lies down the screen" % k)
 
 func _test_a_row_that_spans_the_street_stands_at_its_kerb(t: TestRunner) -> void:
-	var row := EventCatalogue.by_id("roadblock")
+	var row := EventCatalogue.shipped().by_id("roadblock")
 	var lane := _carriageway_point()
 	t.check(lane != Vector2.INF, "there is a carriageway point whose kerb is elsewhere")
 	if lane == Vector2.INF:
@@ -133,7 +133,7 @@ func _test_a_shape_with_no_body_has_no_pieces(t: TestRunner) -> void:
 
 func _test_the_crash_leaves_the_ground_between_its_cars_open(t: TestRunner) -> void:
 	var map := NorthSouthStreet.new()
-	var row := EventCatalogue.by_id("car_accident")
+	var row := EventCatalogue.shipped().by_id("car_accident")
 	var pieces := BodyStance.of(map, row, _AT, Vector2.RIGHT).pieces()
 	var covered: Array[Vector2i] = []
 	for piece in pieces:
@@ -187,7 +187,7 @@ func _test_a_stood_point_is_stood_where_it_is(t: TestRunner) -> void:
 						unstood += 1
 	# The one row that stands at its kerb is stood where it is as well.
 	var lane := _carriageway_point()
-	var roadblock := EventCatalogue.by_id("roadblock")
+	var roadblock := EventCatalogue.shipped().by_id("roadblock")
 	var kerb := BodyStance.of(WorldMap.open_ground(), roadblock, lane, Vector2.RIGHT).center()
 	t.check(lane != Vector2.INF and kerb != lane
 			and BodyStance.of(WorldMap.open_ground(), roadblock, kerb, Vector2.RIGHT).center() \
@@ -228,7 +228,7 @@ func _test_a_planned_body_stands_where_its_plan_was_placed(t: TestRunner) -> voi
 	var map := SidewalkStreets.new(false)
 	var at := map.tile_to_world(Vector2i(20, 12))
 	for id: String in ["market_stall", "roadblock", "car_accident"]:
-		var row := EventCatalogue.by_id(id)
+		var row := EventCatalogue.shipped().by_id(id)
 		var plan := EventPlan.new(row, at)
 		var from_plan := BodyStance.of_plan(map, plan)
 		var from_row := BodyStance.of(map, row, at, plan.faces())
@@ -248,7 +248,7 @@ func _test_a_stance_lays_its_pieces_out_round_any_point(t: TestRunner) -> void:
 	var differ := 0
 	for map: WorldMap in [NorthSouthStreet.new(), EastWestStreet.new()]:
 		for id: String in ["car_accident", "market_stall", "moving_van"]:
-			var stance := BodyStance.of(map, EventCatalogue.by_id(id), _AT, Vector2.RIGHT)
+			var stance := BodyStance.of(map, EventCatalogue.shipped().by_id(id), _AT, Vector2.RIGHT)
 			var own := stance.pieces()
 			var round_the_origin := stance.pieces_at(Vector2.ZERO, Vector2.RIGHT)
 			var moved := stance.pieces_at(elsewhere, Vector2.RIGHT)
@@ -354,7 +354,7 @@ func _test_a_kerbed_body_is_left_where_it_is_and_an_unpinned_one_is_centred(t: T
 	# is the tile whose road-side neighbour is the carriageway.
 	var kerb_tile := Vector2i(Tuning.SIDEWALK_WIDTH - 1, Tuning.STREET_WIDTH + 3)
 
-	var van := EventCatalogue.by_id("delivery_van")
+	var van := EventCatalogue.shipped().by_id("delivery_van")
 	var parked := BodyStance.of(map, van, map.tile_to_world(kerb_tile), Vector2.RIGHT)
 	t.check(parked.center().is_equal_approx(map.tile_to_world(kerb_tile)),
 			"'delivery_van' (AT_THE_KERB) is left exactly where it was placed, not re-centred")
@@ -362,7 +362,7 @@ func _test_a_kerbed_body_is_left_where_it_is_and_an_unpinned_one_is_centred(t: T
 	# The exemption is meaningful, not a no-op: an ANY-`pavement_side` body sited on the very same
 	# tile does get moved, onto the middle of the two-lane band — half a tile from the tile centre,
 	# in the direction `pavement_inward()` answers for this lane.
-	var barrier := EventCatalogue.by_id("construction")
+	var barrier := EventCatalogue.shipped().by_id("construction")
 	var centred := BodyStance.of(map, barrier, map.tile_to_world(kerb_tile), Vector2.RIGHT)
 	var band_centre := map.tile_to_world(kerb_tile) \
 			+ Vector2(map.pavement_inward(kerb_tile)) * (Tuning.TILE_SIZE * 0.5)
@@ -412,12 +412,12 @@ func _test_a_spread_rotates_with_the_street(t: TestRunner) -> void:
 ## Whether a spread row set up at `at` on `map` lies down the screen (`BodyStance.lies_vertically()`,
 ## which a live event's looks draw and lay their slices by), decided once from the street it stands on.
 func _runs_vertically_at(map: WorldMap, at: Vector2) -> bool:
-	return BodyStance.of(map, EventCatalogue.by_id("construction"), at, Vector2.RIGHT) \
+	return BodyStance.of(map, EventCatalogue.shipped().by_id("construction"), at, Vector2.RIGHT) \
 			.lies_vertically()
 
 ## How the row `id` stands on `map` when it is built at `at` facing right.
 func _stance_of(id: String, map: WorldMap, at: Vector2) -> BodyStance:
-	return BodyStance.of(map, EventCatalogue.by_id(id), at, Vector2.RIGHT)
+	return BodyStance.of(map, EventCatalogue.shipped().by_id(id), at, Vector2.RIGHT)
 
 ## Stationary seal vehicles use the street axis even though their default facing is right. The van
 ## faces along it and the burnt car lies across it.
@@ -447,7 +447,7 @@ func _test_stationary_vehicles_face_their_street(t: TestRunner) -> void:
 ## (`--layers 3`); what this holds is the thing that would be wrong if they drifted. That the crash
 ## is two pieces on either axis is the check beside the first two of this suite.
 func _test_a_crash_is_solid_only_where_its_cars_are(t: TestRunner) -> void:
-	var crash := EventCatalogue.by_id("car_accident")
+	var crash := EventCatalogue.shipped().by_id("car_accident")
 	var carriageway := (float(Tuning.STREET_WIDTH) * 0.5 - Tuning.SIDEWALK_WIDTH) * Tuning.TILE_SIZE
 	for vertical: bool in [false, true]:
 		var map: WorldMap = EastWestStreet.new() if vertical else NorthSouthStreet.new()

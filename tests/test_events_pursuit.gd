@@ -76,7 +76,7 @@ func _test_a_sent_pursuer_counts_running_before_he_is_visible(t: TestRunner) -> 
 			"guardsman_giving_chase"]:
 		var pursuer_where := WhereSheIs.nowhere()
 		var pursuer := EventInstance.new()
-		pursuer.setup(EventCatalogue.by_id(id), Vector2.ZERO, PackedVector2Array(), Vector2.RIGHT,
+		pursuer.setup(EventCatalogue.shipped().by_id(id), Vector2.ZERO, PackedVector2Array(), Vector2.RIGHT,
 				EventSurroundings.new().hearing(pursuer_where))
 		pursuer_where.tell(pursuer_where.at(), Vector2.INF, null, true)
 		for frame in int(Tuning.PURSUIT_SHAKEN_OFF / STEP) - 1:
@@ -210,7 +210,7 @@ func _a_building_corner(map: CityMap) -> Dictionary:
 ## its own catch.
 func _test_the_robbers_lunge_is_further_out_than_his_catch(t: TestRunner) -> void:
 	# The robber, and the pursuer on foot a torn poster sends, who is the task robber's chase in a
-	# uniform (`EventCatalogue._policeman_giving_chase()`).
+	# uniform (`EventCatalogue.shipped()._policeman_giving_chase()`).
 	var robbers := ["alley_robbery", "robber_giving_chase", "policeman_giving_chase",
 			"guardsman_giving_chase"]
 	for def in CatalogueRows.every():
@@ -223,7 +223,7 @@ func _test_the_robbers_lunge_is_further_out_than_his_catch(t: TestRunner) -> voi
 	# stand-off, 62px of room, 0.48s at 130px/s. `validate()` refuses it on load (asked here
 	# through the predicate, since the refusal is a `push_error`, which fails the whole run); a
 	# lunge exactly at the catch is allowed.
-	var robbery := EventCatalogue.by_id("alley_robbery")
+	var robbery := EventCatalogue.shipped().by_id("alley_robbery")
 	var lunging := robbery.redraft()
 	lunging.pursuit(robbery.pursuit().lunging_from(10.0))
 	var too_short := lunging.build()
@@ -481,7 +481,7 @@ static func _warned_down_her_line(def: EventDef, her: Vector2, direction: Vector
 ## it, which is the lesson. A later change to its placement, to the camera or to its numbers fails
 ## here.
 func _test_the_day_3_dog_keeps_its_gold_timing(t: TestRunner) -> void:
-	var dog := EventCatalogue.by_id("charging_dog")
+	var dog := EventCatalogue.shipped().by_id("charging_dog")
 	# Amendment 8 of M226: "pursuers should never (or a long time) stop pursuing if she walks".
 	t.check(Tuning.PURSUIT_TIME >= 30.0, "which is a long cap, not an end a walk outlasts (%.0fs)"
 			% Tuning.PURSUIT_TIME)
@@ -525,10 +525,10 @@ func _test_the_day_3_dog_keeps_its_gold_timing(t: TestRunner) -> void:
 ## closing-in: from above her — the start the director prefers — standing still and walking into him
 ## are caught, and so is walking away. Running escapes even while he is offscreen.
 func _test_the_resistances_pursuers_are_fitted_to_the_dog(t: TestRunner) -> void:
-	var dog := EventCatalogue.by_id("charging_dog")
+	var dog := EventCatalogue.shipped().by_id("charging_dog")
 	var edge := DangerEdge.new()
 	for id: String in ["robber_giving_chase", "van_guard_giving_chase"]:
-		var def := EventCatalogue.by_id(id)
+		var def := EventCatalogue.shipped().by_id(id)
 		t.check(def.warns_before_it_exists() and def.starts_by(PursuitSpec.Start.ARRIVES_CHASING),
 				"'%s' is warned of before it exists and arrives chasing" % id)
 		t.check(is_equal_approx(def.warned_for(), dog.warned_for())
@@ -557,7 +557,7 @@ func _test_the_resistances_pursuers_are_fitted_to_the_dog(t: TestRunner) -> void
 ## it leaves. A fixture that walks must do neither, or the man shouting outside the home block would
 ## stroll off down the street eight seconds into every day.
 func _test_a_paced_event_walks_a_beat(t: TestRunner) -> void:
-	var def := EventCatalogue.by_id("homeless_yeller")
+	var def := EventCatalogue.shipped().by_id("homeless_yeller")
 	var path := PackedVector2Array([Vector2.ZERO, Vector2(256.0, 0.0)])
 	var instance := _instance(t, def, Vector2.ZERO, path)
 
@@ -586,7 +586,7 @@ func _test_a_paced_event_walks_a_beat(t: TestRunner) -> void:
 ## from the moment it **notices** rather than from the moment the day put it there. A robbery whose
 ## telegraph ran at dawn, four streets away, would arrive with no notice in it at all.
 func _test_a_pursuer_can_wait(t: TestRunner) -> void:
-	var def := EventCatalogue.by_id("alley_robbery")
+	var def := EventCatalogue.shipped().by_id("alley_robbery")
 	t.check(def.notice_within() > 0.0, "the robber waits")
 	var instance_where := WhereSheIs.nowhere()
 	var instance := _instance(t, def, Vector2.ZERO, PackedVector2Array(), null, instance_where)
@@ -716,7 +716,7 @@ func _test_every_waiting_charger_warns_by_radius(t: TestRunner) -> void:
 ## **A warning she walks out of is not a chase**, so the page's `dog-chased` (`EventBus.pursuit_began`,
 ## docs/TELEMETRY.md, "The page counts visits") is sent at the charge and never for a warning alone.
 func _test_a_warning_is_not_counted_as_a_chase(t: TestRunner) -> void:
-	var def := EventCatalogue.by_id("charging_dog").for_day(Tuning.RUN_TAUGHT_DAY + 1)
+	var def := EventCatalogue.shipped().by_id("charging_dog").for_day(Tuning.RUN_TAUGHT_DAY + 1)
 	var standoff := PursuitSpec.standoff(def.chase_speed(), def.standoff_reach())
 	var began: Array[String] = []
 	var listen := func(id: String) -> void: began.append(id)
@@ -742,13 +742,13 @@ func _test_a_warning_is_not_counted_as_a_chase(t: TestRunner) -> void:
 ## **A charger already in the world raises no screen-edge badge, wherever its charge begins**
 ## (`EventInstance.was_warned_of()`, which `DangerEdge` hands `BadgeModel`; velvet-marten #699,
 ## #705; bouncy-owl #1774): it warned her in her view, and only a charger from off screen comes
-## under a badge. The man a vehicle lets out (`EventCatalogue.out_of_the_car()`) stands with his
+## under a badge. The man a vehicle lets out (`EventCatalogue.shipped().out_of_the_car()`) stands with his
 ## hand raised for his notice and then charges from where he stood: she stands 150px off, past his
 ## stand-off, the camera's view about her, until half his notice has run, and then either stays there
 ## or has walked off 420px, which puts all he draws past the side of the view
 ## (`Tuning.VIEW_HALF_EXTENT`), before it runs out.
 func _test_a_charge_begun_out_of_her_sight_raises_no_badge(t: TestRunner) -> void:
-	var def := EventCatalogue.out_of_the_car(DaySpec.for_day(1))
+	var def := EventCatalogue.shipped().out_of_the_car(DaySpec.for_day(1))
 	for walks_off: bool in [false, true]:
 		var man_where := WhereSheIs.nowhere()
 		var man := _instance(t, def, Vector2.ZERO, PackedVector2Array(), null, man_where)
@@ -892,7 +892,7 @@ func _run_inside_the_warning_rig(t: TestRunner, def: EventDef) -> Dictionary:
 
 ## Every pursuer that waits for her, in each state it is met in: every catalogue row on every day
 ## of a run (`EventDef.for_day()`, which is where the dog's trigger switches on past
-## `Tuning.RUN_TAUGHT_DAY`) at every heat (`EventCatalogue.heated()`, which is where the roadblock's
+## `Tuning.RUN_TAUGHT_DAY`) at every heat (`EventCatalogue.shipped().heated()`, which is where the roadblock's
 ## guard starts to pursue), kept where it pursues and waits (`EventDef.waits_for_her()`) and
 ## `keep` says yes, once per distinct set of the numbers the walk reads. One that sets off
 ## beside her or arrives chasing has no trigger to be sited inside.
@@ -902,7 +902,7 @@ func _waiting_pursuers(keep: Callable) -> Array[EventDef]:
 	for row in CatalogueRows.every():
 		for level in range(0, Tuning.RESISTANCE_GOAL + 1):
 			for day in range(1, Tuning.RUN_LENGTH_DAYS + 1):
-				var def := EventCatalogue.heated(row, level).for_day(day)
+				var def := EventCatalogue.shipped().heated(row, level).for_day(day)
 				if not def.pursues() or def.notice_within() <= 0.0 or def.starts_by(PursuitSpec.Start.SETS_OFF_BESIDE_HER) \
 						or def.starts_by(PursuitSpec.Start.ARRIVES_CHASING) or not keep.call(def):
 					continue
@@ -1008,7 +1008,7 @@ func _test_a_pursuer_stops_at_walls(t: TestRunner) -> void:
 	var north: Vector2i = corner["north"]
 	var east: Vector2i = corner["east"]
 
-	var def := EventCatalogue.by_id("charging_dog")
+	var def := EventCatalogue.shipped().by_id("charging_dog")
 	var instance_where := WhereSheIs.nowhere()
 	var instance := EventInstance.new()
 	instance.setup(def, map.tile_to_world(north) + Vector2(-96.0, 0.0), PackedVector2Array(),
@@ -1068,7 +1068,7 @@ func _an_alley_mouth(map: CityMap) -> Dictionary:
 ## since the notice asks for a clear line; each check moves him from there. He hears where she is
 ## from `where`, which a check goes on telling.
 func _a_chasing_robber(t: TestRunner, map: CityMap, where: WhereSheIs) -> EventInstance:
-	var def := EventCatalogue.by_id("alley_robbery")
+	var def := EventCatalogue.shipped().by_id("alley_robbery")
 	var run := def.notice_within() - 10.0
 	var origin := Vector2.INF
 	for tile_y in range(map.size_in_tiles().y / 2, map.size_in_tiles().y - 2):
@@ -1132,7 +1132,7 @@ func _a_waiting_robber(t: TestRunner, map: CityMap, mouth: Dictionary, back: flo
 	var d1: Vector2 = mouth["d1"]
 	var d2: Vector2 = mouth["d2"]
 	var at := corner + d1 * 16.0 - d2 * back
-	return _instance(t, EventCatalogue.by_id("alley_robbery"), at, PackedVector2Array(), map,
+	return _instance(t, EventCatalogue.shipped().by_id("alley_robbery"), at, PackedVector2Array(), map,
 			where)
 
 ## **He notices her only along a clear line.** *(leafy-puffin, inbox #648, asked whether noticing
@@ -1230,7 +1230,7 @@ func _test_a_late_notice_is_answered_by_his_warning(t: TestRunner) -> void:
 	var corner: Vector2 = mouth["corner"]
 	var d1: Vector2 = mouth["d1"]
 	var d2: Vector2 = mouth["d2"]
-	var def := EventCatalogue.by_id("alley_robbery")
+	var def := EventCatalogue.shipped().by_id("alley_robbery")
 	for back: float in [20.0, 40.0, 60.0, 90.0]:
 		for answer: String in ["run", "stand"]:
 			var instance_where := WhereSheIs.nowhere()
@@ -1279,7 +1279,7 @@ func _test_the_robber_keeps_his_stand_off_at_an_alley_mouth(t: TestRunner) -> vo
 	var corner: Vector2 = mouth["corner"]
 	var d1: Vector2 = mouth["d1"]
 	var d2: Vector2 = mouth["d2"]
-	var def := EventCatalogue.by_id("alley_robbery")
+	var def := EventCatalogue.shipped().by_id("alley_robbery")
 	var charged := 0
 	for back: float in [20.0, 40.0, 60.0, 90.0]:
 		var instance_where := WhereSheIs.nowhere()
@@ -1335,7 +1335,7 @@ func _test_the_robber_keeps_his_stand_off_at_an_alley_mouth(t: TestRunner) -> vo
 ## the core: not red. Both points sit on a quarter-second step of the projection, so neither answer
 ## depends on where its samples fall.
 func _test_the_red_caret_is_measured_from_the_catch(t: TestRunner) -> void:
-	var hot := EventCatalogue.heated(EventCatalogue.by_id("roadblock"), EventDef.HEAT_HUNTS_LEVEL)
+	var hot := EventCatalogue.shipped().heated(EventCatalogue.shipped().by_id("roadblock"), EventDef.HEAT_HUNTS_LEVEL)
 	t.check(hot.pursues() and hot.ends_the_day() and hot.lethal_reach() < hot.core_within(),
 			"the hunting roadblock catches inside its field's core (%.0fpx < %.0fpx)"
 			% [hot.lethal_reach(), hot.core_within()])

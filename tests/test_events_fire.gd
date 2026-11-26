@@ -89,7 +89,7 @@ func _fire_route(outward := true) -> PackedVector2Array:
 ## Day 3's fire as the dawn hands it to her walk: one plan with no position, which these tests
 ## site, so each builds it fresh. What the dawn plans of it is the scheduler's suite's question.
 func _fire_day_plans() -> Array[EventPlan]:
-	return [EventPlan.new(EventCatalogue.by_id("burning_building"), Vector2.INF)]
+	return [EventPlan.new(EventCatalogue.shipped().by_id("burning_building"), Vector2.INF)]
 
 ## The day-3 fire, and the whole rig it needs: its plan, a stand-in for the placement context
 ## (`FakeWalkSiting`, which lays the fire where a check says and answers whether it is still
@@ -139,8 +139,8 @@ func _test_the_director_puts_it_in_front_of_her(t: TestRunner) -> void:
 	var rng := RandomNumberGenerator.new()
 	rng.seed = 99
 	var plans: Array[EventPlan] = [
-		EventPlan.new(EventCatalogue.by_id("cat_dash"), Vector2.INF),
-		EventPlan.new(EventCatalogue.by_id("cat_dash"), Vector2.INF),
+		EventPlan.new(EventCatalogue.shipped().by_id("cat_dash"), Vector2.INF),
+		EventPlan.new(EventCatalogue.shipped().by_id("cat_dash"), Vector2.INF),
 	]
 	# Day 2: day one's first handouts are rigged to hold its dog walkers (`EventDirector`).
 	director.start_day(2, plans, rng, DaySpec.DirectorSends.THE_DAYS_ROWS)
@@ -304,7 +304,7 @@ func _test_a_corner_is_not_a_change_of_mind(t: TestRunner) -> void:
 ## And the distance it has covered **stops growing**, because the gait is driven by distance and a
 ## parked engine would otherwise bob at the kerb for ever.
 func _test_the_engine_parks_at_the_fire(t: TestRunner) -> void:
-	var def := EventCatalogue.by_id("fire_truck")
+	var def := EventCatalogue.shipped().by_id("fire_truck")
 	t.check(def != null and def.parks_where_it_arrives(),
 			"the fire engine is the row that stops where it arrives")
 	if not def:
@@ -344,7 +344,7 @@ func _test_the_engine_parks_at_the_fire(t: TestRunner) -> void:
 ## map, walking continuously the way `due()` requires before it will ever site anything.
 func _test_a_rig_meets_the_three_things_that_arrive(t: TestRunner) -> void:
 	for id: String in ["cat_dash", "cyclist", "loose_dog"]:
-		var def := EventCatalogue.by_id(id)
+		var def := EventCatalogue.shipped().by_id(id)
 		var map: CityMap = StreetMap.full()
 		var director := EventDirector.new(map)
 		var rng := RandomNumberGenerator.new()
@@ -423,7 +423,7 @@ func _test_hard_fail_only_when_active(t: TestRunner) -> void:
 			"a hard-fail event is not lethal outside its inner radius")
 	instance.free()
 
-	var safe := EventCatalogue.by_id("cat_dash")
+	var safe := EventCatalogue.shipped().by_id("cat_dash")
 	var harmless := _instance(t, safe)
 	_advance(harmless, safe.telegraphs_for() + 0.05)
 	t.check(not harmless.is_lethal_at(Vector2.ZERO), "an ordinary event is never lethal")

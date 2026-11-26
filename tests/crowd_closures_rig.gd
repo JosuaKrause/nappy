@@ -138,7 +138,7 @@ func _test_a_hard_seal_shuts_its_street_to_the_crowd(t: TestRunner) -> void:
 	_city.map().clear_day_holds()
 	_city.map().clear_day_obstructions()
 	_city.map().hold_segment(segment.key(), HeldStreets.Why.SEAL)
-	var def := SealPlanner.sealed_variant(EventCatalogue.by_id("fallen_tree"), true)
+	var def := SealPlanner.sealed_variant(EventCatalogue.shipped().by_id("fallen_tree"), true)
 	var body_tiles := {}
 	var owner := 1
 	for at_body: Vector2 in _across(segment, def):
@@ -359,7 +359,7 @@ func _test_a_walker_turns_into_a_street_sealed_further_along(t: TestRunner) -> v
 	_city.map().clear_day_holds()
 	_city.map().clear_day_obstructions()
 	_city.map().hold_segment(arm.key(), HeldStreets.Why.SEAL)
-	var def := SealPlanner.sealed_variant(EventCatalogue.by_id("fallen_tree"), true)
+	var def := SealPlanner.sealed_variant(EventCatalogue.shipped().by_id("fallen_tree"), true)
 	var owner := 1
 	for at_body: Vector2 in _across(arm, def):
 		_city.map().obstruct_tiles(owner, EventSpawner.footprint_of(

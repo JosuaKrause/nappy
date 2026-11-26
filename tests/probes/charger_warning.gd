@@ -33,7 +33,7 @@ const WARNINGS: Array[float] = [1.0, 1.25, 1.5, 1.75, 2.0]
 const REACHES: Array[float] = [0.85, 1.0, 1.15, 1.25, 1.4]
 
 func run(t: TestRunner) -> void:
-	var was := EventCatalogue.charger_timing()
+	var was := EventCatalogue.shipped().charger_timing()
 	for reach in REACHES:
 		for warning in WARNINGS:
 			EventCatalogue.use_charger_timing(ChargerTiming.of(warning, reach))
@@ -62,7 +62,7 @@ static func _waiting_chargers() -> Array[EventDef]:
 	for row in CatalogueRows.every():
 		for level in range(0, Tuning.RESISTANCE_GOAL + 1):
 			for day in range(1, Tuning.RUN_LENGTH_DAYS + 1):
-				var def := EventCatalogue.heated(row, level).for_day(day)
+				var def := EventCatalogue.shipped().heated(row, level).for_day(day)
 				if not def.pursues() or def.notice_within() <= 0.0 or def.starts_by(PursuitSpec.Start.SETS_OFF_BESIDE_HER) \
 						or def.starts_by(PursuitSpec.Start.ARRIVES_CHASING):
 					continue

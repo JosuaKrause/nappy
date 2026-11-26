@@ -33,7 +33,7 @@ func _roles_of_the_named_rows() -> void:
 	var ids := ["cafe_tables", "market_stall", "construction", "delivery_van",
 			"dog_walker", "homeless_yeller", "loose_dog"]
 	for id: String in ids:
-		var def := EventCatalogue.by_id(id)
+		var def := EventCatalogue.shipped().by_id(id)
 		if not def:
 			print("  %-16s not in the catalogue" % id)
 			continue

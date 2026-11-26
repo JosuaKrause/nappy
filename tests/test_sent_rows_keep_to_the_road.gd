@@ -243,7 +243,7 @@ func _test_sent_rows_keep_to_the_road_while_she_walks(t: TestRunner) -> void:
 			streets.begin_day(tree, region, closures)
 			var plans: Array[EventPlan] = []
 			if spot.lorry != Vector2.INF:
-				plans.append(EventPlan.new(EventCatalogue.by_id("reversing_lorry"), spot.lorry))
+				plans.append(EventPlan.new(EventCatalogue.shipped().by_id("reversing_lorry"), spot.lorry))
 			var watched := await _watch(t, events, map, spec, row, spot, walk, plans)
 			_count(tally, watched, spot, row, walk, map, SEEDS[index])
 		events.free()

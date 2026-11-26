@@ -44,7 +44,7 @@ func run(t: TestRunner) -> void:
 ## test, which tells it none, is exactly this case. See `_test_walking_toward_a_stationary_thing_earns_a_
 ## caret` for the one PLAYTEST-115 overturned: the same café, her walking toward it.
 func _test_a_stationary_thing_she_stands_in_is_unmarked(t: TestRunner) -> void:
-	var def := EventCatalogue.by_id("cafe_tables")
+	var def := EventCatalogue.shipped().by_id("cafe_tables")
 	t.check(def != null and not def.moves(), "cafe_tables is a stationary row")
 	if not def:
 		return
@@ -62,7 +62,7 @@ func _test_a_stationary_thing_she_stands_in_is_unmarked(t: TestRunner) -> void:
 ## `Tuning.WALK_SPEED` and no decay given back, the projection now nets something, because in five
 ## seconds of carrying on she really is about to be inside it.
 func _test_walking_toward_a_stationary_thing_earns_a_caret(t: TestRunner) -> void:
-	var def := EventCatalogue.by_id("cafe_tables")
+	var def := EventCatalogue.shipped().by_id("cafe_tables")
 	if not def:
 		return
 	var instance := _instance(def)
@@ -139,7 +139,7 @@ func _test_the_caret_follows_a_pulse_across_its_horizon(t: TestRunner) -> void:
 	var horizon := Tuning.EXPECTED_IMPACT_HORIZON
 	var phases := 4
 	for id: String in ["homeless_yeller", "busker"]:
-		var def: EventDef = EventCatalogue.by_id(id)
+		var def: EventDef = EventCatalogue.shipped().by_id(id)
 		t.check(def != null and def.pulses_every() > 0.0, "%s pulses" % id)
 		if not def:
 			continue
@@ -276,7 +276,7 @@ func _test_two_sources_share_the_decay_the_way_the_halo_does(t: TestRunner) -> v
 ## consequence of it: "a cat's dash on a standing player lands about 30 and is not marked".)* A cat
 ## driving straight at a standing player still lands under `Tuning.EXPECTED_IMPACT_POINTS`.
 func _test_a_cat_dashing_at_her_is_unmarked(t: TestRunner) -> void:
-	var def := EventCatalogue.by_id("cat_dash")
+	var def := EventCatalogue.shipped().by_id("cat_dash")
 	t.check(def != null, "cat_dash is in the catalogue")
 	if not def:
 		return
@@ -294,7 +294,7 @@ func _test_a_cat_dashing_at_her_is_unmarked(t: TestRunner) -> void:
 ## row on a course that reaches her lethal radius is red, and the same row on a course that misses
 ## it — however loud its field still reads along the way — carries nothing at all.
 func _test_a_cyclist_on_course_is_red_one_passing_wide_is_not(t: TestRunner) -> void:
-	var def := EventCatalogue.by_id("cyclist")
+	var def := EventCatalogue.shipped().by_id("cyclist")
 	t.check(def != null and def.ends_the_day(), "cyclist is a hard-fail row")
 	if not def:
 		return
@@ -331,7 +331,7 @@ func _test_a_cyclist_on_course_is_red_one_passing_wide_is_not(t: TestRunner) -> 
 ## a mobile row already riding its route, a pursuer that has noticed her and is holding its
 ## stand-off, and a pursuer that has not noticed anything yet.
 func _test_a_telegraphing_lethal_thing_on_course_is_still_red(t: TestRunner) -> void:
-	var cyclist_def := EventCatalogue.by_id("cyclist")
+	var cyclist_def := EventCatalogue.shipped().by_id("cyclist")
 	if cyclist_def:
 		# No `_advance()` at all: still inside its own 2.0s telegraph, and already moving —
 		# `cyclist` is not `holds_still()`, so `_caret_velocity()` reads its route speed
@@ -349,7 +349,7 @@ func _test_a_telegraphing_lethal_thing_on_course_is_still_red(t: TestRunner) -> 
 						"colour, is what says this has not happened yet")
 		cyclist.free()
 
-	var dog_def := EventCatalogue.by_id("charging_dog")
+	var dog_def := EventCatalogue.shipped().by_id("charging_dog")
 	if dog_def:
 		t.check(dog_def.ends_the_day() and dog_def.pursues() and dog_def.notice_within() <= 0.0,
 				"charging_dog is a hard-fail pursuer sited already noticing her")
@@ -363,7 +363,7 @@ func _test_a_telegraphing_lethal_thing_on_course_is_still_red(t: TestRunner) -> 
 						"doubled red caret")
 		dog.free()
 
-	var robber_def := EventCatalogue.by_id("alley_robbery")
+	var robber_def := EventCatalogue.shipped().by_id("alley_robbery")
 	if robber_def:
 		t.check(robber_def.notice_within() > 0.0, "alley_robbery waits for a trigger")
 		var robber_where := WhereSheIs.nowhere()
@@ -377,7 +377,7 @@ func _test_a_telegraphing_lethal_thing_on_course_is_still_red(t: TestRunner) -> 
 ## The one property the ring had that a symbol does not get for free. Without it a pulsing event
 ## stops being something to time a pass through and becomes something that hurts at random.
 func _test_the_mark_still_breathes(t: TestRunner) -> void:
-	var def := EventCatalogue.by_id("homeless_yeller")
+	var def := EventCatalogue.shipped().by_id("homeless_yeller")
 	t.check(def != null and def.pulses_every() > 0.0, "the yeller pulses")
 	if not def:
 		return
@@ -410,7 +410,7 @@ func _test_the_mark_still_breathes(t: TestRunner) -> void:
 ## on a child of the event that comes after his layers in the tree, the order the engine paints
 ## siblings in, and none on the event's own canvas.
 func _test_a_figure_in_parts_carries_its_caret_over_them(t: TestRunner) -> void:
-	var def := EventCatalogue.by_id("busker")
+	var def := EventCatalogue.shipped().by_id("busker")
 	for heading: Vector2 in [Vector2.RIGHT, Vector2.LEFT]:
 		var where := WhereSheIs.nowhere()
 		var instance := _instance(def, PackedVector2Array(), where, heading)

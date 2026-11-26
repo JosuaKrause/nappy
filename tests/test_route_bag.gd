@@ -266,7 +266,7 @@ func _test_a_stretch_of_her_route_the_length_of_a_bag_has_its_mix(t: TestRunner)
 		director.start_day(day, RouteBagMoments.plans(day, seed_value), rng,
 				DaySpec.DirectorSends.THE_DAYS_ROWS)
 		var expected := {}
-		for marble: String in EventDirector.ordinary_route_marbles(day, 0):
+		for marble: String in EventDirector.ordinary_route_marbles(EventCatalogue.shipped(), day, 0):
 			expected[marble] = int(expected.get(marble, 0)) + 1
 		var length := 0
 		for id: String in expected:
@@ -304,9 +304,9 @@ func _test_a_stretch_of_her_route_the_length_of_a_bag_has_its_mix(t: TestRunner)
 func _test_the_rows_sent_ahead_of_her_are_marbles_of_her_route(t: TestRunner) -> void:
 	var wrong: Array[String] = []
 	for day in range(1, Tuning.RUN_LENGTH_DAYS + 1):
-		var marbles := EventDirector.ordinary_route_marbles(day, 0)
+		var marbles := EventDirector.ordinary_route_marbles(EventCatalogue.shipped(), day, 0)
 		for id: String in ["dog_walker", "police_patrol", "military_convoy"]:
-			var def := EventCatalogue.by_id(id)
+			var def := EventCatalogue.shipped().by_id(id)
 			if def.is_sent_ahead() != true or marbles.has(id) != def.available_on(day):
 				wrong.append("%s on day %d" % [id, day])
 	t.check(wrong.is_empty(), "each of the three is sent ahead of her and a marble of her route on "
@@ -391,7 +391,7 @@ func _test_day_3s_lesson_is_first_and_a_bag_of_its_own(t: TestRunner) -> void:
 		# The next marble fills the ordinary bag: the lesson took none of it.
 		bag.peek()
 		var ordinary := bag.bag_in_front()
-		var dogs: int = EventDirector.ordinary_route_marbles(day, 0).count("charging_dog")
+		var dogs: int = EventDirector.ordinary_route_marbles(EventCatalogue.shipped(), day, 0).count("charging_dog")
 		t.check(ordinary.count("charging_dog") == dogs,
 				"seed %d: the ordinary bag after the lesson keeps all %d of its dog marbles (%d of %d)"
 				% [seed_value, dogs, ordinary.count("charging_dog"), ordinary.size()])
@@ -402,7 +402,7 @@ func _test_day_3s_lesson_is_first_and_a_bag_of_its_own(t: TestRunner) -> void:
 ## (`ordinary_route_marbles()`). *(inbox #566 in feathery-stork: two dogs in day 3's bag of 16.)*
 func _test_day_3s_charging_dogs_keep_their_share(t: TestRunner) -> void:
 	var day := Tuning.RUN_TAUGHT_DAY
-	var marbles := EventDirector.ordinary_route_marbles(day, 0)
+	var marbles := EventDirector.ordinary_route_marbles(EventCatalogue.shipped(), day, 0)
 	var dogs := marbles.count("charging_dog")
 	var share: float = EventDirector.ROUTE_BAG_SHARE_OF["charging_dog"]
 	t.check(dogs > 0 and absf(float(dogs) - share * float(marbles.size())) <= 0.5,

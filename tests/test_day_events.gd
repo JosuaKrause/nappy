@@ -25,7 +25,7 @@ func _calm() -> FakeCalmAreas:
 			.set_area(PARK, PARK_GROUND)
 
 func _row(id: String, at: Vector2) -> EventPlan:
-	return EventPlan.new(EventCatalogue.by_id(id), at)
+	return EventPlan.new(EventCatalogue.shipped().by_id(id), at)
 
 ## Just above the court's top edge by `gap` pixels, on its middle.
 func _above_the_court(gap: float) -> Vector2:
@@ -33,7 +33,7 @@ func _above_the_court(gap: float) -> Vector2:
 
 func _test_a_row_spoils_the_ground_its_field_reaches(t: TestRunner) -> void:
 	var events := DayEvents.over(_calm())
-	var reach := EventCatalogue.by_id("dog_walker").field_reach()
+	var reach := EventCatalogue.shipped().by_id("dog_walker").field_reach()
 	var near := _row("dog_walker", _above_the_court(reach - 10.0))
 	var far := _row("dog_walker", _above_the_court(reach + 10.0))
 	events.add(near)

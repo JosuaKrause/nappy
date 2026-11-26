@@ -95,7 +95,8 @@ func _reproduce_zero_density_visits() -> void:
 				if open_tiles.is_empty():
 					open_empty_count += 1
 					continue
-				var pool := DawnSpoilers._things_to_put_in_a_park(day, lot_world, 0)
+				var pool := DawnSpoilers._things_to_put_in_a_park(EventCatalogue.shipped(), day,
+						lot_world, 0)
 				if pool.is_empty():
 					pool_empty_count += 1
 					continue

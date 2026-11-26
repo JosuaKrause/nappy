@@ -14,8 +14,8 @@ extends RefCounted
 const SIZE := 2 * Tuning.BLOCK_SIZE + 3 * Tuning.STREET_WIDTH
 const TILE := Tuning.TILE_SIZE
 
-var _patrol := EventCatalogue.by_id("police_patrol").as_sent_ahead()
-var _walker := EventCatalogue.by_id("dog_walker").as_sent_ahead()
+var _patrol := EventCatalogue.shipped().by_id("police_patrol").as_sent_ahead()
+var _walker := EventCatalogue.shipped().by_id("dog_walker").as_sent_ahead()
 
 func run(t: TestRunner) -> void:
 	_test_straight_on_to_the_far_edge_of_the_next_box(t)
@@ -226,7 +226,7 @@ func _test_what_a_car_may_drive(t: TestRunner) -> void:
 	t.check(_way_on(paved).driven(_patrol, leg).is_empty(), "a precinct's paving is not")
 	var park := _lattice()
 	park.fill_rect(Rect2i(Vector2i(int(south / TILE), 10), Vector2i.ONE), GameEnums.TileType.PARK)
-	var convoy := EventCatalogue.by_id("military_convoy").as_sent_ahead()
+	var convoy := EventCatalogue.shipped().by_id("military_convoy").as_sent_ahead()
 	t.check(_way_on(_lattice()).driven(convoy, leg) == leg
 			and _way_on(park).driven(convoy, leg).is_empty(), "nor a street a park took")
 	var closed := _lattice()

@@ -295,11 +295,11 @@ func _the_events_ahead(city: City, player: Stroller, label: String) -> int:
 	var printed := 0
 	var view := RunCity.events(city).visible_view()
 	var map := city.map()
-	var cyclist := EventCatalogue.by_id("cyclist")
-	var dog := EventCatalogue.by_id("loose_dog")
-	var charger := EventCatalogue.by_id("charging_dog")
-	var engine := EventCatalogue.by_id("fire_truck")
-	var column := EventCatalogue.by_id("military_convoy")
+	var cyclist := EventCatalogue.shipped().by_id("cyclist")
+	var dog := EventCatalogue.shipped().by_id("loose_dog")
+	var charger := EventCatalogue.shipped().by_id("charging_dog")
+	var engine := EventCatalogue.shipped().by_id("fire_truck")
+	var column := EventCatalogue.shipped().by_id("military_convoy")
 	var headings: Array[Vector2] = [Vector2.UP, Vector2.DOWN, Vector2.LEFT, Vector2.RIGHT]
 	for her in _spots(city):
 		_stand(city, player, her)
@@ -328,7 +328,7 @@ func _the_events_ahead(city: City, player: Stroller, label: String) -> int:
 							map.size_in_tiles().y * Tuning.TILE_SIZE - 16.0, view))])
 			printed += 1
 		# The men a hunting van owes get out beside it.
-		var hot := EventCatalogue.heated(EventCatalogue.by_id("abduction"),
+		var hot := EventCatalogue.shipped().heated(EventCatalogue.shipped().by_id("abduction"),
 				Tuning.RESISTANCE_GOAL)
 		var van := RunCity.events(city).spawn_extra(hot, her + Vector2(hot.notice_within() - 10.0, 0.0))
 		RunCity.events(city).world.where_she_is().tell(her)
@@ -383,7 +383,7 @@ func _print(line: String) -> void:
 ## The task's guard as the street has him: the live `task_guard` among `city`'s instances, or null.
 static func _task_guard(city: City) -> EventInstance:
 	for instance in RunCity.events(city).instances():
-		if instance.row_id() == EventCatalogue.task_guard().id() and not instance.is_gone():
+		if instance.row_id() == EventCatalogue.shipped().task_guard().id() and not instance.is_gone():
 			return instance
 	return null
 

@@ -35,7 +35,7 @@ func run(t: TestRunner) -> void:
 # ------------------------------------------------------------------ the rig ---
 
 func _patrol() -> EventDef:
-	return EventCatalogue.by_id("police_patrol")
+	return EventCatalogue.shipped().by_id("police_patrol")
 
 ## A live car of `def` on `route`, in the tree so its body exists, stepped by hand, drawn through
 ## `drawer` when one is handed in.
@@ -309,7 +309,7 @@ func _test_a_car_that_is_not_driving_strikes_nobody(t: TestRunner) -> void:
 	t.check(deepest >= -0.01 and _stands(leaving, leaving_where, player),
 			"it stops against her instead (closest %.2fpx)" % deepest)
 	leaving.free()
-	var hot := EventCatalogue.heated(_patrol(), Tuning.RESISTANCE_GOAL)
+	var hot := EventCatalogue.shipped().heated(_patrol(), Tuning.RESISTANCE_GOAL)
 	var start := Vector2(-140.0, 0.0)
 	var investigating_where := WhereSheIs.nowhere()
 	var investigating := _car(t, hot, PackedVector2Array([start, Vector2(600.0, 0.0)]), null,
@@ -453,7 +453,7 @@ func _test_an_investigating_car_never_leaves_the_carriageway(t: TestRunner) -> v
 	var inward: Vector2 = wall[1]
 	# Her back to the building, her pram toward the street.
 	var at := against + inward * (Tuning.TILE_SIZE * 0.5 - Tuning.PLAYER_BODY_RADIUS - 1.0)
-	var hot := EventCatalogue.heated(_patrol(), Tuning.RESISTANCE_GOAL)
+	var hot := EventCatalogue.shipped().heated(_patrol(), Tuning.RESISTANCE_GOAL)
 	var lane := at - inward * 96.0
 	# Along the lane toward her from the street's far side, ending just past her: the street the
 	# sidewalk is found on runs out a few tiles the other way.
@@ -636,7 +636,7 @@ func _test_a_sent_patrol_refused_its_turn_stands_in_the_box_and_goes_on(t: TestR
 ## into her, never striking her — and once she has stepped out of its lane it drives on the way it
 ## was going, past her, facing the same way every frame, and is gone only once out of her sight.
 func _test_a_car_leaving_turns_away_and_never_vanishes_beside_her(t: TestRunner) -> void:
-	var hot := EventCatalogue.heated(_patrol(), Tuning.RESISTANCE_GOAL)
+	var hot := EventCatalogue.shipped().heated(_patrol(), Tuning.RESISTANCE_GOAL)
 	var car_where := WhereSheIs.nowhere()
 	var car := _car(t, hot, PackedVector2Array([Vector2(-200.0, 0.0), Vector2(600.0, 0.0)]),
 			null, car_where)
@@ -658,7 +658,7 @@ func _test_a_car_leaving_turns_away_and_never_vanishes_beside_her(t: TestRunner)
 		turned = turned or car.facing_now().dot(Vector2.RIGHT) < 0.999
 		if car.officers_owed() > 0:
 			officer = EventInstance.new()
-			var out := EventCatalogue.out_of_the_car(DaySpec.for_day(6))
+			var out := EventCatalogue.shipped().out_of_the_car(DaySpec.for_day(6))
 			officer.setup(out, car.where_its_officer_may_get_out(out, 0, 1)[0],
 					PackedVector2Array(), Vector2.RIGHT,
 					EventSurroundings.new().hearing(officer_where))

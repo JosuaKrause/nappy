@@ -223,7 +223,7 @@ func send_a_pursuer() -> void:
 	if not _sends_poster_pursuits or not world.has_player() or _a_pursuer_is_after_her() \
 			or not _spawn_siting:
 		return
-	var def := EventCatalogue.on_foot_on(_spec)
+	var def := world.rows().on_foot_on(_spec)
 	if not def:
 		return
 	var her := world.player().global_position
@@ -268,7 +268,7 @@ func let_the_officers_out() -> void:
 	for vehicle: EventInstance in world.instances().duplicate():
 		if not vehicle.lets_men_out():
 			continue
-		var def := EventCatalogue.out_of_the_car(_spec,
+		var def := world.rows().out_of_the_car(_spec,
 				not vehicle.hunts_for_her())
 		# Handed every tick, before it may stop: whether its men would get out in her view is
 		# asked of the places this man may get out, as he is put down below.
@@ -351,7 +351,7 @@ func _where_the_sent_pursuer_starts(def: EventDef, her: Vector2, prefer: Vector2
 func queue_a_mast(offered: Array[Vector2i]) -> EventPlan:
 	if offered.is_empty():
 		return null
-	var def := EventCatalogue.heated(EventCatalogue.mast(),
+	var def := world.rows().heated(world.rows().mast(),
 			world.run().resistance().progress())
 	var siting := _siting
 	if not siting:

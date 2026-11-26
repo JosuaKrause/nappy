@@ -561,7 +561,7 @@ func _check_clearance_beside_a_kerbed_van(t: TestRunner, planner: RouteRigPlanne
 		return
 	var inward := _city.map().pavement_inward(kerb)
 	var along := Vector2i(inward.y, inward.x)
-	var van := RunCity.events(_city).spawn_extra(EventCatalogue.by_id("delivery_van"),
+	var van := RunCity.events(_city).spawn_extra(EventCatalogue.shipped().by_id("delivery_van"),
 			_city.map().tile_to_world(kerb))
 	t.check(van.is_solid(), "the van stands with a solid body")
 	var frontage := kerb + inward
@@ -606,7 +606,7 @@ func _test_a_crossed_clearance_tile_is_walked_at_its_roomiest_point(t: TestRunne
 		return
 	var inward := _city.map().pavement_inward(kerb)
 	var along := Vector2i(inward.y, inward.x)
-	var van := RunCity.events(_city).spawn_extra(EventCatalogue.by_id("delivery_van"),
+	var van := RunCity.events(_city).spawn_extra(EventCatalogue.shipped().by_id("delivery_van"),
 			_city.map().tile_to_world(kerb))
 	var lane := kerb - inward
 	var surface := func(point: Vector2) -> float:

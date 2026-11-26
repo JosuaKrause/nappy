@@ -25,7 +25,7 @@ func _test_every_marble_of_a_walk_bag_names_a_row(t: TestRunner) -> void:
 			if marble == DaySpec.EMPTY_MARBLE:
 				continue
 			named += 1
-			t.check(spec.walk_bag_rows().has(marble),
+			t.check(spec.walk_bag_rows(EventCatalogue.shipped()).has(marble),
 					"day %d's walk bag marble %s names a row" % [spec.day_number(), marble])
 	t.check(named > 0, "some spec walks a bag with rows in it (%d marbles named)" % named)
 	t.check(DaySpec.EMPTY_MARBLE == ViewBag.EMPTY, "the spec's empty marble is the bag's")
@@ -49,7 +49,7 @@ func _test_every_named_bag_is_a_whole_bag(t: TestRunner) -> void:
 	for bag_name: String in DaySpec.ESCAPE_BAGS:
 		var spec := DaySpec.for_section(DaySpec.Section.CITY, 60.0, "", bag_name)
 		for marble: String in spec.walk_bag():
-			t.check(marble == DaySpec.EMPTY_MARBLE or spec.walk_bag_rows().has(marble),
+			t.check(marble == DaySpec.EMPTY_MARBLE or spec.walk_bag_rows(EventCatalogue.shipped()).has(marble),
 					"bag %s's marble %s names a row" % [bag_name, marble])
 		t.check(spec.marbles_a_street() > 0, "bag %s draws a set number of marbles" % bag_name)
 	var sizes := {}

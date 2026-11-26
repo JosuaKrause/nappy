@@ -1967,6 +1967,11 @@ func paces_a_beat() -> bool:
 func leaves_behind() -> String:
 	return _aftermath.leaves_behind()
 
+## The row it leaves where it ends (`Aftermath.left_behind()`), or null for a row that leaves
+## nothing: the catalogue's own row, the one `EventCatalogue.by_id()` answers for its id.
+func left_behind() -> EventDef:
+	return _aftermath.left_behind()
+
 ## The id of the scar it leaves on the run where it happens (`Aftermath.scar_id()`), or "" for a row that
 ## leaves none: the burning building's burnt shell, the roadblock's barricade.
 func scar_id() -> String:

@@ -74,8 +74,8 @@ static func _plans(context: DawnContext) -> Array[EventPlan]:
 	var planned: Array[EventPlan] = []
 	if day < Tuning.MAST_FIRST_DAY:
 		return planned
-	var loudspeaker := EventCatalogue.heated(EventCatalogue.mast(), heat)
-	var curfew := EventCatalogue.heated(EventCatalogue.by_id("curfew_announce"), heat) \
+	var loudspeaker := context.rows().heated(context.rows().mast(), heat)
+	var curfew := context.rows().heated(context.rows().by_id("curfew_announce"), heat) \
 			if day == CURFEW_ANNOUNCE_DAY else null
 	var sites := context.mast_sites()
 	for scar in scars:

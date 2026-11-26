@@ -41,10 +41,10 @@ func run(t: TestRunner) -> void:
 	# the shipped warning, so what a wider notice does to the guards is read side by side. The
 	# shipped reach first: a timing that plays as the one in use leaves the one held, so handing
 	# `was` back after another puts the very object back.
-	var was := EventCatalogue.charger_timing()
+	var was := EventCatalogue.shipped().charger_timing()
 	for reach: float in [EventCatalogue.CHARGER_REACH, 1.0]:
 		EventCatalogue.use_charger_timing(ChargerTiming.of(EventCatalogue.CHARGER_WARNING, reach))
-		var notice := EventCatalogue.mark_guard().notice_within()
+		var notice := EventCatalogue.shipped().mark_guard().notice_within()
 		print("== robber notice %.0fpx (reach %.2f) ==" % [notice, reach])
 		_on_screen(t)
 		_moves_from_everywhere(t)
@@ -120,7 +120,7 @@ func _rng(seed_value: int, day: int, stream: String) -> RandomNumberGenerator:
 func _reachability(t: TestRunner) -> void:
 	var own_run := RunState.new()
 	own_run.start_run(RUN_SEED)
-	var robbery := EventCatalogue.by_id("alley_robbery")
+	var robbery := EventCatalogue.shipped().by_id("alley_robbery")
 	var min_distance: float = robbery.core_within() + ContactPoint.REACH
 	var max_distance: float = robbery.notice_within() + ContactPoint.REACH
 	var names: Array[String] = ["far end"]
@@ -190,7 +190,7 @@ func _on_screen(t: TestRunner) -> void:
 		var rng := RandomNumberGenerator.new()
 		rng.seed = hash("m213-screen:%d" % seed_value)
 		director._rng = rng
-		var robbery := EventCatalogue.by_id("alley_robbery")
+		var robbery := EventCatalogue.shipped().by_id("alley_robbery")
 		for tile in map.tiles_of_type(GameEnums.TileType.ALLEY):
 			var her := map.tile_to_world(tile)
 			view.look(Rect2(her - Tuning.VIEW_HALF_EXTENT,
