@@ -63,7 +63,10 @@ current session**; the standing merge permission is not release permission. **Cu
 needs none** (the filer's proposal, lilac-alpaca): the root plays the same release, and a candidate
 counts nothing, so a wrong one is online only at an address linked from nowhere until the next
 candidate replaces it. The root is not left untouched, though: every candidate's deploy rebuilds it
-from the release's own tag, plays it in Chrome again and gives its page the `?rc=1` forward. Completed work may be
+from the release's own tag, plays it in Chrome again and gives its page the `?rc=1` forward. **The orchestrator cuts the next candidate after a work item a player would
+notice merges** (the filer's proposal, inbox #1798 in cozy-hedgehog): v0.30.0 blocks no work item, so
+the candidate at `/rc/` carries each one as it merges, and the release is cut only when the player
+judges the candidate a good point and says so. Completed work may be
 pushed without asking, since pushing `main` publishes nothing.
 
 **Cut a release with `tools/release.sh <major|minor|patch>`**, which reads the latest release tag
