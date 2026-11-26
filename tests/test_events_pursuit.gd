@@ -36,7 +36,7 @@ func run(t: TestRunner) -> void:
 	_test_a_pursuer_can_wait(t)
 	_test_every_waiting_charger_warns_by_radius(t)
 	_test_a_warning_is_not_counted_as_a_chase(t)
-	_test_a_charge_begun_out_of_her_sight_carries_the_badge(t)
+	_test_a_charge_begun_out_of_her_sight_raises_no_badge(t)
 	_test_a_pursuer_stops_at_walls(t)
 	_test_the_robbers_lunge_is_further_out_than_his_catch(t)
 	_test_the_robber_does_not_catch_her_through_a_wall(t)
@@ -738,13 +738,15 @@ func _test_a_warning_is_not_counted_as_a_chase(t: TestRunner) -> void:
 	EventBus.pursuit_began.disconnect(listen)
 	dog.free()
 
-## **A charge that begins out of her sight puts its screen-edge badge up** (`EventInstance.was_warned_of()`,
-## which `DangerEdge` hands `BadgeModel`), and one that begins in her sight does not. The man a
-## vehicle lets out (`EventCatalogue.out_of_the_car()`) stands with his hand raised for his notice
-## and then charges from where he stood: she stands 150px off, past his stand-off, the camera's view
-## about her, until half his notice has run, and then either stays there or has walked off 420px, which puts all he
-## draws past the side of the view (`Tuning.VIEW_HALF_EXTENT`), before it runs out.
-func _test_a_charge_begun_out_of_her_sight_carries_the_badge(t: TestRunner) -> void:
+## **A charger already in the world raises no screen-edge badge, wherever its charge begins**
+## (`EventInstance.was_warned_of()`, which `DangerEdge` hands `BadgeModel`; velvet-marten #699,
+## #705; bouncy-owl #1774): it warned her in her view, and only a charger from off screen comes
+## under a badge. The man a vehicle lets out (`EventCatalogue.out_of_the_car()`) stands with his
+## hand raised for his notice and then charges from where he stood: she stands 150px off, past his
+## stand-off, the camera's view about her, until half his notice has run, and then either stays there
+## or has walked off 420px, which puts all he draws past the side of the view
+## (`Tuning.VIEW_HALF_EXTENT`), before it runs out.
+func _test_a_charge_begun_out_of_her_sight_raises_no_badge(t: TestRunner) -> void:
 	var def := EventCatalogue.out_of_the_car(DaySpec.for_day(1))
 	for walks_off: bool in [false, true]:
 		var man_where := WhereSheIs.nowhere()
@@ -765,9 +767,8 @@ func _test_a_charge_begun_out_of_her_sight_carries_the_badge(t: TestRunner) -> v
 			waited += STEP
 		man.step(STEP)
 		t.check(man.is_chasing(), "his notice run, he charges (walks off %s)" % walks_off)
-		t.check(man.was_warned_of() == walks_off,
-				"his badge is up only where his charge began out of her sight (walks off %s: %s)"
-				% [walks_off, man.was_warned_of()])
+		t.check(not man.was_warned_of(),
+				"his charge puts no badge up, in her sight or out of it (walks off %s)" % walks_off)
 		man.free()
 
 ## **She leaves while he warns and comes back** (review 4 of PR #781): she stands 10px inside his

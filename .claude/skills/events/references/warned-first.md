@@ -64,10 +64,18 @@ pursuer sent from out of her sight (the resistance's trap, the torn poster's man
 
 **Every screen-edge badge comes from this path** (minty-dolphin #852): a warning, then the thing it
 created keeping the badge until any of it is in sight (`EventInstance.was_warned_of()`,
-`BadgeModel`). **A charger already in the world whose charge begins out of her sight takes the
-same path**: that start is its warning, and it carries the badge from then until she can see it
-(`EventInstance._begin_the_charge()`), a rule asked of every charger and never keyed on a row. Any
-other danger in the world carries none, so nothing in the world is measured for one.
+`BadgeModel`). Nothing in the world is measured for one, and a danger already in the world
+carries none.
+
+**A charger is one of two kinds, and only the off-screen kind has a badge** (velvet-marten #699,
+#705; calm-kestrel #559; busy-quail #569; bouncy-owl #1774). An off-screen charger comes by this
+path and enters her view already charging, always, never standing or walking: a pursuer warned
+first arrives chasing (`ARRIVES_CHASING`), the day-3 dog arrives on its running approach, the
+masked man runs his line from the tick he exists. An on-screen charger is already in the world and
+never carries a badge, wherever its charge begins: it warns her in her view before any charge
+(`pursuits.md`). So a charger whose warning could start out of her sight is fixed by a check before
+that warning (the waiting charger's view, a vehicle stopping for her only in view, day 13's guard
+sent under a badge when he is out of it), never by giving it a badge.
 
 **The warning time is the row's own number** (PLAYTEST-145 1). Nothing about where a thing is
 created may be derived from its telegraph, and a row's telegraph is not shortened by shrinking its

@@ -2266,7 +2266,7 @@ static var _task_guard_sent: EventDef = null
 ##
 ## **Solid at every heat**: `obstructs_within()` 44, half its drawn width. The van never moves, so the
 ## rule that takes a pursuer's body away (a moving wall pins her) never reaches it, and its men get
-## out beside that body (`EventInstance.door_for_its_officer()`).
+## out beside that body (`EventInstance.where_its_officer_may_get_out()`).
 static func _night_raid() -> EventDef:
 	var row := EventDraft.new("night_raid")
 	row.scripted_on(10, 3)

@@ -26,10 +26,9 @@ var _age := 0.0
 ## (`was_warned_of()`) to carry the warning's badge on to the thing itself until it comes into
 ## view, and `restore()` reads it to tell a fresh instance from one streamed back in.
 var _came_under_a_warning := false
-## Whether its charge began with none of it in her sight (`_begin_the_charge()`): that start is
-## its warning, so it carries the screen-edge badge from then until she can see it
-## (`was_warned_of()`).
-var _charged_out_of_sight := false
+## The man this vehicle lets out, as `EventsAhead` hands it (`lets_out_as()`); null until then,
+## and for a row that lets out none.
+var _its_officer: EventDef = null
 ## Whether it has handed over what it leaves where it goes off (`take_what_it_leaves()`).
 var _left_what_it_leaves := false
 
@@ -418,11 +417,41 @@ func body_position() -> Vector2:
 ## there. The view is the camera's own, look-ahead and trailing included. Always true for any other
 ## row, and for an instance nobody has handed a view (an empty view, a rig that steps it
 ## directly), where the notice is the radius alone.
+##
+## **And whether a vehicle that lets men out would let them out in her view** (`EventInvestigation`
+## stops for her only then): all it draws (`drawn_box()`) and, for every man it lets out, his
+## picture with a hand raised (`EventFootprints.raised_hand_rect()`) on his feet at **every** place
+## he may get out (`where_its_officer_may_get_out()`: its door on her side, the door on the other
+## side, its own place), wholly inside the view. Which of them he takes is his ground's to say when he
+## gets out (`EventsAhead.let_the_officers_out()`), so the test holds wherever that is. So a man let
+## out warns her in her view before his charge, and is never a charger already in the world coming
+## at her unseen and with no badge (velvet-marten #699, #705; bouncy-owl #1774). A vehicle not yet
+## handed the man it lets out (`lets_out_as()`) cannot say where he would stand, and is not in her
+## view yet.
 func _would_stand_in_her_view() -> bool:
 	var view := _where.view()
-	if not _def.pursues() or not warns_by_radius() or not view.has_area():
+	if not view.has_area():
+		return true
+	if _composed.investigation():
+		return _would_let_its_men_out_in(view)
+	if not _def.pursues() or not warns_by_radius():
 		return true
 	return view.encloses(warning_rect())
+
+## Whether this vehicle and every place each of its men may get out stand whole in `view`
+## (`_would_stand_in_her_view()`).
+func _would_let_its_men_out_in(view: Rect2) -> bool:
+	if _its_officer == null:
+		return false
+	var box := drawn_box()
+	if box.has_area() and not view.encloses(Rect2(global_position + box.position, box.size)):
+		return false
+	var count := _def.lets_out()
+	for i in count:
+		for feet: Vector2 in where_its_officer_may_get_out(_its_officer, i, count):
+			if not view.encloses(EventFootprints.raised_hand_rect(feet)):
+				return false
+	return true
 
 ## The world rect his warning picture fills, at the widest and tallest of its views, standing on his
 ## feet: a roadblock's guard at the post on her side of the band
@@ -863,14 +892,42 @@ func call_back_its_officers(stopped_by: EventInstance) -> void:
 			if officer != stopped_by:
 				officer._be_done()
 
-## Where a man gets out: beside the body's flank on her side, clear of it by his own reach, `along`
-## px from its middle along its length — `side` 1 for her side, -1 for the other.
-func door_for_its_officer(row: EventDef, side := 1.0, along := 0.0) -> Vector2:
+## **Takes the man this vehicle lets out** (`EventCatalogue.out_of_the_car()`: the day's pursuer on
+## foot, whose catch is a stop out of the patrol car and ends the day out of a hunting van), as
+## `EventsAhead.let_the_officers_out()` hands it every tick. Where he gets out
+## (`where_its_officer_may_get_out()`) is worked out from his own row, both for whether the vehicle
+## may stop in her view and for where he is put down.
+func lets_out_as(row: EventDef) -> void:
+	_its_officer = row
+
+## Whether this is a vehicle that stops for her and lets men out (`EventInvestigation`).
+func lets_men_out() -> bool:
+	return _composed.investigation() != null
+
+## **Where the `i`th of the `count` men `row` describes may get out, in the order they are tried**:
+## at its door on her side, at the door on the other side, then at the vehicle's own place. A door
+## is beside the body's flank, clear of it by his own reach (`row`'s body), and `OFFICER_SPACING`
+## apart along its length from the next man's. `EventsAhead.let_the_officers_out()` puts him at
+## the first his ground allows; `_would_stand_in_her_view()` asks every one, so the vehicle stops
+## only where each of them is in her view.
+func where_its_officer_may_get_out(row: EventDef, i: int, count: int) -> PackedVector2Array:
+	var along := (float(i) - float(count - 1) * 0.5) * OFFICER_SPACING
+	var his_reach := row.ground_shape().reach() if row.ground_shape() else 0.0
+	return PackedVector2Array([_door_at(his_reach, 1.0, along), _door_at(his_reach, -1.0, along),
+			global_position])
+
+## How far apart along a vehicle's flank its men get out when it lets out more than one, in px:
+## a body and a half of a man apart, so neither stands in the other.
+const OFFICER_SPACING := 28.0
+
+## Where a man whose body reaches `his_reach` round his feet gets out beside the body's flank,
+## `along` px from its middle along its length — `side` 1 for her side, -1 for the other.
+func _door_at(his_reach: float, side: float, along: float) -> Vector2:
 	var across := _heading.orthogonal()
 	var her := _where.at()
 	if her != Vector2.INF and (her - global_position).dot(across) < 0.0:
 		across = -across
-	var reach := _def.ground_shape().rounding_radius() + (row.ground_shape().reach() if row.ground_shape() else 0.0) + 1.0
+	var reach := _def.ground_shape().rounding_radius() + his_reach + 1.0
 	return global_position + across * side * reach + _heading * along
 
 # ------------------------------------------------------------------- the stop ---
@@ -2000,8 +2057,8 @@ class Figure:
 	func clear_line_to(point: Vector2) -> bool:
 		return _of._clear_line_to(point)
 
-	## Whether a waiting charger's warning would stand whole in her view
-	## (`EventInstance._would_stand_in_her_view()`).
+	## Whether a waiting charger's warning, or the men a vehicle lets out, would stand whole in her
+	## view (`EventInstance._would_stand_in_her_view()`).
 	func would_stand_in_her_view() -> bool:
 		return _of._would_stand_in_her_view()
 
@@ -2079,10 +2136,11 @@ class Figure:
 	func warning_went_up() -> void:
 		_of._report_the_warning()
 
-	## Its charge began, for its counter (`EventBus.pursuit_began`), said once however often told;
-	## begun out of her sight, it carries the screen-edge badge (`EventInstance._begin_the_charge()`).
+	## Its charge began, for its counter (`EventBus.pursuit_began`), said once however often told
+	## (`ChargeRecord.begin()`). It raises no badge, wherever it is: a charger already in the world
+	## warned her in her view (`EventInstance.was_warned_of()`).
 	func charge_began() -> void:
-		_of._begin_the_charge()
+		_of._charge.begin()
 
 	## Its charge, and the warning before it, were said and ended before it streamed out: none of it
 	## is said again (`ChargeRecord.count_as_over()`).
@@ -2198,32 +2256,11 @@ func has_parked() -> bool:
 
 ## **Whether its coming was put on the screen-edge badge**, which it carries until it comes into
 ## view (`BadgeModel`): it was created where a warning pointed, once that warning was over
-## (`arrive_from_its_warning()`), or its charge began out of her sight (`_begin_the_charge()`).
+## (`arrive_from_its_warning()`). **Only a charger from off screen carries one, and a charger
+## already in the world never does**, wherever its charge begins: it warned her in her view
+## before any charge (velvet-marten #699, #705; bouncy-owl #1774).
 func was_warned_of() -> bool:
-	return _came_under_a_warning or _charged_out_of_sight
-
-## **Its charge begins**, said once however often told (`ChargeRecord.begin()`). **A charge that
-## begins with none of it in her sight puts its badge up as it starts** (`_charged_out_of_sight`),
-## pointing where it comes from and kept until she can see it, through the one path every badge
-## takes (`was_warned_of()`, `BadgeModel`): a charger that waited for her and ran from just
-## outside the view, or a man let out of a vehicle whose raised hand she walked away from. A rule
-## about every charger, never one row: it asks only where the charger is when its charge begins.
-## One that began in her sight carries none, since she saw it coming.
-func _begin_the_charge() -> void:
-	if not _charge.has_begun() and not _is_in_her_sight():
-		_charged_out_of_sight = true
-	_charge.begin()
-
-## Whether any of it is in her sight this tick: the point it stands at or any of what it draws
-## (`drawn_box()`) inside the camera's view (`WhereSheIs.view()`), the test the badge comes down
-## by (`DangerEdge`). In sight for an instance nobody has handed a view (a rig that steps it
-## directly), so no badge goes up on a guess.
-func _is_in_her_sight() -> bool:
-	var view := _where.view()
-	if not view.has_area() or view.has_point(global_position):
-		return true
-	var box := drawn_box()
-	return box.has_area() and view.intersects(Rect2(global_position + box.position, box.size))
+	return _came_under_a_warning
 
 ## Whether it comes after her (its row's `pursuit`).
 func pursues() -> bool:

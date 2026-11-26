@@ -8,6 +8,16 @@ The mechanics — the stand-off, the break-off as a rate, the waiting state — 
 a moving encounter is stated over distance and checked by walking**, never by asserting the numbers
 it was written from.
 
+**Every charger is one of two kinds of charge** (velvet-marten #699, #705; bouncy-owl #1774): an
+off-screen one comes under its screen-edge badge and enters her view already charging
+(`warned-first.md`), and an on-screen one is already in the world, never shows a badge, and warns
+her in her view when she comes close before it charges by its own rule (below). **A warning of an
+on-screen charger starts only in her view**: a waiting charger notices her only with its warning
+picture in the camera's view, a vehicle stops for her only where it and its men would stand whole
+in it (`EventInstance._would_stand_in_her_view()`), and day 13's guard set on her out of it is
+sent as an off-screen charger instead. A charger that fits neither kind is fixed by such a check,
+never by a badge.
+
 **Three things bind a change to any pursuer, and `SKILL.md`, "The telegraph fairness contract",
 states them**: the day-3 dog's separate notice floor, the clock a pursuer that waited for her warns
 on, and verifying escape with the actual Baby meter.
