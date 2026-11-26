@@ -11,10 +11,13 @@ extends RefCounted
 ## different moments and each reads as its own step. `Tuning.RESISTANCE_GOAL - 1` is one task's worth
 ## of progress left before the goal.
 const HEAT_HUNTS_LEVEL := Tuning.RESISTANCE_GOAL - 1
-## How close she has to come before it takes an interest, in px. Strictly between
-## `PursuitSpec.standoff(Tuning.HEAT_HUNTS_SPEED, 54)` (132px, against the van's own inner radius) and its
-## 250px field: under the stand-off the whole notice is spent standing still, over the field it
-## decides about her before she can feel it.
+## How close she has to come before it takes an interest, in px, as written: the hunting roadblock's
+## guard's one radius, and the hunting vans' before they let their men out. Drawn at the run's
+## `ChargerTiming.notice()` of this, 225px as shipped, since the player found 180px way too small
+## for a charger to notice her within (curly-moose #803). Over
+## `PursuitSpec.standoff(Tuning.HEAT_HUNTS_SPEED, 54)` (132px, against the van's own inner radius),
+## since under the stand-off the whole notice is spent standing still; a van never notices her past
+## its 250px field (`at_heat()`), where it would decide about her before she can feel it.
 const HEAT_HUNTS_WITHIN := 180.0
 ## The progress at which a pressing row stops merely running its route and starts investigating:
 ## stopping near her and letting a pursuer on foot out (`EventDef.investigates()`, read off its
@@ -23,10 +26,14 @@ const HEAT_HUNTS_WITHIN := 180.0
 ## being interested.
 const HEAT_INVESTIGATES_LEVEL := 3
 ## How close she has to come, along a clear line, before an investigating car stops and its
-## policeman gets out, in px. **Inside the patrol's own 185px outer radius**, so it decides about her
-## only once she can feel it, and wider than the man's stand-off (116px), so he usually gets out with
-## room to hold his ground and give the notice he owes her (`PursuitSpec.Start.SETS_OFF_BESIDE_HER`
-## covers him when she is nearer).
+## policeman gets out, in px, as written. Drawn at the run's `ChargerTiming.notice()` of this, as
+## every charger's notice is (curly-moose #803), and **never past the patrol's own 185px outer
+## radius** (`at_heat()`), so it decides about her only once she can feel it: 185px as shipped.
+## Wider than the man's stand-off (116px), so he usually gets out with room to hold his ground and
+## give the notice he owes her (`PursuitSpec.Start.SETS_OFF_BESIDE_HER` covers him when she is
+## nearer). Once he is back in, the car stands for her while she is in its lane within the radius
+## it stopped at (`EventCarDriving.stand_for_her()`), so stopped however far out, it never pulls
+## away into her.
 const HEAT_INVESTIGATE_WITHIN := 150.0
 ## What the intensity of a pressing row is multiplied by at full heat: the patrol's 10/s at the
 ## centre becomes 13.5/s. The smaller of the two multipliers, since an intensity rise is the one the
@@ -140,6 +147,11 @@ enum Look {
 	                        ## checkpoint guard's own drawing, standing then lunging as
 	                        ## `DOOR_GUARD` is drawn, badged by the lunge's front diagonal, the
 	                        ## one picture of the guard no other look already stands for.
+	# ---- the escape city's explosion, drawn only in its badge ----
+	EXPLOSION,        ## A burst on the ground and its mushroom of smoke: the screen-edge badge of
+	                  ## an explosion about to go off out of her sight. Nothing of it is drawn on
+	                  ## the street, where it is only ever heard (and lit); what it leaves there is
+	                  ## the crater, a row of its own.
 }
 
 ## Where AMBIENT instances come from. Ambient events are features of the map, not rolls.
@@ -200,6 +212,7 @@ func _init(draft: EventDraft) -> void:
 	_drawn_to_sack_piles = draft.drafted_is_drawn_to_sack_piles()
 	_role = draft.drafted_role()
 	_counts_charges_as = draft.drafted_charges_counted_as()
+	_set_off_within = draft.drafted_set_off_within()
 	_look = draft.drafted_look()
 	_body = draft.drafted_body()
 	_field = draft.drafted_field()
@@ -244,7 +257,7 @@ func is_of_kind(kind: GameEnums.EventKind) -> bool:
 ## shadow, whether it trails a lead, whether its hold hides all of it, whether a rider of it may be
 ## the pelican and the sides its guards stand on. Written by the draft (`EventDraft.look()`); asked
 ## through `look()` and the questions below. Every visible row states its own picture;
-## `tests/test_events.gd` names the three that are legitimately invisible.
+## `tests/test_events_catalogue.gd` names the two that are legitimately invisible.
 ## `LookSpec.none()` is a row with no picture.
 var _look: LookSpec
 
@@ -447,6 +460,62 @@ var _sent_ahead: SentAhead
 ## Whether the director sends it ahead of her on an ordinary day (`EventDraft.sent_ahead()`).
 func is_sent_ahead() -> bool:
 	return _sent_ahead != null
+
+## **How near she comes to where the row starts before it is set off**, in px, or 0 for a row no
+## place sets off (`EventDraft.set_off_within()`): the masked man on the escape's stairs and the
+## escape city's explosions. A plan of such a row is not in the world until she comes within this
+## of where it starts (`SetOffWatch`), and then comes under its warning, its badge pointing at that
+## place, with its telegraph spent.
+var _set_off_within := 0.0
+
+## Whether a place sets it off (`_set_off_within`): not in the world until she comes near where it
+## starts, then warned of first and created there.
+func is_set_off_by_a_place() -> bool:
+	return _set_off_within > 0.0
+
+## How near she comes to where it starts before it is set off, in px, or 0 for a row no place sets
+## off.
+func sets_off_within() -> float:
+	return _set_off_within
+
+## **Whether walking into its place may set it off at once** (`as_set_off_at_once()`): a thing
+## that comes at her from there, where its set-off distance alone, with no badge up first, keeps it
+## as far from her as its warning owes (`minimum_telegraph()`), as the masked man's 426px does
+## against his catch — the same reckoning `warning_time()` holds the copy to. **A thing that stands
+## where it comes is warned for its own `warned_for()` whichever way she came in** (the escape
+## city's explosion): it comes all at once, with no approach for her to watch, so the badge before
+## it is the whole of its notice *(minty-lemur #785: explosions off screen with a warning sign
+## showing the explosion)*.
+func may_be_set_off_at_once() -> bool:
+	if not is_set_off_by_a_place() or comes_all_at_once():
+		return false
+	return _time_to_reach_from(_where_set_off_at_once()) + 0.001 >= minimum_telegraph()
+
+## How far from her the copy set off at once comes (`as_set_off_at_once()`): its set-off
+## distance, and never nearer than a thing just out of sight.
+func _where_set_off_at_once() -> float:
+	return maxf(Offscreen.min_boundary(), _set_off_within)
+
+## **How long after it is created `created_at` px from her it can first reach her**, both closing:
+## its own speed and her walk, to its reach (its lethal reach for a row that ends the day, its
+## field's otherwise). What `warning_time()` adds to the badge, and what decides whether a place
+## may set a row off at once (`may_be_set_off_at_once()`), so the two cannot reckon it apart.
+func _time_to_reach_from(created_at: float) -> float:
+	var closing := _route.speed() + Tuning.WALK_SPEED
+	var reach := lethal_reach() if ends_the_day() else field_reach()
+	return maxf(0.0, created_at - reach) / closing
+
+## **The copy a place sets off at once**: its badge up alone for no time, for her walking into its
+## place, so it comes on the tick she reaches it, as near as its set-off distance; asked only of a
+## row that `may_be_set_off_at_once()`. The row itself is warned for its own `warned_for()` first,
+## for her already inside its place when it may come, or arriving inside it through a door
+## (`SetOffWatch`). Validated as it is made.
+func as_set_off_at_once() -> EventDef:
+	var draft := redraft()
+	draft.warning(_warning.cut_to(0.0))
+	var variant := draft.build()
+	variant.validate()
+	return variant
 
 ## Whether the director warns of it first in the lane of the road beside her when it sends it
 ## ahead of her (`SentAhead.is_warned_first()`, a row of the road, `keeps_to_the_carriageway()`):
@@ -961,13 +1030,13 @@ var _act_tag: int
 ## **A derived copy, never a mutation.** The catalogue's rows are shared by every day of the run and
 ## validated once at boot. `EventCatalogue.at_heat()` caches these, so a level costs one copy
 ## per row per run rather than one per placement.
-func at_heat(level: int) -> EventDef:
+func at_heat(level: int, chargers: ChargerTiming) -> EventDef:
 	if not answers_to_heat() or level <= 0:
 		return self
 	var through := clampf(float(level) / float(Tuning.RESISTANCE_GOAL), 0.0, 1.0)
 	var hot := redraft()
 	var hunts_from := HEAT_HUNTS_LEVEL
-	var notices_within := HEAT_HUNTS_WITHIN
+	var notices_within := chargers.notice(HEAT_HUNTS_WITHIN)
 	if _hunts.presses():
 		# More of them, and more expensive to be near. Population is the axis that changes the
 		# *route*, and intensity is what makes one of them worth planning around. Below its own
@@ -980,7 +1049,7 @@ func at_heat(level: int) -> EventDef:
 		hot.drawn(_weight * lerpf(1.0, HEAT_PRESSES_POPULATION, through), most)
 		hot.field(_field.at_peak(peak() * lerpf(1.0, HEAT_PRESSES_INTENSITY, through)))
 		hunts_from = HEAT_INVESTIGATES_LEVEL
-		notices_within = HEAT_INVESTIGATE_WITHIN
+		notices_within = chargers.notice(HEAT_INVESTIGATE_WITHIN)
 	if level < hunts_from:
 		return hot.build()
 	# **At its rung's threshold the copy takes the row's hunt** (`_hunts`, `HuntSpec`) and
@@ -988,6 +1057,12 @@ func at_heat(level: int) -> EventDef:
 	# is, and lets its men out (`investigates()`), keeping its cold row's catch; or a man
 	# pursues her himself.
 	hot.hunting(_hunts)
+	# **A copy never notices her from outside its own field**, before she can feel it. The rung's
+	# trigger is authored once; a vehicle that lets its men out stops short of it at its own field's
+	# edge (its field is priced against its own telegraph, `Tuning.validate_event()`), and a man who
+	# pursues her himself has his field widened to it below.
+	if _hunts.pursuit() == null:
+		notices_within = minf(notices_within, hot.drafted_field().heard_within())
 	hot.notice(NoticeSpec.at(notices_within))
 	if _hunts.pursuit() != null:
 		# He hunts as the row says, at the ladder's own speed.
@@ -1055,7 +1130,7 @@ func validate() -> bool:
 	# **The body is the shape.** A row that draws something has a shape to draw it from. A solid
 	# body's reach is its shape's (`BodySpec.obstructs_within()`), so the two cannot disagree and
 	# the body and the picture cannot disagree about where she can walk.
-	if _look.picture() != Look.NONE and ground_shape() == null:
+	if _look.is_drawn_in_the_world() and ground_shape() == null:
 		push_error("event '%s' has a look but no shape to draw its shadow and body from" % _id)
 		return false
 	if _body.is_solid_with_no_shape():
@@ -1308,12 +1383,13 @@ func validate() -> bool:
 		push_error("Unfair pursuit '%s': its lunge is measured from %.0fpx, inside its own %.0fpx catch"
 				% [_id, _pursuit.lunge_reach(), lethal_reach()])
 		return false
-	# A row that runs its own line once she is near is a mobile row that does not pursue and notices
-	# her from further than it runs.
-	if _notice and _notice.runs_within() > 0.0 \
-			and (_pursuit or not _route.moves() or _notice.within() <= _notice.runs_within()):
-		push_error("event '%s' runs within %.0fpx but is not a mobile row that waits for her "
-				% [_id, _notice.runs_within()] + "from further than that")
+	# **A row a place sets off comes under a warning first**: a `MAP` row, warned of before it
+	# exists, that neither waits for her nor pursues her, since its place is its notice: the masked
+	# man then runs his line, and the escape city's explosion goes off where it stands.
+	if is_set_off_by_a_place() and (not _warning.is_warned_first() \
+			or _spawn_mode != SpawnMode.MAP or _notice or _pursuit):
+		push_error("event '%s' is set off by a place but is not a MAP row warned of first "
+				% _id + "that neither waits for her nor pursues her")
 		return false
 	if starts_by(PursuitSpec.Start.CHARGES_AT_ONCE) and _notice:
 		push_error("event '%s' charges at once but waits for her as well" % _id)
@@ -1431,14 +1507,16 @@ func nearest_crouch() -> float:
 ## where it is created. Created closest (`Offscreen.min_boundary()`, just out of sight on the
 ## view's short axis) and reaching her with her walking into it: at its lethal reach for a
 ## row that ends the day, and at its field's forward reach for any other. A field that already covers her
-## where it is created adds nothing.
+## where it is created adds nothing. **A row a place sets off at once** (`as_set_off_at_once()`,
+## its badge alone for no time) is created on the tick she walks into its place, so as far from
+## her as its set-off distance (`sets_off_within()`), never nearer than just out of sight.
 func warning_time() -> float:
 	if not warns_before_it_exists():
 		return telegraphs_for()
-	var closing := _route.speed() + Tuning.WALK_SPEED
-	var reach := lethal_reach() if ends_the_day() else field_reach()
 	var created_at := Offscreen.min_boundary()
-	return warned_for() + maxf(0.0, created_at - reach) / closing
+	if is_set_off_by_a_place() and warned_for() <= 0.0:
+		created_at = _where_set_off_at_once()
+	return warned_for() + _time_to_reach_from(created_at)
 
 ## How long this row's badge is up alone, with nothing in the world, before it is placed just out of
 ## sight (`PendingWarning`), for a row warned of before it exists. A pursuer's is its
@@ -1456,11 +1534,6 @@ func holds_still() -> bool:
 ## telegraph and duration measured from that moment rather than from its birth.
 func waits_for_her() -> bool:
 	return _notice != null
-
-## Whether it runs its own line once she comes close (`NoticeSpec.runs_within()`), rather than
-## ending its notice on a clock: the masked man on the escape's stairs.
-func runs_its_own_line() -> bool:
-	return _notice != null and _notice.runs_within() > 0.0
 
 ## **Whether its warning emits only a telegraph's share of its peak**: its telegraph, and its wait
 ## where it has one. True for a row that does not wait and for one whose wait is quiet
@@ -1793,14 +1866,27 @@ func reach_above(rate: float) -> float:
 
 ## **Whether its coming gets a badge at the screen edge**, for her walking at `walk_speed`: lethal
 ## always, and otherwise only what she cannot outwalk (a thing slower than a walk is one she can
-## turn round and leave). A thing that does not telegraph its coming (`telegraphs_its_coming()`) is outside the
-## badge.
+## turn round and leave). **A thing that comes all at once** (`comes_all_at_once()`) is one she
+## cannot outwalk either: its noise is on her the moment it is there, so its badge is the only
+## notice of it she gets — the escape city's explosion *(minty-lemur #785: explosions off screen
+## with a warning sign showing the explosion)*. A thing that does not telegraph its coming
+## (`telegraphs_its_coming()`) is outside the badge.
 func announces_its_coming(walk_speed: float) -> bool:
 	if not telegraphs_its_coming():
 		return false
 	if ends_the_day():
 		return true
+	if comes_all_at_once():
+		return true
 	return _route.moves() and _route.speed() > walk_speed
+
+## **Whether it comes all at once**: warned of before it exists and standing where it comes, so
+## there is no approach for her to watch — the escape city's explosion. Its badge is the whole of
+## its notice: it gets one whatever its speed (`announces_its_coming()`), a place never sets it
+## off at once (`may_be_set_off_at_once()`), and a place puts its badge up only where her moving
+## during it cannot bring the place into her sight (`SetOffWatch`).
+func comes_all_at_once() -> bool:
+	return _warning.is_warned_first() and not _route.moves()
 
 ## How fast it comes at her under its own steam: its chase speed for a pursuer, otherwise its
 ## route's speed (`RouteSpec.speed()`). What the badge starts a thing that arrives under its warning

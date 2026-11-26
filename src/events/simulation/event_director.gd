@@ -213,14 +213,18 @@ func _init(map: CityMap, navigator: Navigator = null) -> void:
 ## `RunState.resistance().progress()` the day's own placements were planned at.
 ##
 ## **`sends` is the walk's own setting of what the director may send her**
-## (`DaySpec.director_sends()`), and the day's number decides nothing of it: a walk that sends none
-## of an ordinary day's rows (`DaySpec.DirectorSends.NOTHING`) has no route bag, owes nothing
-## from the plan and rolls no sprinkled dog and no day-one rig, whatever `day` is. There is no
-## default: a caller says what its walk sends.
+## (`DaySpec.director_sends()`), and the day's number decides nothing of it: a walk that sends
+## none of an ordinary day's rows (`DaySpec.DirectorSends.NOTHING`) has no route bag, owes
+## nothing from the plan and rolls no sprinkled dog and no day-one rig, whatever `day` is; one
+## that sends the rows of its own plan (`SENT_AHEAD_ROWS_OF_ITS_PLAN`) owes only the sent-ahead
+## rows its plan left unplaced, in a route bag of those alone. There is no default: a caller
+## says what its walk sends. `wait_share` is the share of `AHEAD_INTERVAL` the walk lets pass
+## between two handouts (`DaySpec.handout_wait_share()`).
 func start_day(day: int, plans: Array[EventPlan],
 		rng: RandomNumberGenerator, sends: DaySpec.DirectorSends,
-		siting: WalkSiting = null, heat: int = 0) -> void:
+		siting: WalkSiting = null, heat: int = 0, wait_share := 1.0) -> void:
 	_owed.clear()
+	_wait_share = wait_share
 	_lesson = null
 	_rng = rng
 	_day = day
@@ -231,6 +235,8 @@ func start_day(day: int, plans: Array[EventPlan],
 	_return_patrols_left = 0
 	_patrol_bag_left = 0
 	_sends_the_days_rows = sends == DaySpec.DirectorSends.THE_DAYS_ROWS
+	var its_trucks := sends == DaySpec.DirectorSends.SENT_AHEAD_ROWS_OF_ITS_PLAN
+	var trucks: Array[EventDef] = []
 	_fill_the_route_bag(day, heat, rng)
 	_return_owed = false
 	_return_pacing = false
@@ -255,10 +261,12 @@ func start_day(day: int, plans: Array[EventPlan],
 		if plan.is_sited_from_her_walk() and not plan.is_placed():
 			_on_her_way.append(plan)
 		if not _sends_the_days_rows:
+			if its_trucks and plan.is_sent_ahead() and not plan.is_placed():
+				trucks.append(plan.row())
 			continue
 		var mode := plan.spawn_mode_on(day)
 		# A row the director sends ahead of her is owed as a moment where the dawn left it unplaced
-		# (`DawnMoments`); placed, it is a place something else stood (the escape's bag, a recipe).
+		# (`DawnMoments`); placed, it is a place something else stood (a scene recipe's).
 		if mode == EventDef.SpawnMode.AHEAD_OF_PLAYER or mode == EventDef.SpawnMode.TOWARD_PLAYER \
 				or (plan.is_sent_ahead() and not plan.is_placed()):
 			if plan.pursues() and not lesson:
@@ -267,6 +275,7 @@ func start_day(day: int, plans: Array[EventPlan],
 			_owed.append(null if _route_rows.has(plan.row_id()) else plan.row())
 	if _sends_the_days_rows:
 		_owe_the_sprinkled_dog(day)
+	_owe_its_trucks(trucks, heat)
 	_take_the_forced_row()
 	# The first one is not free: a cat on the doorstep before she has taken a step reads as the
 	# game starting badly rather than as something happening.
@@ -276,8 +285,27 @@ func start_day(day: int, plans: Array[EventPlan],
 	_teach_the_run(day, lesson)
 	_rig_day_one(day, heat)
 
+## **The sent-ahead rows a walk's own plan left for the director**
+## (`DaySpec.hands_the_director()`): each is a marble of a route bag that holds them alone, and
+## a slot owed, so she meets as many as the plan handed over, one at the director's usual pace,
+## each sited ahead of her as a day's convoy is (`_routed()`). A truck is no row of the ordinary
+## bag, so `max_per_day` caps none of them.
+func _owe_its_trucks(trucks: Array[EventDef], heat: int) -> void:
+	if trucks.is_empty():
+		return
+	var marbles := []
+	for def in trucks:
+		_route_rows[def.id()] = _routed(def, heat)
+		marbles.append(def.id())
+		_owed.append(null)
+	_route = MarbleBag.new([], marbles, hash("%d:route-bag" % _rng.seed))
+
+## The share of `AHEAD_INTERVAL` the walk lets pass between two handouts (`start_day()`'s
+## `wait_share`).
+var _wait_share := 1.0
+
 ## Whether today's route is the ordinary day's rows (`start_day()`'s `sends`). When it is not, the
-## director has no route bag and owes nothing from the plan.
+## director's route bag holds only what the walk's plan hands it (`_owe_its_trucks()`), or nothing.
 var _sends_the_days_rows := true
 
 ## How many dog walkers day one's first handouts hold (`_rig_day_one()`).
@@ -1106,7 +1134,7 @@ func _roll_interval() -> float:
 		return _forced_interval
 	if _return_pacing:
 		return _rng.randf_range(RETURN_PATROL_INTERVAL.x, RETURN_PATROL_INTERVAL.y)
-	return _rng.randf_range(AHEAD_INTERVAL.x, AHEAD_INTERVAL.y)
+	return _rng.randf_range(AHEAD_INTERVAL.x, AHEAD_INTERVAL.y) * _wait_share
 
 ## A run straight across her line, `AHEAD_LEAD_DISTANCE` in front of her.
 ##
@@ -1426,7 +1454,29 @@ func _down_the_lane(at: Vector2, going: Vector2, index: int, def: EventDef,
 	var place := PendingWarning.in_its_lane(def, at, lane_point, going, ends.x, ends.y, view)
 	if place == Vector2.INF:
 		return PackedVector2Array()
+	if def.is_warned_in_its_lane() and not _holds_while_its_badge_is_up(def, place, at, going):
+		return PackedVector2Array()
 	return leg_in_the_lane(def, place, at, going)
+
+## **Whether a row warned of first in its lane could be created from wherever the camera is once its
+## badge has been up**: the thing is created just out of sight of where the camera is then
+## (`EventsAhead._warn_in_its_lane()`), a place that has moved along the road with her by up to
+## `RUN_SPEED` times `warned_for()`, and a tile for the camera's own lead. Its place and its leg
+## are asked every half tile of that stretch either way; a break in the carriageway, a leg a car may
+## not drive or go on from, or a placed plan's room across it refuses the row, which waits for
+## room. A badge is never raised for a thing that cannot come: "a badge shouldn't disappear before
+## the entity is visible" (minty-dolphin #852).
+func _holds_while_its_badge_is_up(def: EventDef, place: Vector2, at: Vector2,
+		going: Vector2) -> bool:
+	var reach := Tuning.RUN_SPEED * def.warned_for() + Tuning.TILE_SIZE
+	var shift := -reach
+	while shift <= reach:
+		var by := going * shift
+		var leg := leg_in_the_lane(def, place + by, at + by, going)
+		if leg.is_empty() or not clear_to_send(leg, def):
+			return false
+		shift += Tuning.TILE_SIZE * 0.5
+	return true
 
 ## **The first leg of a row sent down a lane of the road beside her** (the patrol and the convoy the
 ## director sends ahead of her), from `place` in the lane driving `going` (a unit along the road),

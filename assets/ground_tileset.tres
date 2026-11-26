@@ -1,4 +1,4 @@
-[gd_resource type="TileSet" load_steps=59 format=3]
+[gd_resource type="TileSet" load_steps=58 format=3]
 
 [sub_resource type="TileSetAtlasSource" id="atlas_road"]
 resource_name = "tiles/road"
@@ -122,10 +122,6 @@ texture_region_size = Vector2i(32, 32)
 
 [sub_resource type="TileSetAtlasSource" id="atlas_precinct"]
 resource_name = "tiles/precinct"
-texture_region_size = Vector2i(32, 32)
-
-[sub_resource type="TileSetAtlasSource" id="atlas_water"]
-resource_name = "tiles/water"
 texture_region_size = Vector2i(32, 32)
 
 [sub_resource type="TileSetAtlasSource" id="atlas_bulkhead"]
@@ -266,7 +262,6 @@ sources/27 = SubResource("atlas_sidewalk_kerb_main_s")
 sources/28 = SubResource("atlas_sidewalk_kerb_main_e")
 sources/29 = SubResource("atlas_sidewalk_kerb_main_w")
 sources/30 = SubResource("atlas_precinct")
-sources/31 = SubResource("atlas_water")
 sources/32 = SubResource("atlas_bulkhead")
 sources/33 = SubResource("atlas_fence")
 sources/34 = SubResource("atlas_mountain")

@@ -1,15 +1,16 @@
 extends RefCounted
 ## Measurement probe for the stairwell guard's charge distance (inbox #782 in minty-lemur, inbox #764 in minty-lemur): where in
-## the right shaft the masked man starts his run, by the way she comes down to the first floor, and
-## whether she then gets out through the first floor's door. Not a suite: it prints rather than
-## asserts. Run by name:
+## the right shaft she is when his place sets the masked man off (`EventDef.sets_off_within()` of the
+## foot of his shaft, `SetOffWatch`) and he comes, running, by the way she comes down to the first
+## floor, and whether she then gets out through the first floor's door. Not a suite: it prints rather
+## than asserts. Run by name:
 ##
 ##     tools/test.sh probes/escape_stairwell_guard_trigger.gd
 ##     CHARGES_WITHIN=420 tools/test.sh probes/escape_stairwell_guard_trigger.gd
 ##
-## The second tries another charge distance for his row on that run alone. Her real carrying body
-## walks with the real stair steering and collision, and the real man is driven by
-## the building's `EventManager._physics_process()`, which tells him where she is, steps him and
+## The second tries another set-off distance for his row on that run alone. Her real carrying body
+## walks with the real stair steering and collision, and the real man is set off, created and driven
+## by the building's `EventManager._physics_process()`, which watches his place, steps him and
 ## checks the catch. It is stepped at the game's rhythm: a 30Hz physics tick moves her, then the
 ## manager's tick. A line is `TRIGGER seed <s> <route> <pace> charged at (<local tile units>) <d>px
 ## from him, <outcome> at <t>s, <a>s after he ran, closest <k>px on a tick (the catch is <r>px)`,
@@ -61,9 +62,6 @@ func _once(t: TestRunner, s: int, route: String, pace: String) -> void:
 		events.use_planner(_Planner.new(events.world, float(OS.get_environment("CHARGES_WITHIN"))))
 		BuildingEvents.restart(events, scene)
 	var man: EventInstance = null
-	for instance in events.instances():
-		if instance.row_id() == "masked_pursuer":
-			man = instance
 	var origin: Vector2i = f.waypoint("stairwell_right") - InteriorMap.STAIRWELL_TOP_LANDING_LOCAL
 	var door_tile: Vector2i = (f.door("stairwell_right:landing_first") as InteriorMapPlan.Door).tile
 	var second_door: Vector2i = (f.door("stairwell_right:landing_second") as InteriorMapPlan.Door).tile
@@ -93,14 +91,16 @@ func _once(t: TestRunner, s: int, route: String, pace: String) -> void:
 		var her := player.global_position
 		var tile := scene.map().world_to_tile(her)
 		events._physics_process(TICK)
-		var caught := man.is_lethal_at(her)
-		var on_tick := man.global_position.distance_to(her)
 		elapsed += TICK
+		if man == null:
+			man = BuildingEvents.live(events, "masked_pursuer")
+		var caught := man != null and man.is_lethal_at(her)
+		var on_tick := man.global_position.distance_to(her) if man != null else INF
 		if not turned and tile.y - origin.y >= int(ROUTES[route][0]) \
 				and her.y >= scene.map().tile_to_world(tile).y:
 			turned = true
 			_hold(ROUTES[route][1], running)
-		if charged_at == Vector2.INF and not man.is_waiting() and not man.is_telegraphing():
+		if charged_at == Vector2.INF and man != null:
 			charged_at = her
 			charged_range = man.global_position.distance_to(her)
 			if pace == "walk-run":
@@ -126,15 +126,16 @@ func _once(t: TestRunner, s: int, route: String, pace: String) -> void:
 			_hold(["move_up"], running)
 	_hold([], false)
 	var local := charged_at - scene.map().tile_to_world(origin) + Vector2.ONE * InteriorScene.TILE * 0.5
+	var catch := man.row().lethal_reach() if man != null else 0.0
 	print("TRIGGER seed %d %s %s charged at %s %.0fpx from him, %s at %.2fs, %.2fs after he ran, closest %.1fpx on a tick (the catch is %.1fpx)"
 			% [s, route, pace, (local / InteriorScene.TILE).snapped(Vector2(0.01, 0.01)),
-			charged_range, outcome, elapsed, charged_for, closest_on_tick, man.row().lethal_reach()])
+			charged_range, outcome, elapsed, charged_for, closest_on_tick, catch])
 	player.free()
 	events.free()
 	scene.free()
 
-## The building's planner, the masked man's plan made over with a copy of his row whose notice
-## reaches `within` pixels.
+## The building's planner, the masked man's plan made over with a copy of his row that a place sets
+## off within `within` pixels.
 class _Planner extends DayPlanner:
 	var _within := 0.0
 
@@ -151,7 +152,7 @@ class _Planner extends DayPlanner:
 			if placed.row_id() != "masked_pursuer":
 				continue
 			var draft := placed.row().redraft()
-			draft.notice(placed.row().notice().running_within(_within))
+			draft.set_off_within(_within)
 			placements[i] = EventPlan.new(draft.build(), placed.placed_at(), placed.walks())
 		return planned
 

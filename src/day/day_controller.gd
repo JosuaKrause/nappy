@@ -11,12 +11,14 @@ extends Node
 ## building's service exit and the city's two ways out are goals of this clock exactly as her front
 ## door is, and a lost section ends here through the same three losing paths a day does.
 
-## How close her own centre has to come to the last walkable tile of the spine, at either end of
-## the map, for the sequence to be over. One tile and a half — comfortably past her own body
-## (`Tuning.PLAYER_BODY_RADIUS`, 14px) so standing anywhere on that tile is out, and under two tiles so
-## the tile before it is not. The same reasoning, and the same figure, as the radius the building's
-## own doors hold her with.
-const FINALE_EXIT_REACH := Tuning.TILE_SIZE * 1.5
+## How far from an exit's threshold (`DaySpec.exit_points()`, the middle of the carriageway on the
+## spine's last row) her centre may lie along the spine and still be on that last row: half a tile,
+## so only the last row counts. Her body (`Tuning.PLAYER_BODY_RADIUS`, 14px) cannot take her centre
+## past the map's edge, so the row is as far as her own control goes; the tile before it, the
+## border junction's crossing, is the street she is still on. The reach across the spine is the
+## carriageway's own half width (`_reached_an_exit()`). Reaching the row wins the section; the
+## game then walks her into the tunnel or across the bridge (`EscapeWalkIn`).
+const FINALE_EXIT_DEPTH := Tuning.TILE_SIZE * 0.5
 
 signal day_finished(result: GameEnums.DayResult)
 
@@ -52,6 +54,11 @@ var _connected := false
 ## colour it would draw identically to what it drew last time. `-1` so the day's first tick,
 ## whatever `_time_remaining` starts at, always counts as a change.
 var _last_emitted_second := -1
+## Whether she stood on a carriageway tile / on calm ground at the last tick, so a step onto either is
+## one `EventBus.road_entered` / `calm_ground_entered` and standing on it is none. Read afresh by
+## every `start()`, so what she stands on at dawn is not an arrival.
+var _was_on_road := false
+var _was_on_calm := false
 ## `--invincible`, handed in by whoever builds the day: nothing but a win ends it and its clock
 ## stands still (`set_invincible()`). See `tick()` and `_ignores_loss()`.
 var _invincible := false
@@ -99,6 +106,8 @@ func start(length: float) -> void:
 	_hard_fail_reason = ""
 	_exit_reached = -1
 	_last_emitted_second = int(_time_remaining)
+	_was_on_road = _standing_on_road()
+	_was_on_calm = _standing_on_calm()
 	EventBus.day_time_changed.emit(_time_remaining, _time_total)
 
 ## 1.0 at dawn, 0.0 at dusk. Drives the light.
@@ -183,8 +192,28 @@ func tick(delta: float) -> void:
 			_end(GameEnums.DayResult.LOST_TIMEOUT)
 			return
 
+	_tell_of_arrivals()
 	if _reached_the_goal():
 		_end(GameEnums.DayResult.WON)
+
+## Says on `EventBus` when she steps onto the road or onto calm ground, for `VisitCounter`'s day-one
+## milestones. It reads her tile and changes nothing: no map (the building) means nothing to say.
+func _tell_of_arrivals() -> void:
+	var on_road := _standing_on_road()
+	if on_road and not _was_on_road:
+		EventBus.road_entered.emit()
+	_was_on_road = on_road
+	var on_calm := _standing_on_calm()
+	if on_calm and not _was_on_calm:
+		EventBus.calm_ground_entered.emit()
+	_was_on_calm = on_calm
+
+func _standing_on_road() -> bool:
+	return _map != null and _player != null \
+			and Tile.is_road(_map.tile_type_at_world(_player.global_position))
+
+func _standing_on_calm() -> bool:
+	return _map != null and _player != null and _map.is_calm_zone(_player.global_position)
 
 ## **A drawn frame only shows the escape's hundredths**: between two ticks, a clock that reads to the
 ## hundredth (`DaySpec.clock_hundredths`) is told the tick's countdown advanced by how far the frame
@@ -211,14 +240,17 @@ func _reached_the_goal() -> bool:
 			return _reached_an_exit()
 	return false
 
-## Whether she has reached the tunnel mouth or the bridge deck — within `FINALE_EXIT_REACH`
-## of the last walkable tile of the spine at either end (`_spec.exit_points()`), past her body and
-## under two tiles — and which, kept in `_exit_reached`.
+## Whether she is at the threshold of the tunnel or the bridge — her centre on the last row of the
+## spine, across the carriageway, at either end (`_spec.exit_points()`, `FINALE_EXIT_DEPTH`) — and
+## which, kept in `_exit_reached`. The street before it, the border junction's crossing, is not. The
+## win is decided here; she is walked in afterwards.
 func _reached_an_exit() -> bool:
 	if not _player:
 		return false
+	var half_width := Tuning.carriageway_width() * 0.5
 	for kind: int in _spec.exit_points():
-		if _player.global_position.distance_to(_spec.exit_points()[kind]) <= FINALE_EXIT_REACH:
+		var away: Vector2 = _player.global_position - _spec.exit_points()[kind]
+		if absf(away.x) <= half_width and absf(away.y) <= FINALE_EXIT_DEPTH:
 			_exit_reached = kind
 			return true
 	return false

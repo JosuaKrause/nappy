@@ -90,6 +90,7 @@ func run(t: TestRunner) -> void:
 	_test_encounters_and_runs_are_named_by_their_day_and_row(t)
 	_test_an_escape_section_is_counted_as_a_day_of_its_own(t)
 	_test_every_event_opts_out_of_sessions(t)
+	_test_day_one_milestones_are_sent_once_an_attempt_and_only_on_day_one(t)
 
 ## The gate's truth table: `may_ever_send()` is the three inputs that never change (on the web, a
 ## release build, `?debug=1` unasked); the fourth, `window.goatcounter.count` being present, is
@@ -464,6 +465,41 @@ func _test_every_tear_and_every_hold_is_sent(t: TestRunner) -> void:
 	counter.bus.poster_pursuit_sent.emit()
 	t.check(counter.sent.back() == "nappy-day-%d-poster-pursuit" % day,
 		"a tear that sends a pursuer on foot sends its own poster-pursuit")
+	_done(counter)
+
+## Day one's milestones, each answered from its own `EventBus` signal: the first encounter left
+## behind, the first step onto a road, the first onto calm ground, the baby asleep. Once per attempt
+## (a walk's `day_started` begins one, so a retry counts them again), however often the signal comes,
+## and nothing on another day or in an escape section.
+func _test_day_one_milestones_are_sent_once_an_attempt_and_only_on_day_one(t: TestRunner) -> void:
+	var counter := RecordingCounter.new()
+	var obstacle := "nappy-day-1-first-obstacle"
+	var crossing := "nappy-day-1-first-crossing"
+	var park := "nappy-day-1-park-reached"
+	var asleep := "nappy-day-1-asleep"
+	counter.begin(1)
+	counter.sent.clear()
+	for _i in 3:
+		counter.bus.encounter_passed.emit(1, "fallen_tree")
+		counter.bus.road_entered.emit()
+		counter.bus.calm_ground_entered.emit()
+		counter.bus.return_phase_started.emit()
+	t.check(counter.sent == [obstacle, crossing, park, asleep],
+		"each milestone is sent once however often its signal comes (%s)" % [counter.sent])
+	counter.begin(1)
+	counter.sent.clear()
+	counter.bus.encounter_passed.emit(1, "fallen_tree")
+	counter.bus.return_phase_started.emit()
+	t.check(counter.sent == [obstacle, asleep],
+		"a retry of day 1 is a new attempt and counts the milestones again (%s)" % [counter.sent])
+	for day: int in [2, DaySpec.BUILDING_DAY, DaySpec.CITY_DAY]:
+		counter.begin(day)
+		counter.sent.clear()
+		counter.bus.encounter_passed.emit(day, "fallen_tree")
+		counter.bus.road_entered.emit()
+		counter.bus.calm_ground_entered.emit()
+		counter.bus.return_phase_started.emit()
+		t.check(counter.sent.is_empty(), "no milestone is sent on day %d (%s)" % [day, counter.sent])
 	_done(counter)
 
 ## The fold this counter makes: the day's end's own cause becomes part of the one event a lost day
@@ -863,9 +899,10 @@ func _test_a_raised_hand_is_counted_warned_and_the_charge_chased(t: TestRunner) 
 	guard.free()
 	_done(counter)
 
-## **The masked man in the escape's stairwell has his counter** like every charger: `-warned` as his
-## hand goes up, `-chased` when he starts his run, and then `-caught` (the building's `EventManager`
-## reports his catch, as a day's does) or `-outlasted` when his run is over without one.
+## **The masked man in the escape's stairwell has his counter** like every charger: `-warned` for his
+## badge and `-chased` for his run, both on his first tick, since a place set him off under a warning
+## that already ran (`EventSetOffRun`), and then `-caught` (the building's `EventManager` reports
+## his catch, as a day's does) or `-outlasted` when his run is over without one.
 func _test_the_masked_man_has_his_counter(t: TestRunner) -> void:
 	var counter := RecordingCounter.new()
 	counter.listen(EventBus)
@@ -877,13 +914,14 @@ func _test_the_masked_man_has_his_counter(t: TestRunner) -> void:
 	var man := EventInstance.new(ToldEvents.on(EventBus))
 	man.setup(def, Vector2.ZERO, path, Vector2.RIGHT,
 			EventSurroundings.new().hearing(man_where))
+	man.arrive_from_its_warning()
+	man.restore(EventSave.aged(EventSpawner.age_when_warned(def)))
 	t.add_child(man)
 	man.set_process(false)
-	_walk(man, man_where, Vector2(0.0, -(def.notice().runs_within() + 100.0)), 0.5)
-	t.check(counter.sent == [name + "warned"], "warning her, he is counted warned (%s)" % [counter.sent])
-	_walk(man, man_where, Vector2(0.0, -(def.notice().runs_within() - 10.0)), 1.0 / 60.0)
+	t.check(counter.sent.is_empty(), "nothing is counted before his first tick (%s)" % [counter.sent])
+	_walk(man, man_where, Vector2(0.0, -300.0), 1.0 / 60.0)
 	t.check(counter.sent == [name + "warned", name + "chased"],
-		"his run is counted chased (%s)" % [counter.sent])
+		"on his first tick his warning is counted warned and his run chased (%s)" % [counter.sent])
 	for i in int(round(6.0 / (1.0 / 60.0))):
 		man_where.tell(Vector2(200.0, 0.0))
 		man.step(1.0 / 60.0)
@@ -897,10 +935,11 @@ func _test_the_masked_man_has_his_counter(t: TestRunner) -> void:
 	var caught := EventInstance.new(ToldEvents.on(EventBus))
 	caught.setup(def, Vector2.ZERO, path, Vector2.RIGHT,
 			EventSurroundings.new().hearing(caught_where))
+	caught.arrive_from_its_warning()
+	caught.restore(EventSave.aged(EventSpawner.age_when_warned(def)))
 	t.add_child(caught)
 	caught.set_process(false)
-	_walk(caught, caught_where, Vector2(0.0, -(def.notice().runs_within() - 10.0)),
-			Tuning.WARNING_ALONE_MAX + 0.1)
+	_walk(caught, caught_where, Vector2(0.0, -300.0), 0.1)
 	caught.report_the_catch()
 	t.check(counter.sent == [name + "warned", name + "chased", name + "caught"],
 		"a run that catches her is counted caught (%s)" % [counter.sent])

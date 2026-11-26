@@ -1,0 +1,19 @@
+# 3 cities: 1337 4242 90210
+WALKDAY  1 routes 46 minutes 43.9 | points 72.0 a minute | met 3.39 a minute, 3.2 a route | ends the day or pursues 0.00 a minute, 0.00 a route
+WALKDAY  2 routes 46 minutes 58.8 | points 56.7 a minute | met 2.84 a minute, 3.6 a route | ends the day or pursues 0.00 a minute, 0.00 a route
+WALKDAY  3 routes 45 minutes 49.4 | points 20.7 a minute | met 1.70 a minute, 1.9 a route | ends the day or pursues 0.00 a minute, 0.00 a route
+WALKDAY  4 routes 46 minutes 60.8 | points 81.0 a minute | met 3.44 a minute, 4.5 a route | ends the day or pursues 0.03 a minute, 0.04 a route
+WALKDAY  5 routes 46 minutes 52.1 | points 45.5 a minute | met 2.84 a minute, 3.2 a route | ends the day or pursues 0.00 a minute, 0.00 a route
+WALKDAY  6 routes 46 minutes 44.6 | points 93.7 a minute | met 4.13 a minute, 4.0 a route | ends the day or pursues 0.13 a minute, 0.13 a route
+WALKDAY  7 routes 46 minutes 47.1 | points 63.2 a minute | met 3.99 a minute, 4.1 a route | ends the day or pursues 0.08 a minute, 0.09 a route
+WALKDAY  8 routes 46 minutes 37.7 | points 61.3 a minute | met 3.82 a minute, 3.1 a route | ends the day or pursues 0.53 a minute, 0.43 a route
+WALKDAY  9 routes 46 minutes 51.0 | points 53.0 a minute | met 4.49 a minute, 5.0 a route | ends the day or pursues 0.10 a minute, 0.11 a route
+WALKDAY 10 routes 46 minutes 49.5 | points 58.4 a minute | met 4.36 a minute, 4.7 a route | ends the day or pursues 0.06 a minute, 0.07 a route
+WALKDAY 11 routes 46 minutes 44.4 | points 48.4 a minute | met 4.77 a minute, 4.6 a route | ends the day or pursues 0.11 a minute, 0.11 a route
+WALKDAY 12 routes 46 minutes 46.3 | points 57.3 a minute | met 4.79 a minute, 4.8 a route | ends the day or pursues 0.09 a minute, 0.09 a route
+WALKDAY 13 routes 46 minutes 37.4 | points 52.1 a minute | met 4.41 a minute, 3.6 a route | ends the day or pursues 0.00 a minute, 0.00 a route
+WALKDAY 14 routes 45 minutes 54.6 | points 56.9 a minute | met 4.29 a minute, 5.2 a route | ends the day or pursues 0.11 a minute, 0.13 a route
+WALKACT 1 routes 137 minutes 152.0 | points 49.5 a minute | met 2.63 a minute, 2.9 a route | ends the day or pursues 0.00 a minute, 0.00 a route
+WALKACT 2 routes 184 minutes 204.6 | points 70.6 a minute | met 3.56 a minute, 4.0 a route | ends the day or pursues 0.06 a minute, 0.07 a route
+WALKACT 3 routes 184 minutes 182.6 | points 55.1 a minute | met 4.39 a minute, 4.4 a route | ends the day or pursues 0.18 a minute, 0.18 a route
+WALKACT 4 routes 137 minutes 138.3 | points 55.7 a minute | met 4.49 a minute, 4.5 a route | ends the day or pursues 0.07 a minute, 0.07 a route

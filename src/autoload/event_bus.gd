@@ -84,6 +84,8 @@ signal save_deletion_settled(operation: int, kept: bool)
 # and the model may not name the simulation's class. A listener that reads the event casts it.
 
 signal event_telegraphed(instance: Node2D)
+## A live event's telegraph is over and it is at full strength, on the tick it is: what the escape
+## city's sky lights up for, for one that flashes as it goes off (`BlastLight`, connected by `main`).
 signal event_activated(instance: Node2D)
 signal hard_fail_triggered(reason: String)
 ## `EventSpawner.summon_what_has_been_sighted()`'s own first frame an `aftermath.calls_in()` row (only
@@ -107,8 +109,8 @@ signal event_lit_unmet(id: String)
 # ending in exactly one of caught, cut short and ended.
 
 ## A charger's warning going up, the level below its charge, which `pursuit_began` is sent for: a
-## waiting charger noticing her (`EventInstance.warns_by_radius()`), the masked man's raised hand,
-## the raised hand of the man a vehicle lets out and of day 13's guard in her view — once per
+## waiting charger noticing her (`EventInstance.warns_by_radius()`), the masked man on the tick he
+## comes (his badge was his warning), the raised hand of the man a vehicle lets out and of day 13's guard in her view — once per
 ## instance — and a checkpoint hut's or post's guard raising his hand from her crossing of its
 ## door's line (`CheckpointController.warn_at_the_doors()`, `door_guard`), each time he does.
 signal pursuit_warned(id: String)
@@ -146,6 +148,11 @@ signal encounter_seen(day: int, name: String)
 ## that encounter: a meaningful encounter is held until it is seen, and sent with `seen` false only
 ## once it is over without having been.
 signal encounter_influenced(day: int, name: String, seen: bool)
+## An encounter she had seen is over while the day goes on: its instance has been out of sight for
+## `EncounterWatch.ENCOUNTER_GAP` or is gone, so she has left it behind — once per encounter. An
+## encounter the day's end closes is not passed. Listen-only, for `VisitCounter` — see
+## docs/TELEMETRY.md, "The page counts visits".
+signal encounter_passed(day: int, name: String)
 ## She began running after at least `EncounterWatch.RUN_BOUT_GAP` of not running, or for the first time in
 ## the day.
 signal run_bout_began(day: int)
@@ -210,6 +217,14 @@ signal city_went_quiet()
 ## silence — unlike `city_went_quiet` above, this fires on every go-dark. Listen-only, for
 ## `VisitCounter` — see docs/TELEMETRY.md, "The page counts visits".
 signal city_gone_dark()
+## `DayController.tick()`'s own moment she steps from anywhere else onto the road or a crossing (a
+## carriageway tile), once per step onto it: the run log's `cross` line is the same moment. Listen-only,
+## for `VisitCounter` — see docs/TELEMETRY.md, "The page counts visits".
+signal road_entered()
+## `DayController.tick()`'s own moment she steps from anywhere else onto calm ground (a park, forest,
+## square, courtyard or alley tile, `Tile.is_calm()`), once per arrival: the run log's `calm` line is
+## the same moment. Listen-only, for `VisitCounter` — see docs/TELEMETRY.md, "The page counts visits".
+signal calm_ground_entered()
 
 # ------------------------------------------------------------------- escape ---
 # The escape's own moments, emitted by `main` as its sections begin and end, beside the start and

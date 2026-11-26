@@ -19,7 +19,8 @@ extends RefCounted
 ## things are exempt, each for its own reason: anything mobile (a moving wall on a two-tile
 ## sidewalk pins her against a building), anything director-sited (`EventDef.validate()` refuses
 ## it: nothing checks that a thing sited out of where she happens to be walking leaves a route to a
-## park), anything with no silhouette (a city-wide source, a playground the park already draws),
+## park), anything with nothing drawn in the world (a city-wide source, a playground the park
+## already draws, the escape city's explosion, drawn only in its badge),
 ## and a flock (`validate()` refuses it: several bodies wheeling inside one disc have no one
 ## silhouette to be half of). And one constraint rather than an exemption: a lethal row's body has
 ## to fit inside its lethal radius with her own body to spare.

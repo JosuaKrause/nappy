@@ -754,8 +754,9 @@ const HUT_EAST := "checkpoints/hut_east"
 const HUT_WEST := "checkpoints/hut_west"
 ## The stationary picture beside a hut (`checkpoint_hut`) or alone (`checkpoint_post`) — a guard
 ## who never turns, since neither row ever moves. The guard who does — a heated `roadblock`'s
-## escort and `masked_pursuer` — reads `GUARD_STANDING_BY_VIEW`/`GUARD_LUNGING_BY_VIEW` below
-## instead, through `EventLook._draw_eight_view()`.
+## escort, and `masked_pursuer`, who is only ever drawn lunging — reads
+## `GUARD_STANDING_BY_VIEW`/`GUARD_LUNGING_BY_VIEW` below instead, through
+## `EventLook._draw_eight_view()`.
 const GUARD_STANDING := "checkpoints/guard_standing"
 const GUARD_LUNGING := "checkpoints/guard_lunging"
 ## Bound through `EventLook._draw_eight_view()` for the two rows whose guard actually turns as he
@@ -781,8 +782,8 @@ const GUARD_LUNGING_BY_VIEW := {
 }
 ## **A guard who has noticed her stands square-on with one hand raised, palm out** (inbox #748 in
 ## woolly-penguin), held still for his notice: the hunting roadblock's guard at his post, the
-## guardsman a vehicle lets out beside its door, the masked man at the foot of the shaft
-## (`PursuerLook._masked_pursuer_pictures()`), and — the front view — a checkpoint hut's or post's
+## guardsman a vehicle lets out beside its door (`PursuerLook._masked_pursuer_pictures()`), and — the
+## front view — a checkpoint hut's or post's
 ## guard while her crossing of its door's line warns her (`EventInstance.is_its_guard_warning()`).
 ## Never the van's guard a task sends or the guardsman a torn poster sends: both arrive already charging. 22×44
 ## front and back, 26×44 side and diagonals, bottom-centre anchored like the standing family.
@@ -837,6 +838,10 @@ const IMPACT_CRATER := "props/impact_crater_2x2"
 ## comment names the same point — *"Ground anchor is the canvas centre (32,32)"* — on a 64×64
 ## canvas, and `EventCatalogue._impact_crater()`'s own 32px body is half of the same width.
 const CRATER_ANCHOR := Vector2(32.0, 32.0)
+## The screen-edge badge of the escape city's explosion, a burst and its mushroom of smoke. Drawn
+## only in the badge (`LookSpec.is_drawn_in_the_world()`): the explosion goes off out of her sight, and what
+## she meets on the street afterwards is the crater, `IMPACT_CRATER`.
+const EXPLOSION := "events/explosion"
 ## Each asset's own documented ground anchor, read out of the SVG's own comment rather than
 ## assumed — neither is `Sprites.draw_standing`'s bottom-centre: the hut's doorway sits a few
 ## pixels short of the canvas's own bottom edge. See `EventLook._draw_at_anchor`.
@@ -917,6 +922,7 @@ static func icon_for(look: EventDef.Look) -> String:
 		EventDef.Look.CHECKPOINT_GATE: return BOOM_GATE_NS_LOWERED
 		EventDef.Look.CHECKPOINT_POST: return GUARD_STANDING
 		EventDef.Look.IMPACT_CRATER: return IMPACT_CRATER
+		EventDef.Look.EXPLOSION: return EXPLOSION
 		EventDef.Look.MASKED_PURSUER: return GUARD_LUNGING
 		EventDef.Look.STEAM: return STEAM
 		EventDef.Look.LOUDSPEAKER_MAST: return MAST
@@ -937,6 +943,11 @@ static func icon_for(look: EventDef.Look) -> String:
 		# a torn poster sends from day 9 is badged by its front diagonal.
 		EventDef.Look.GUARDSMAN_GIVING_CHASE: return str(GUARD_LUNGING_BY_VIEW["front_diagonal"])
 		_: return ""
+
+## **Whether `look`'s picture is registered on its middle rather than on its feet**: the crater, a
+## hole in the road (`CRATER_ANCHOR`), drawn round the point it stands on.
+static func is_registered_on_its_middle(look: EventDef.Look) -> bool:
+	return look == EventDef.Look.IMPACT_CRATER
 
 ## The wheels drawn under `icon_for()`'s own silhouette, `""` for a look whose silhouette is one
 ## picture. A vehicle that rolls on wheels of its own (`WHEELS_BY_LOOK`) has its side view split
@@ -1209,9 +1220,12 @@ static func family_sources(look: EventDef.Look) -> Array[String]:
 		EventDef.Look.VAN_GUARD_GIVING_CHASE:
 			# Sent already chasing: no notice, so no alert to draw.
 			_collect_views(sources, [GUARD_STANDING_BY_VIEW, GUARD_LUNGING_BY_VIEW])
-		EventDef.Look.MASKED_PURSUER, EventDef.Look.GUARDSMAN_GIVING_CHASE:
-			# The masked man's notice at the foot of the shaft, and the guardsman's out of a
-			# vehicle.
+		EventDef.Look.MASKED_PURSUER:
+			# Drawn lunging from the tick he comes: he gives no notice and makes no stop, so his
+			# footprint (`EventFootprints.footprint_of()`) is measured over these views alone.
+			_collect_views(sources, [GUARD_LUNGING_BY_VIEW])
+		EventDef.Look.GUARDSMAN_GIVING_CHASE:
+			# His notice out of a vehicle, and his stop.
 			_collect_views(sources, [GUARD_STANDING_BY_VIEW, GUARD_ALERT_BY_VIEW,
 					GUARD_LUNGING_BY_VIEW])
 		EventDef.Look.POLICEMAN_GIVING_CHASE:

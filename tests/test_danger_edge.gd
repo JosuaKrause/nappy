@@ -4,21 +4,21 @@ extends RefCounted
 ## `tests/test_badge_model.gd` with a rectangle for a view and the edge's drawing there too; here
 ## the edge is handed a stand-in `EventManager` answering the live events it is brought
 ## (`instances()`), whose own view (`visible_view()`) the rig looks through about her, and one
-## stand-in live event, the military convoy, moved by hand between real frames. What is checked is that the edge asks the view
-## she has: a badge comes down on the frame any of its thing is in sight, and nothing just past the
-## screen's edge, inside the badge's margin, is raised one fresh. The edge is hidden, so it draws
-## nothing and is handed no atlas.
+## stand-in live event, the military convoy, created under its warning
+## (`EventInstance.arrive_from_its_warning()`, as `EventManager.spawn_warned()` creates it) and moved
+## by hand between real frames. What is checked is that the edge asks the view she has: a badge
+## comes down on the frame any of its thing is in sight. The edge is hidden, so it draws nothing and
+## is handed no atlas.
 
 const StandIns := preload("res://tests/edge_stand_ins.gd")
 
 func run(t: TestRunner) -> void:
 	await _test_a_badge_comes_down_the_frame_its_danger_is_in_sight(t)
-	await _test_nothing_in_the_margin_is_raised_a_badge_fresh(t)
 
 ## **A badge comes down on the frame any of its danger is in sight** (the danger vocabulary's badge,
-## kept until the thing is in sight). The convoy closes on her from above, out of sight and out past
-## the margin, where the edge raises its badge; it drives on into the view, and the badge is up on
-## every frame until the first frame any of it shows, and down on that frame.
+## kept until the thing is in sight). The convoy, created under its warning, closes on her from
+## above, out of sight, where the edge keeps its badge up; it drives on into the view, and the badge
+## is up on every frame until the first frame any of it shows, and down on that frame.
 func _test_a_badge_comes_down_the_frame_its_danger_is_in_sight(t: TestRunner) -> void:
 	var rig := _rig(t, Vector2(0.0, -421.0))
 	var edge: DangerEdge = rig["edge"]
@@ -37,41 +37,15 @@ func _test_a_badge_comes_down_the_frame_its_danger_is_in_sight(t: TestRunner) ->
 		elif went_up and not up:
 			down_early += 1
 		went_up = went_up or up
-	t.check(went_up, "closing from out past the margin, the convoy's badge goes up")
+	t.check(went_up, "closing from out of sight, the convoy's badge is up")
 	t.check(down_early == 0,
 			"and stays up on every frame it is out of sight (%d frames down)" % down_early)
 	t.check(seen and down_when_seen,
 			"and comes down on the first frame any of it is in sight (at %s)" % convoy.position)
 	_put_away(rig)
 
-## **Nothing just past the screen's edge is raised a badge fresh.** A thing sitting on the boundary
-## would otherwise trade places with its own badge every frame, so the edge counts the badge's margin
-## (`BadgeModel.SCREEN_MARGIN` screen px, each the world the view shows across the design box over its
-## width) as in sight when it asks whether to raise one. The convoy closes on her from inside that margin, wholly
-## out of sight on every frame, and is raised no badge on any of them.
-func _test_nothing_in_the_margin_is_raised_a_badge_fresh(t: TestRunner) -> void:
-	var margin := BadgeModel.SCREEN_MARGIN * Tuning.VIEW_HALF_EXTENT.x * 2.0 \
-			/ ScreenOrientation.DESIGN_SIZE.x
-	var top := -Tuning.VIEW_HALF_EXTENT.y
-	var rig := _rig(t, Vector2(0.0, top - margin + 10.0))
-	var edge: DangerEdge = rig["edge"]
-	var convoy: Node2D = rig["convoy"]
-	var frames := 0
-	var up := 0
-	var shown := 0
-	while convoy.position.y < top - 3.0:
-		convoy.position.y += 2.0
-		await _next_frame(t)
-		frames += 1
-		up += int(_up(edge))
-		shown += int(_in_sight(convoy.position))
-	t.check(frames > 10 and shown == 0,
-			"the convoy closed for %d frames inside the margin, out of sight on all of them (%d shown)"
-			% [frames, shown])
-	t.check(up == 0, "and no badge was raised on any of them (%d frames up)" % up)
-	_put_away(rig)
-
-## The edge watching the stand-in source, with her standing at the origin and the convoy at `at`.
+## The edge watching the stand-in source, with her standing at the origin and the convoy, created
+## under its warning, at `at`.
 func _rig(t: TestRunner, at: Vector2) -> Dictionary:
 	var source := StandIns.Source.new()
 	source.visible_view().look_from(Vector2.ZERO)
@@ -80,6 +54,7 @@ func _rig(t: TestRunner, at: Vector2) -> Dictionary:
 	t.add_child(her)
 	var convoy := StandIns.Coming.new(EventCatalogue.by_id("military_convoy"), _convoy_box())
 	convoy.position = at
+	convoy.arrive_from_its_warning()
 	source.bring(convoy)
 	var edge := DangerEdge.new()
 	edge.visible = false

@@ -1279,7 +1279,7 @@ Against the alley robber, walked on the real instance (`tests/probes/charger_war
 
 | she | outcome |
 | --- | --- |
-| walks up and stops | charged once his 2.0s warning has run, and caught |
+| walks up and stops | charged once his 1.75s warning has run, and caught |
 | walks on in | caught |
 | walks or runs away as he warns, out of his radius | never charged: he stops and waits again |
 | runs inside his radius as he warns, then stands | charged once his warning has run, and caught: running shakes him off only once he has charged |
@@ -1380,10 +1380,9 @@ escape_distance = outer − inner     for anything at or below walking pace
                 = outer                    for anything FASTER than walking
 ```
 
-The split matters for a row that is in the world while it telegraphs, not a row without a badge of
-its own — the escape's `military_convoy` trucks, the one convoy placed on the map, have a badge that
-rises as they come and still keep this split, because they exist and telegraph in the world rather
-than being warned first. A stationary
+The split matters for a row that is in the world while it telegraphs. A row warned of before it
+exists is not one: it is created with its telegraph spent and held to the floor below, the escape's
+`military_convoy` trucks among them, which are sent ahead of her as a day's convoy is. A stationary
 event, or one slower than the player (a dog walker at 32 px/s), only has to be walked away from, so
 clearing the falloff band is enough. Something faster than the player cannot be outwalked at all; it sweeps its entire outer
 radius along the street, and the only escape is getting off its line, so it must give enough
@@ -1444,37 +1443,41 @@ Alley tiles apply a constant `+3.0/s` excitement trickle. They are shortcuts, an
 where the resistance meets. Both facts are the point: the fastest route and the story route
 are the ones that cost you the baby's calm.
 
-A resistance pickup's chalk mark follows her rather than sitting still: it counts as noticed
-only once she has been within `ResistanceDirector.SEEN_DISTANCE` (150px, kept under the
-visible world's own 180px vertical half-extent so the point is inside the camera's view on every
-bearing rather than only a favourable one — never right at the screen's own edge) of it, and in
-sight — what she can see, `VisibleView`: in the tap scheme that is every point within 150px, and in
-the joystick scheme a mark down and to one side can be under a corner its controls cover, where it
-is not in sight and its dwell does not run — continuously, for `ResistanceDirector.SEEN_DWELL_SECONDS` (1.0s) — near enough, for long
-enough, that walking past it rather than to it is a choice, not the instant its tile merely
+A resistance pickup's chalk mark follows her rather than sitting still: it counts as noticed only
+once she has been within `ResistanceDirector.SEEN_DISTANCE` (150px, kept under the visible world's
+own 180px vertical half-extent so the point is inside the camera's view on every bearing rather than
+only a favourable one — never right at the screen's own edge) of it, and in sight — what she can
+see, `VisibleView`: in the tap scheme that is every point within 150px, and in the joystick scheme a
+mark down and to one side can be under a corner its controls cover, where it is not in sight and its
+dwell does not run — continuously, for `ResistanceDirector.SEEN_DWELL_SECONDS` (1.0s) — near enough,
+for long enough, that walking past it rather than to it is a choice, not the instant its tile merely
 swept across the camera on the way to somewhere else. Until then, walking more than
-`ResistanceDirector.NOTICE_RADIUS` (400px) away from it moves it to the nearest reachable
-alley mouth within that radius of her instead — a mark is only ever chosen at an alley's mouth, at
-dawn as on every move (*"Mouth only"*, 2026-10-03, inbox #486 in [quiet-yak](playtests/2026-10-03-quiet-yak.md)),
-and stands one tile in from it (a courtyard's one-tile passage puts it on the courtyard tile
-just past), 48px in from the street's edge, so that touching it, within the 36px touch reach of its
-centre, takes her at least 12px inside the alley, never from the pavement at the mouth
-(*"let's move the chalk mark one tile into the alley so I actually have to enter the alley to
-activate it"*, 2026-10-10, azure-puffin, inbox #664), on the path rather than off it, and never where any part of the mark's picture, or of the guard standing two-thirds
-through that alley (or at the courtyard's inner end, past a courtyard's passage), would be on her
-screen — the camera's whole view, a corner the joystick's controls cover included, since what
-stands under the controls is still drawn there — so neither is ever planted in front of her —
-skipping an alley a completed step's mark already stood at as long as some other one is still
-in reach. Its guard moves with it, to two-thirds of the way through that alley from the end
-nearer wherever the mark lands, plus the tile the mark stands in from that end so he keeps the
-distance from it he had when it stood on the mouth, never within 62px of the mark (the courtyard's inner end, for a
-courtyard's passage), the same rule as at dawn (`docs/NARRATIVE.md`, "Risk"), and never within
-his own `EventDef.notice_within()` of her or in view when he is placed — so where that spot is 216px or
-more from the mark (his 180px notice and her 36px reach), entering the alley from the mark's own end, reading it and leaving the same way
-never wakes him, and in a shorter alley reading it may. The mark does not move while its guard is awake or any part of him
-is on her screen, since the move retires him and he would vanish in front of her or out of a chase;
-once read, the mark never moves and its guard stays until the day ends. The guard a task stands at
-its own contact, placed the instant she reads its mark, is never placed in view of her either.
+`ResistanceDirector.NOTICE_RADIUS` (400px) away from it moves it to the nearest reachable alley
+mouth within that radius of her instead — a mark is only ever chosen at an alley's mouth, at dawn as
+on every move (*"Mouth only"*, 2026-10-03, inbox #486 in
+[quiet-yak](playtests/2026-10-03-quiet-yak.md)), and stands one tile in from it (a courtyard's
+one-tile passage puts it on the courtyard tile just past), 48px in from the street's edge, so that
+touching it, within the 36px touch reach of its centre, takes her at least 12px inside the alley,
+never from the pavement at the mouth (*"let's move the chalk mark one tile into the alley so I
+actually have to enter the alley to activate it"*, 2026-10-10, azure-puffin, inbox #664), on the
+path rather than off it, and never where any part of the mark's picture, or of the guard standing
+two-thirds through that alley (or at the courtyard's inner end, past a courtyard's passage), would
+be on her screen — the camera's whole view, a corner the joystick's controls cover included, since
+what stands under the controls is still drawn there — so neither is ever planted in front of her —
+skipping an alley a completed step's mark already stood at as long as some other one is still in
+reach. Its guard moves with it, to two-thirds of the way through that alley from the end nearer
+wherever the mark lands, plus the tile the mark stands in from that end so he keeps the distance
+from it he had when it stood on the mouth, never within 62px of the mark (the courtyard's inner end,
+for a courtyard's passage), the same rule as at dawn (`docs/NARRATIVE.md`, "Risk"), and never within
+his own `EventDef.notice_within()` of her or in view when he is placed. A move never lands where
+that spot would be within his notice of her, as it never lands where he would be in view, so a moved
+mark always has its guard — so where that spot is 261px or more from the mark (his notice, 225px as
+shipped, and her 36px reach), entering the alley from the mark's own end, reading it and leaving the
+same way never wakes him, and in a shorter alley reading it may. The mark does not move while its
+guard is awake or any part of him is on her screen, since the move retires him and he would vanish
+in front of her or out of a chase; once read, the mark never moves and its guard stays until the day
+ends. The guard a task stands at its own contact, placed the instant she reads its mark, is never
+placed in view of her either.
 
 Neither the mark nor its guard is ever offered ground she cannot reach that day: a held
 segment, a sealed alley, or the ground behind a region wall's band — including a crossing
@@ -1612,9 +1615,11 @@ not time the city has lost: the service door is the building's goal, which ends 
 city's begins with a whole clock. The countdown, the three losing paths, the
 `EventBus.day_time_changed` the HUD draws from, and `--invincible` standing the clock still are all
 a day's and none of them change; **the goal is the section's own**: the building's service exit,
-reached once its fade has covered the screen, and the city's tunnel mouth or bridge deck, within
-`DayController.FINALE_EXIT_REACH` of the last walkable tile of the spine at either end, reached however
-the baby is.
+reached once its fade has covered the screen, and the city's tunnel or bridge, won when her centre
+is on the spine's last row at either end, across the carriageway
+(`DayController.FINALE_EXIT_DEPTH`), reached however the baby is. The border junction's crossing
+before that row is still the city. The last row is the threshold: her own control ends there, and
+the game walks her on by herself into the tunnel or across the bridge (`EscapeWalkIn`).
 
 **The clock reads to the hundredth** — `%d:%02d.%02d` through `RunState.format_clock_hundredths()`,
 in place of a day's `%d:%02d` — and the day's clock tells the HUD on every frame while a section's
@@ -1711,9 +1716,13 @@ where the masked man is.
 **And he keeps coming.** A masked man runs the right shaft foot to top; once he is out of the top
 of it, another comes up from the foot `EventCatalogue.FINALE_PURSUER_RESPAWN_SECONDS` later, for as long
 as she is in the building. The answer is the one the row is built around — step through the
-nearest corridor door and let him pass. **He starts his run the moment she is within 426px of him**
-*(inbox #764 in minty-lemur, inbox #782 in minty-lemur)*, with no warning clock, the one waiting charger without one *(inbox
-#788 in minty-lemur, the player: "No delay, as on main")*, which coming down from the second floor is at the head of the second
+nearest corridor door and let him pass. **A place sets him off** *(minty-dolphin #852, the player:
+"The stair guard can become a charger that is triggered by a location if necessary")*: he is not in
+the world until she comes within 426px of the foot of the shaft *(inbox #764 in minty-lemur, inbox
+#782 in minty-lemur)*, and walking into that place puts his badge up and brings him there on the same
+tick, already running, with no warning clock *(inbox #788 in minty-lemur, the player: "No delay, as
+on main")*; inside the place already when he may come, his badge is up alone for a second first.
+Coming down from the second floor, that place begins at the head of the second
 flight: from there a runner gets through to the first floor's door on every line onto the flight, and a
 walker is caught when she takes the flight holding plain left from the row level with its head tread
 or the row below, or down-left from the landing tile between the two flights. A walker who holds
@@ -1721,8 +1730,8 @@ plain left from that landing tile gets through, and the margins are thin against
 *(inbox #865 in minty-dolphin)* (on the tightest runner's line, walking until he runs, then running, and turning plain
 left at row 11's centre, he comes 24.6px from her centre on the tick, 1.1px outside it; the walker
 down-left from the landing tile comes 22.7px, 0.8px inside; she is caught if she starts running 0.3s
-late). In the stairwell his warning is off screen,
-and only the screen-edge badge shows his charge once he runs, up from the frame he starts running *(inbox #788 in minty-lemur: "Let's show that at least")*; the player accepted both *(inbox #782 in minty-lemur)*. So
+late). In the stairwell the foot of the shaft is off screen,
+and only the screen-edge badge shows him coming, up from his warning until he is in her view *(inbox #788 in minty-lemur: "Let's show that at least")*; the player accepted both *(inbox #782 in minty-lemur)*. So
 the side she switched to is not a side she can settle on, which is the whole point of him: the way
 down is a sequence of crossings rather than one.
 
@@ -1796,8 +1805,8 @@ so the line on the screen and the line in the HUD are one instruction rather tha
 unmarked vans and roadblocks at full resistance progress stand on the streets either chain walks,
 drawn from one marble bag for the whole escape: each street draws one marble and holds one row at
 most, and the bag holds the most trucks, then explosions, then vans, then roadblocks
-(`DaySpec.FINALE_BAG_TRUCKS` and the three after it), beside the empty marbles that leave a street
-with nothing (`FINALE_BAG_EMPTY`). A danger a street has no room for stays in the bag for a later
+(`DaySpec.ESCAPE_BAGS`, the default bag's counts), beside the one empty marble that leaves a street
+with nothing. A danger a street has no room for stays in the bag for a later
 street, so most streets stand one danger and the rest stand none. *(Inbox #785 in minty-lemur: "a marble bag is absolutely needed with empty events (nothing
 happening) as well. we need a fair mix"; "frequency order is trucks > explosions > vans >
 barriers > empty".)* See `docs/EVENTS.md`, "The escape — the walk filled before she sets off". A roadblock
@@ -1806,6 +1815,31 @@ the moment it is placed; when he notices her **he** comes for her, on foot, and 
 leaves stays drawn and stays shut across the road behind him. What takes the baby is his own reach
 (`EventCatalogue.MASKED_MAN_REACH`, 28px, the same as the man on the stairs) — nothing about the
 barricade catches her. See `docs/EVENTS.md`, "The heat".
+
+**An explosion goes off out of her sight, under its badge, and leaves its crater as it does**
+*(minty-lemur #785: explosions off screen with a warning sign showing the explosion; craters already
+there when she walks toward them; a bright flash with each, matching the building's; random flashes
+for bombs further away; a little shake for a close one; nothing so short or quick it is dangerous
+for viewers)*. One the bag stood on a street is set off as she comes within
+`EventCatalogue.FINALE_EXPLOSION_SET_OFF_WITHIN` of it: its screen-edge badge, the mushroom cloud,
+points at it for a second, and then it goes off there, but only while it and the crater it leaves
+are wholly out of her sight, so neither a bang nor a crater ever appears in her view. The distance
+is its field's reach (`EventCatalogue.FINALE_EXPLOSION_HEARD_WITHIN`) and as far again as she runs
+in its badge and its bang, so heading straight at one, at a walk or a run, she hears none of its
+bang, and the badge never comes down with nothing after it. The crater is laid the moment it goes
+off. As it goes off the city's light is lifted toward
+`Palette.ESCAPE_FLASH_LIGHT`, the light a hallway of the building lifts to while its windows flash,
+by `FlashRhythm.NEAR_PEAK`, rising in a twentieth of a second and dying away eased over
+`FlashRhythm.FALL_SECONDS`; between the bangs, fainter flashes (`FlashRhythm.DISTANT_PEAK`) come on the
+building's own waits, light with no noise. **No more than three flashes begin in any one second**,
+near and far together (`FlashRhythm.LEAST_GAP`), the usual guidance for photosensitive viewers; a
+bang's flash that comes sooner waits for the gap. The screen-edge badges, the HUD and the controls
+are drawn over the world and are never lit or moved. Her view shakes by how near the explosion goes off
+(`ViewShake.share_at()`: full on top of her, none at `EventCatalogue.FINALE_EXPLOSION_FELT_WITHIN`,
+further than the bang is heard), at most `ViewShake.MOST_PX` and eased away over `ViewShake.SECONDS`;
+the game has no reduced-motion setting for it to honour. **The building's window flashes keep the
+player's own curve**, down to a tenth of a second and a double flash; whether they take the city's
+limit waits on the player's answer on the board.
 
 **A roadblock is passed by luring its guard off.** *(Inbox #771 in minty-lemur: "it should be in a way that
 luring away the guard is enough")* Walking straight past his post on the open sidewalk meets his
@@ -1845,9 +1879,15 @@ street either chain runs through. *(Inbox #747: "yes, of course the yellow tint.
 game establishing that why would it be different in the last section?")* A street a chain only
 turns at is sealed and plain.
 
-**It ends on the tunnel or the bridge**, within `DayController.FINALE_EXIT_REACH` of the exit `CityEdge`
-draws, on a summary screen with the way out behind her and nothing triumphant on it — and the clock
-she took, to the millisecond, which is the only number that screen carries.
+**It ends in the tunnel or across the bridge.** The section is won, and the clock stops, when she
+stands on the last row of the spine, where the tunnel's portal `CityEdge` draws begins (the bridge
+has no portal: its deck begins at the map's edge). Her control ends there. The game walks her on by
+herself, at a walk as deep as the tunnel's opening (she darkens step by step in its dark ramp) or
+at a run along the whole length of the deck, the camera
+following her past the map's edge, and **the summary screen comes up when she is in**, with the way
+out behind her and nothing triumphant on it — and the clock she took, to the millisecond, which is
+the only number that screen carries. Nothing can catch her on the way: the section is already won
+and the world stands still around her, the baby's meters with it. No walkable ground is added.
 
 ## Nerves
 

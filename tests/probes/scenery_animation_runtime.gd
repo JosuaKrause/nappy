@@ -16,6 +16,8 @@ var _building: Building
 ## its own, and stands each unit for real.
 var _roof := RecordingRoofDrawer.new()
 var _water: SceneryWater
+## The south water's tile the fixture's water draws from, on a clock that pauses with the fixtures.
+var _tile: SouthWaterTile
 var _events: Array[EventInstance] = []
 ## What each event's drawer saw built, by event.
 var _seen: Dictionary[EventInstance, SeeingDrawer] = {}
@@ -67,6 +69,14 @@ func _ready() -> void:
 	for y in 4:
 		for x in 8:
 			cells.append(Vector2i(x, y))
+	_tile = SouthWaterTile.new()
+	_fixtures.add_child(_tile)
+	_tile.keep_drawing(true)
+	var clock := WaterClock.new()
+	clock.name = "WaterClock"
+	clock.tile = _tile
+	_fixtures.add_child(clock)
+	_water.use_tile(_tile)
 	_water.configure(cells)
 	_watch(_water, "water_surface")
 	if DisplayServer.get_name() == "headless":
@@ -79,6 +89,16 @@ func _ready() -> void:
 func _exit_tree() -> void:
 	if _fixtures != null:
 		_atlas.release(&"events")
+
+## The water's clock as the ground keeps it: advanced on its own process frames, which pause with
+## the fixtures, and handed to the tile.
+class WaterClock extends Node:
+	var tile: SouthWaterTile
+	var elapsed := 0.0
+
+	func _process(delta: float) -> void:
+		elapsed += delta
+		tile.set_clock(elapsed)
 
 ## The turning rotor of every vent the building was told to stand.
 func _rotors() -> Array[SceneryLayer]:
@@ -217,9 +237,10 @@ func _finish(duration: float) -> void:
 	print("SCENERY_RUNTIME " + JSON.stringify(metadata.duplicate().merged({"frames": _frames.size()}, true)))
 	get_tree().quit(0 if static_held and animated and before == paused and resumed != paused else 1)
 
-## Where the water's ripples are in their animation: the clock its shader is drawing with.
+## Where the water is in its animation: the clock its tile's shader is drawing with.
 func _ripple_clock() -> float:
-	return float((_water.material as ShaderMaterial).get_shader_parameter("elapsed"))
+	var lines := (_tile.get_child(0) as CanvasItem).material as ShaderMaterial
+	return float(lines.get_shader_parameter("elapsed"))
 
 func _draw() -> void:
 	draw_rect(Rect2(0, 0, 1280, 720), Color("292f35"))
@@ -229,7 +250,7 @@ func _draw() -> void:
 	for label: Array in [[Vector2(40, 80), "Roof vent · 1.7x"],
 			[Vector2(475, 110), "Broken pipe · 2x"], [Vector2(475, 305), "Crash smoke · 2x"],
 			[Vector2(935, 150), "Both vertical views · 1.6x"],
-			[Vector2(40, 478), "Approved shoreline ripple · 1.3x"],
+			[Vector2(40, 478), "South water, one live tile · 1.3x"],
 			[Vector2(475, 610), "Only small details change their drawing."],
 			[Vector2(475, 642), "Source artwork, timing and body geometry retained."]]:
 		draw_string(font, label[0], label[1], HORIZONTAL_ALIGNMENT_LEFT, -1, 19)

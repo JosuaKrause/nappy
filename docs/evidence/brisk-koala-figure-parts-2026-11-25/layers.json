@@ -1,0 +1,466 @@
+{
+  "layers": {
+    "burst_water_main": [
+      [
+        "burst_water_main_static_0",
+        26,
+        21,
+        148,
+        29,
+        false
+      ],
+      [
+        "burst_water_main_motion_1",
+        38,
+        29,
+        126,
+        19,
+        true
+      ],
+      [
+        "burst_water_main_static_2",
+        62,
+        15,
+        76,
+        33,
+        false
+      ],
+      [
+        "burst_water_main_motion_3",
+        76,
+        37,
+        49,
+        6,
+        true
+      ],
+      [
+        "burst_water_main_static_4",
+        51,
+        22,
+        98,
+        28,
+        false
+      ],
+      [
+        "burst_water_main_motion_5",
+        63,
+        1,
+        74,
+        40,
+        true
+      ],
+      [
+        "burst_water_main_static_6",
+        3,
+        1,
+        194,
+        42,
+        false
+      ]
+    ],
+    "burst_water_main_vertical": [
+      [
+        "burst_water_main_vertical_static_0",
+        3,
+        1,
+        43,
+        170,
+        false
+      ],
+      [
+        "burst_water_main_vertical_motion_1",
+        8,
+        40,
+        31,
+        117,
+        true
+      ],
+      [
+        "burst_water_main_vertical_static_2",
+        7,
+        49,
+        36,
+        95,
+        false
+      ],
+      [
+        "burst_water_main_vertical_motion_3",
+        15,
+        114,
+        21,
+        15,
+        true
+      ],
+      [
+        "burst_water_main_vertical_static_4",
+        0,
+        72,
+        50,
+        79,
+        false
+      ],
+      [
+        "burst_water_main_vertical_motion_5",
+        0,
+        82,
+        50,
+        40,
+        true
+      ],
+      [
+        "burst_water_main_vertical_static_6",
+        14,
+        166,
+        22,
+        33,
+        false
+      ]
+    ],
+    "busker_back": [
+      [
+        "busker_back_static_0",
+        0,
+        2,
+        29,
+        42,
+        false
+      ],
+      [
+        "busker_back_motion_1",
+        6,
+        12,
+        12,
+        19,
+        true
+      ],
+      [
+        "busker_back_static_2",
+        8,
+        0,
+        16,
+        16,
+        false
+      ]
+    ],
+    "busker_back_diagonal": [
+      [
+        "busker_back_diagonal_static_0",
+        0,
+        1,
+        30,
+        43,
+        false
+      ],
+      [
+        "busker_back_diagonal_motion_1",
+        6,
+        12,
+        12,
+        19,
+        true
+      ],
+      [
+        "busker_back_diagonal_static_2",
+        8,
+        0,
+        17,
+        16,
+        false
+      ]
+    ],
+    "busker_front": [
+      [
+        "busker_front_static_0",
+        0,
+        2,
+        29,
+        42,
+        false
+      ],
+      [
+        "busker_front_motion_1",
+        8,
+        12,
+        14,
+        15,
+        true
+      ],
+      [
+        "busker_front_static_2",
+        8,
+        0,
+        16,
+        26,
+        false
+      ]
+    ],
+    "busker_front_diagonal": [
+      [
+        "busker_front_diagonal_static_0",
+        0,
+        1,
+        30,
+        43,
+        false
+      ],
+      [
+        "busker_front_diagonal_motion_1",
+        8,
+        12,
+        15,
+        17,
+        true
+      ],
+      [
+        "busker_front_diagonal_static_2",
+        8,
+        0,
+        18,
+        27,
+        false
+      ]
+    ],
+    "busker_side": [
+      [
+        "busker_side_static_0",
+        0,
+        2,
+        30,
+        42,
+        false
+      ],
+      [
+        "busker_side_motion_1",
+        12,
+        12,
+        14,
+        16,
+        true
+      ],
+      [
+        "busker_side_static_2",
+        9,
+        0,
+        17,
+        27,
+        false
+      ]
+    ],
+    "cafe_sitter_back": [
+      [
+        "cafe_sitter_back_static_0",
+        0,
+        20,
+        16,
+        10,
+        false
+      ],
+      [
+        "cafe_sitter_back_motion_1",
+        1,
+        0,
+        15,
+        25,
+        true
+      ]
+    ],
+    "cafe_sitter_back_diagonal": [
+      [
+        "cafe_sitter_back_diagonal_static_0",
+        0,
+        18,
+        16,
+        12,
+        false
+      ],
+      [
+        "cafe_sitter_back_diagonal_motion_1",
+        1,
+        0,
+        15,
+        27,
+        true
+      ]
+    ],
+    "cafe_sitter_front": [
+      [
+        "cafe_sitter_front_static_0",
+        0,
+        20,
+        16,
+        10,
+        false
+      ],
+      [
+        "cafe_sitter_front_motion_1",
+        1,
+        0,
+        15,
+        25,
+        true
+      ]
+    ],
+    "cafe_sitter_front_diagonal": [
+      [
+        "cafe_sitter_front_diagonal_static_0",
+        0,
+        18,
+        16,
+        12,
+        false
+      ],
+      [
+        "cafe_sitter_front_diagonal_motion_1",
+        1,
+        0,
+        15,
+        27,
+        true
+      ]
+    ],
+    "cafe_sitter_side": [
+      [
+        "cafe_sitter_side_static_0",
+        3,
+        19,
+        13,
+        11,
+        false
+      ],
+      [
+        "cafe_sitter_side_motion_1",
+        2,
+        0,
+        14,
+        25,
+        true
+      ]
+    ],
+    "car_accident": [
+      [
+        "car_accident_static_0",
+        10,
+        5,
+        123,
+        45,
+        false
+      ],
+      [
+        "car_accident_motion_1",
+        74,
+        0,
+        23,
+        14,
+        true
+      ],
+      [
+        "car_accident_static_2",
+        173,
+        5,
+        17,
+        44,
+        false
+      ]
+    ],
+    "car_accident_vertical": [
+      [
+        "car_accident_vertical_static_0",
+        0,
+        1,
+        50,
+        118,
+        false
+      ],
+      [
+        "car_accident_vertical_motion_1",
+        27,
+        48,
+        22,
+        19,
+        true
+      ],
+      [
+        "car_accident_vertical_static_2",
+        15,
+        153,
+        20,
+        44,
+        false
+      ]
+    ],
+    "poster_crew_back": [
+      [
+        "poster_crew_back_static_0",
+        0,
+        28,
+        26,
+        16,
+        false
+      ],
+      [
+        "poster_crew_back_motion_1",
+        18,
+        0,
+        12,
+        22,
+        true
+      ],
+      [
+        "poster_crew_back_static_2",
+        6,
+        11,
+        18,
+        22,
+        false
+      ],
+      [
+        "poster_crew_back_motion_3",
+        2,
+        0,
+        12,
+        33,
+        true
+      ],
+      [
+        "poster_crew_back_static_4",
+        7,
+        0,
+        16,
+        16,
+        false
+      ]
+    ]
+  },
+  "sources": {
+    "art/events/burst_water_main.svg": "5ceaaa1c91c1ff69713fe9f64534dcfe00771ebb184a49e95f50d691b21561c9",
+    "art/events/burst_water_main_b.svg": "330549e369a341ad6a281c8cfa4b974015e913c082d438ddd675e07d8d713e79",
+    "art/events/burst_water_main_vertical.svg": "f928771ff60a388ecc8dc0c640f4cdeea3231aebc4dae9740045d41f0861e61c",
+    "art/events/burst_water_main_vertical_b.svg": "3babc5cc7df14225b10fbb70b190babbb49554c8f2c195b02b5755e50f49bf52",
+    "art/events/busker_back.svg": "97fcdf2e8d9c5d3ecd394fa98d6eb50bd80363c86d44d01af27f28d23aab030f",
+    "art/events/busker_back_b.svg": "8ff351dffcbbcfbfe4afaa7b04d8c60550e48dca2e7f40c10d1cdf72b9bad792",
+    "art/events/busker_back_diagonal.svg": "a0e4d828be9eea9eef9e07d23efea7e85fe1bac4e004064c932b3aba677e6e01",
+    "art/events/busker_back_diagonal_b.svg": "b1879b177b3fe6a84bfdff08462133c1ee59f6942ef4d52f28bb817275064a54",
+    "art/events/busker_front.svg": "dd647e5dfc3b8a8971ec6f426258c65e78c4f89567768e7a6502d3c0a4c005e3",
+    "art/events/busker_front_b.svg": "dee992c7150b27364162195b926c1b11ade9ef93bed0dcf1fafc661c81711de2",
+    "art/events/busker_front_diagonal.svg": "c1c491945e0345f03474d0adb1d9761e62a5770013e418b549ef957a1807ecf1",
+    "art/events/busker_front_diagonal_b.svg": "b3192904756a3cfe007b9746cf8c5245cd334576c535e38f3897c45a688013e1",
+    "art/events/busker_side.svg": "30293688a8c2be9f8007753434b60155ec31e37184ba68596eee790262a21486",
+    "art/events/busker_side_b.svg": "db7ceb35a60a89b85b010a92656707a47a4fda029c341bd853da0323f50022ba",
+    "art/events/cafe_sitter_back.svg": "bb58084398eab4328de5b50c37e1dfab67498720337e9e1ce250e43d9aa778c6",
+    "art/events/cafe_sitter_back_b.svg": "e92cb9fe42db92c26b712b48f68e1ff06ee71edcfc4bf9445f84fec9993e2ef3",
+    "art/events/cafe_sitter_back_diagonal.svg": "ef7020c4e7dc6b4289a273b5c9dfa2deecdf5a0409388703db4b0c66ee2dfbe9",
+    "art/events/cafe_sitter_back_diagonal_b.svg": "6748676f0e5148621073ab3517c44484e9e45d3b15d947fab00f4f662dfd3ed7",
+    "art/events/cafe_sitter_front.svg": "deac5870061e21853ff7fa4d3c15088ee34482f69a83f9393dac8bfa37cc3031",
+    "art/events/cafe_sitter_front_b.svg": "83289da46223b5f08b5c194490b273cdbf7b0a986ea63550c9ab8637c6a03b6c",
+    "art/events/cafe_sitter_front_diagonal.svg": "1749ae4dac86d7cb57c0a7488b1fa3152f015b078238d1de921ab45b4ed47a08",
+    "art/events/cafe_sitter_front_diagonal_b.svg": "46dc34160fdf0e74f4c69acac1e0b0fd206116d0e3d5ee89e7834f85e9965460",
+    "art/events/cafe_sitter_side.svg": "cb15e57a3819d04ed46655c8fd51b22ad8b8bb5e3196c799b39aee4bca7bbb84",
+    "art/events/cafe_sitter_side_b.svg": "6891eaa7578ca3d687741b03b97faac8b1ae3cbac3c071942977b22d0f6db885",
+    "art/events/car_accident.svg": "8824f870a9a063a316158e1935d49a7f28bc3277528f3fb3db0a6c0cef990125",
+    "art/events/car_accident_b.svg": "8f6f55d17bba62b1d3570aae03e1017678c6ea474559118515a3f39779f4f7d4",
+    "art/events/car_accident_vertical.svg": "065f87d240d6ee40c8806266b8e12252ff2cde506c8732ffbc343236ebb7315a",
+    "art/events/car_accident_vertical_b.svg": "876f48f86d20c4af4b81bd5d383946d7ea2233f10de3ce17fa7a6dd69cb0f838",
+    "art/events/poster_crew_back.svg": "15f350cb3153d6d68dba8940b150200bda150b20c862a016780106b18d71b9ff",
+    "art/events/poster_crew_back_b.svg": "d2fb0bcd08f6e5848ce20d835f3aba2960ee597de979713cec819c554f071f94"
+  }
+}

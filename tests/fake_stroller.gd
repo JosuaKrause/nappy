@@ -20,6 +20,35 @@ func put_at() -> Vector2:
 func facing_when_put() -> Vector2:
 	return _fake_facing_when_put
 
+## The heading and speed she was last led by (`lead()`), and how many times she was released.
+var _fake_led := Vector2.ZERO
+var _fake_led_speed := 0.0
+var _fake_releases := 0
+
+## Overrides Stroller.lead.
+## Each ask carries her one tick on, as her own physics would.
+func lead(heading: Vector2, speed: float) -> void:
+	_fake_led = heading.normalized()
+	_fake_led_speed = speed
+	global_position += _fake_led * speed / float(Engine.physics_ticks_per_second)
+
+## Overrides Stroller.release.
+func release() -> void:
+	_fake_led = Vector2.ZERO
+	_fake_releases += 1
+
+## Whether she is led.
+func is_led() -> bool:
+	return _fake_led != Vector2.ZERO
+
+## The speed she was last led at.
+func led_speed() -> float:
+	return _fake_led_speed
+
+## How many times she was handed back.
+func releases() -> int:
+	return _fake_releases
+
 ## Overrides Stroller.reset_at.
 func reset_at(where: Vector2, look: Vector2 = Vector2.DOWN) -> void:
 	_fake_put_at = where

@@ -17,9 +17,9 @@ func allows(candidate: EventPlan, _tile: Vector2i,
 
 ## **One waiting guard at a time** (`DaySpec.notices_one_at_a_time()`). A candidate that waits to
 ## notice her (`EventDef.notice_within()`: the escape's roadblock, whose guard notices her within
-## 180px of his band) is refused when the ground it notices her from meets the ground another placed
+## 225px of his band) is refused when the ground it notices her from meets the ground another placed
 ## one notices her from: the two notice discs, each centred where its band stands, may not overlap,
-## so two of the escape's roadblocks stand at least twice that, 360px, apart, on one street or on
+## so two of the escape's roadblocks stand at least twice that, 450px, apart, on one street or on
 ## two. *(Inbox #771 in minty-lemur, 2026-10-18: "two roadblocks are right next to each other and the
 ## second guard is invisible (hidden) until it already charges".)*
 ##

@@ -30,9 +30,10 @@ func _test_everything_that_stands_still_is_solid(t: TestRunner) -> void:
 		# to a park, so `EventDef.validate()` refuses a body on one outright.
 		if def.spawn_mode_on(1) == EventDef.SpawnMode.AHEAD_OF_PLAYER:
 			continue
-		# Nothing drawn, nothing to bump into: a curfew announcement carried by a mast that is
-		# already solid on its own, a playground the park itself draws.
-		if def.picture() == EventDef.Look.NONE:
+		# Nothing drawn in the world, nothing to bump into: a curfew announcement carried by a mast
+		# that is already solid on its own, a playground the park itself draws, the escape city's
+		# explosion, whose picture is drawn only in its badge.
+		if not def.look().is_drawn_in_the_world():
 			continue
 		# A flock is several bodies wheeling inside one disc with pavement between them, so there is
 		# no silhouette for a body to be half of — and being walked into is the whole event, which a

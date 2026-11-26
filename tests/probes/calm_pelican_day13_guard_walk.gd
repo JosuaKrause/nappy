@@ -26,8 +26,8 @@ extends RefCounted
 ## - **guarding** the roadblock the arrow points at: in its band (inner radius plus its touch reach
 ##   to `EventDef.notice_within()` plus it), with a clear line to its body;
 ## - **near it**: with a clear line to it, outside the band but within
-##   `ResistanceDirector.TASK_GUARD_FARTHEST`, the farther out-of-view spot a move takes when every
-##   spot of the band is in her view;
+##   `ResistanceDirector.task_guard_farthest()`, the farther out-of-view spot a move takes when
+##   every spot of the band is in her view;
 ## - **elsewhere**: anywhere else, with his distance from the arrow's.
 ## A guard who noticed her is not ticked in this rig, so none is.
 ##
@@ -291,7 +291,7 @@ func _what_he_guards(city: City, director: ResistanceDirector, moves: int) -> Di
 	if from_arrow >= robbery.core_within() + reach - 0.5 \
 			and from_arrow <= robbery.notice_within() + reach + 0.5 and clear:
 		kind = "guarding"
-	elif clear and from_arrow <= ResistanceDirector.TASK_GUARD_FARTHEST + 0.5:
+	elif clear and from_arrow <= ResistanceDirector.task_guard_farthest(reach) + 0.5:
 		kind = "near"
 	return {"kind": kind, "from_arrow": from_arrow, "clear": clear, "moves": moves}
 

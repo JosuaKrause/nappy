@@ -276,17 +276,6 @@ class ClassTests(unittest.TestCase):
         engine = "func f(r: Area) -> void:\n\tpass\nfunc g(r: Rect2) -> void:\n\tr.grow(1.0)\n"
         self.assertEqual(only(self.GROW | {self.HUD: engine}, self.GROW_READ), {(self.AREA, "grow")})
 
-    def test_a_value_of_no_class_here_reads_in_a_file_whose_opt_out_line_silences_that_access(self) -> None:
-        call = "func f(n: Node) -> void:\n\tn.grow(1.0)\n"
-        self.assertEqual(only(self.GROW | {self.HUD: call}, self.GROW_READ), {(self.AREA, "grow")})
-        silenced = '@warning_ignore_start("unsafe_method_access")\n' + call
-        self.assertEqual(only(self.GROW | {self.HUD: silenced}, self.GROW_READ), set())
-        read = "func f(n: Node) -> void:\n\tprint(n.gap)\n"
-        method_only = '@warning_ignore_start("unsafe_method_access")\n' + read
-        self.assertEqual(only(self.GAP | {self.HUD: method_only}, self.GAP_READ), {(self.CORDON, "gap")})
-        property_too = '@warning_ignore_start("unsafe_property_access", "unsafe_method_access")\n' + read
-        self.assertEqual(only(self.GAP | {self.HUD: property_too}, self.GAP_READ), set())
-
     def test_a_static_function_is_read_only_through_its_class(self) -> None:
         tree = {
             self.TREE: (

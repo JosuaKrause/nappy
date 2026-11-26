@@ -1,7 +1,7 @@
 # Rows warned of before they exist
 
 Read this before touching `WarningSpec.warned_first()`, `PendingWarning`, `EventSpawner.as_warned()`,
-`EventManager.warn_first()` or a pursuer sent from out of her sight. The design, row by row, is
+`EventManager.warn_first()`, `SetOffWatch` or a pursuer sent from out of her sight. The design, row by row, is
 `docs/EVENTS.md`, "Everything arrives from off screen"; this file holds what the fairness contract
 asks of such a row and the traps in the code.
 
@@ -46,6 +46,28 @@ pursuer sent from out of her sight (the resistance's trap, the torn poster's man
   robber and guard, and a torn poster's pursuer on foot (olive-hedgehog #598).
 - **Where its ground has no place when the warning's time has run, the warning is withdrawn**; a
   withdrawn day-3 dog is owed again.
+- **A row a place sets off** (`EventDef.is_set_off_by_a_place()`: the masked man on the escape's
+  stairs, the escape city's explosions) is warned of the moment she comes within its
+  `sets_off_within()` of where it starts (`SetOffWatch`; minty-dolphin #852), and created there
+  rather than where a siting finds a place, only while everything it puts on the screen there is
+  out of her sight, what it leaves where it goes off included (`EventFootprints.footprint_of()`,
+  the explosion's crater): with no time alone where she walks into the place and its set-off
+  distance alone is the warning it owes (`EventDef.may_be_set_off_at_once()`,
+  `as_set_off_at_once()`, the masked man), so it comes exactly as near as its set-off distance,
+  which `EventDef.warning_time()` counts from, and with its row's own `warned_for()` where she is
+  inside it already, where the distance is not warning enough, or for a thing that comes all at
+  once (`EventDef.comes_all_at_once()`: the explosion, whose badge is the whole of its notice).
+  **Such a thing's badge goes up only where her running for the whole of it cannot bring the place
+  into her sight**, so it never comes down without its bang (minty-dolphin #852), and the
+  explosion's set-off distance (`EventCatalogue.FINALE_EXPLOSION_SET_OFF_WITHIN`) is far enough
+  out that walking or running into it never makes the badge wait.
+
+**Every screen-edge badge comes from this path** (minty-dolphin #852): a warning, then the thing it
+created keeping the badge until any of it is in sight (`EventInstance.was_warned_of()`,
+`BadgeModel`). **A charger already in the world whose charge begins out of her sight takes the
+same path**: that start is its warning, and it carries the badge from then until she can see it
+(`EventInstance._begin_the_charge()`), a rule asked of every charger and never keyed on a row. Any
+other danger in the world carries none, so nothing in the world is measured for one.
 
 **The warning time is the row's own number** (PLAYTEST-145 1). Nothing about where a thing is
 created may be derived from its telegraph, and a row's telegraph is not shortened by shrinking its
@@ -60,11 +82,10 @@ ends it at `PURSUIT_SHAKEN_OFF`'s rate.
 
 ## What is not warned first
 
-**A patrol sent down the road and a `MAP` mover** (the escape's `military_convoy` trucks). The
-patrol does not telegraph its coming at all (slower than a walk; its strike is a car's, warned the
-way a car warns, see `event-cars.md`); the escape's trucks telegraph in the world, with a badge
-because they are faster than a walk, as places the escape planned, not things sent at her. A convoy
-on an ordinary day is sent at her and warned first, in the lane beside her as day 13's column is
-(`EventDef.as_sent_ahead()`). **Do not add a row to this list, and do not cite it as the reason
-something else is not warned first.** What stands in the way of it is
-`docs/EVENTS.md`, "Everything arrives from off screen".
+**A patrol sent down the road.** It does not telegraph its coming at all (slower than a walk; its
+strike is a car's, warned the way a car warns, see `event-cars.md`). A convoy is sent at her and
+warned first, in the lane beside her as day 13's column is (`EventDef.as_sent_ahead()`), on an
+ordinary day and in the escape alike: the escape's `military_convoy` trucks are the director's to
+send (`DaySpec.hands_the_director()`), not places its plan stands. **Do not add a row to this
+list, and do not cite it as the reason something else is not warned first.** What stands in the way
+of it is `docs/EVENTS.md`, "Everything arrives from off screen".

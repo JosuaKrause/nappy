@@ -5,10 +5,11 @@ extends EventDrawer
 ## picture an event shows where is the look's to decide, and how a picture looks on a canvas is the
 ## real drawer's.
 ##
-## The scenery of a crash's or a burst main's slices is built for real, since the look stands it
-## behind its slice as a node: a drawer recording scenery is handed the atlas the scenery is cut
-## from, and one handed none records no scenery and must not be asked to. The scenery lays its
-## pictures through the real drawer's own, or through `scenery_drawer` when a test hands one.
+## The scenery of a partly animated picture (a crash's or a burst main's slices, a café sitter, the
+## busker, a poster crew pasting) is built for real, since the look stands it as a node: a drawer
+## handed the atlas the scenery is cut from builds it, and one handed none builds a scenery that
+## lays nothing (`InertScenery`), which is still recorded. The scenery lays its pictures through the
+## real drawer's own, or through `scenery_drawer` when a test hands one.
 
 ## Every picture the look asked for, in order: `{"canvas", "kind", "picture", "foot", "size",
 ## "rect", "mirrored", "colour", "band", "pass", "frame"}`. `kind` is `&"stand"`, `&"paint"`, `&"caret"` (a danger caret: `foot` is its tip, `size` its width twice over, `colour` its colour),
@@ -53,13 +54,21 @@ func caret(canvas: CanvasItem, at: Vector2, width: float, colour: Color) -> void
 
 ## Overrides EventDrawer.scenery.
 func scenery(picture: String, extent: Vector2, anchor: Vector2, shadow: String,
-		band: Rect2) -> EventScenery:
-	var built := super(picture, extent, anchor, shadow, band)
+		band: Rect2, mirrored := false) -> EventScenery:
+	var built: EventScenery = super(picture, extent, anchor, shadow, band, mirrored) \
+			if _atlas != null else InertScenery.new()
 	draws.append({"canvas": built, "kind": &"scenery", "picture": picture, "foot": anchor,
 		"size": extent, "rect": Rect2(anchor - Vector2(extent.x * 0.5, extent.y), extent),
-		"mirrored": false, "colour": Color.WHITE, "band": band, "pass": 0,
+		"mirrored": mirrored, "colour": Color.WHITE, "band": band, "pass": 0,
 		"frame": Engine.get_process_frames()})
 	return built
+
+## A scenery for a drawer handed no atlas: it has nothing to cut its pictures from, so it builds
+## no layers and lays nothing.
+class InertScenery extends EventScenery:
+	## Overrides EventScenery._ready.
+	func _ready() -> void:
+		pass
 
 ## The scenery's drawer is this one's `scenery_drawer` when a test hands one, handed through the
 ## same `EventScenery.draw_through()` call the real drawer makes.

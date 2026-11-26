@@ -77,6 +77,6 @@ somewhere.
   meter that cannot end the day answers nothing about either.
 
 **Where a cue cannot be triggered on demand, relax its condition, look, and put it back.** The
-screen-edge badge needs something lethal off-screen and closing, which is not something a six-second
-screenshot can be asked for. Forcing it on for one shot is the only thing that finds a badge
+screen-edge badge needs a warning of something lethal or fast coming from off screen, which is not
+something a six-second screenshot can be asked for. Forcing it on for one shot is the only thing that finds a badge
 colliding with the excitement meter or an icon squashed by a square box.

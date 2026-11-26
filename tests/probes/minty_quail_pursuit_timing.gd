@@ -387,7 +387,7 @@ class Run extends RefCounted:
 			return "waiting"
 		if instance.is_telegraphing():
 			return "warning"
-		return "charging" if instance.has_charged() else "active"
+		return "charging" if instance.is_chasing() else "active"
 
 	func report() -> String:
 		var parts: Array[String] = []

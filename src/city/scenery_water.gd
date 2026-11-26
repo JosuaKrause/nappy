@@ -1,77 +1,43 @@
 class_name SceneryWater
 extends Node2D
-## The unreachable south water, kept off the static ground TileMap. The shader samples only
-## its own baked region; a pausable local clock moves the existing ripples without redraws.
-
-## One shader resource for the boot probe and every water surface. Materials stay per surface so
-## each city or fixture owns its clock without recompiling the same program on tree reentry.
-const RIPPLE_SHADER: Shader = preload("res://assets/shaders/scenery_water.gdshader")
+## The unreachable south water, kept off the static ground TileMap and drawn behind its chunk's
+## tiles, so a tile that stands in the water (the bulkhead's sea wall,
+## `GroundTiles.stands_in_water()`) shows it through the transparent part of its picture. Each
+## cell is drawn from the south water's one live tile (`SouthWaterTile`), from the place in the
+## tile the cell covers in the world, so the surfaces the ground streams in chunk by chunk meet
+## without a seam and move as one. The tile carries the motion and its clock, so a surface draws
+## its cells once and is never drawn again for the water to move.
 
 var cells: Array[Vector2i] = []
-## The baked atlas pages the water's region comes from (`AtlasLibrary`), handed in by `use_atlas()`
-## (the ground does, before the surface is added); a surface nobody handed one (a suite's) makes its own when it first
-## enters the tree.
-var _atlas: AtlasLibrary = null
-## The surface's clock, in seconds: the ripples' phase (`set_clock()`).
-var _elapsed := 0.0
-var _texture: AtlasTexture
-var _ripples: ShaderMaterial
+## The tile the cells are drawn from, handed in by `use_tile()` (the ground does, before the
+## surface is added). A surface handed none draws nothing.
+var _tile: SouthWaterTile = null
 
-func _enter_tree() -> void:
-	if _atlas == null:
-		_atlas = AtlasLibrary.new()
-	_atlas.acquire(&"ground")
-	if not cells.is_empty():
-		configure(cells)
+func _init() -> void:
+	# Behind the chunk's own TileMap, which is this surface's parent: the water under a sea-wall
+	# cell is drawn first and the stone over it.
+	show_behind_parent = true
+	# Repeat, so a texel sampled at the tile's edge blends with the other edge's, its neighbour in
+	# the world; linear, as the tile is drawn a texel a world pixel and magnified on screen.
+	texture_repeat = CanvasItem.TEXTURE_REPEAT_ENABLED
+	texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR
 
-func _exit_tree() -> void:
-	RenderingServer.canvas_item_clear(get_canvas_item())
-	_texture = null
-	material = null
-	_ripples = null
-	_atlas.release(&"ground")
-
-## Hands in the baked atlas pages the water's region comes from, before the surface is added.
-func use_atlas(library: AtlasLibrary) -> void:
-	_atlas = library
+## Hands in the tile the cells are drawn from.
+func use_tile(tile: SouthWaterTile) -> void:
+	_tile = tile
+	queue_redraw()
 
 func configure(water_cells: Array[Vector2i]) -> void:
 	if cells != water_cells:
 		cells.assign(water_cells)
-	_texture = _atlas.region(&"tiles/water") as AtlasTexture
-	_ripples = material_for(_texture, _elapsed)
-	material = _ripples
 	queue_redraw()
 
-## Builds one surface's uniforms around the shared runtime shader. The boot warmup calls this same
-## path so the material it draws has the atlas page and region values real shoreline draws use.
-static func material_for(texture: AtlasTexture, at_elapsed: float = 0.0) -> ShaderMaterial:
-	var ripples := ShaderMaterial.new()
-	ripples.shader = RIPPLE_SHADER
-	var page_size := texture.atlas.get_size()
-	var region := texture.region
-	ripples.set_shader_parameter("region_uv", Vector4(region.position.x / page_size.x,
-			region.position.y / page_size.y, region.size.x / page_size.x, region.size.y / page_size.y))
-	ripples.set_shader_parameter("page_pixel", Vector2.ONE / page_size)
-	ripples.set_shader_parameter("elapsed", at_elapsed)
-	return ripples
-
-## Sets this surface's clock, and its ripples' phase with it, to `at_elapsed`. The ground calls it
-## with its one city clock when it stands a surface up and on every frame after, so the chunks it
-## streams in stay in phase with each other; a surface the ground stands up does not run its own
-## `_process()`. Before `configure()` there are no ripples yet, and the clock alone is set, for
-## `configure()` to start them from.
-func set_clock(at_elapsed: float) -> void:
-	_elapsed = at_elapsed
-	if _ripples != null:
-		_ripples.set_shader_parameter("elapsed", _elapsed)
-
-func _process(delta: float) -> void:
-	_elapsed += delta
-	if _ripples != null:
-		_ripples.set_shader_parameter("elapsed", _elapsed)
-
 func _draw() -> void:
+	if _tile == null:
+		return
+	var picture := _tile.get_texture()
 	var extent := Vector2(Tuning.TILE_SIZE, Tuning.TILE_SIZE)
 	for tile in cells:
-		draw_texture_rect(_texture, Rect2(Vector2(tile) * extent, extent), false)
+		# Unclipped, so the filter reads across the region's edge into the texels beside it.
+		draw_texture_rect_region(picture, Rect2(Vector2(tile) * extent, extent),
+				_tile.region_for(tile), Color.WHITE, false, false)

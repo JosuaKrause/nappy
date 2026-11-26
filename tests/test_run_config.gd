@@ -37,6 +37,7 @@ func run(t: TestRunner) -> void:
 	_test_a_release_page_opens_the_bundle_only_with_debug(t)
 	_test_a_resolved_config_cannot_change(t)
 	_test_a_recipe_stands_in_for_the_run_flags(t)
+	_test_the_charger_timing_is_the_flags_or_the_shipped_one(t)
 	_test_the_day_and_the_section_lengths(t)
 	_test_every_rig_flag_makes_a_rig(t)
 	_test_the_title_is_skipped_by_a_rig_or_a_recipe(t)
@@ -59,19 +60,22 @@ func _test_a_release_build_reads_no_command_line_flag(t: TestRunner) -> void:
 	t.check(release.day_override() == 1 and release.seed_override() == 0
 			and not release.is_invincible()
 			and release.layers_override().is_empty() and release.route_targets().is_empty()
-			and release.dev_flag_words().is_empty() and not release.runs_as_a_rig(),
+			and release.dev_flag_words().is_empty() and not release.runs_as_a_rig()
+			and release.escape_bag() == DaySpec.DEFAULT_ESCAPE_BAG,
 			"a release build reads none of the developer flags")
 	t.check(release.refuses_telemetry(), "but does read the player's own --no-telemetry")
 
 func _test_a_debug_build_reads_them(t: TestRunner) -> void:
 	var debug := RunConfig.parse(_words(["--day", "99", "--seed", "7", "--invincible",
-			"--layers", "1,3", "--ground-mode", "3", "--day-length", "40"]), "", true)
+			"--layers", "1,3", "--ground-mode", "3", "--day-length", "40", "--escape-bag", "B"]),
+			"", true)
 	t.check(debug.day_override() == Tuning.RUN_LENGTH_DAYS, "--day is clamped into the run")
 	t.check(debug.seed_override() == 7 and debug.is_invincible()
 			and debug.layers_override() == [1, 3]
-			and debug.ground_mode() == 3 and is_equal_approx(debug.day_length_for(3), 40.0),
+			and debug.ground_mode() == 3 and is_equal_approx(debug.day_length_for(3), 40.0)
+			and debug.escape_bag() == "B",
 			"and every other flag given is read")
-	t.check(debug.dev_flag_words().size() == 11, "the words themselves are kept, all of them")
+	t.check(debug.dev_flag_words().size() == 13, "the words themselves are kept, all of them")
 
 ## The release-safe bundle answers to a release page only once it asked `?debug=1`; using one of its
 ## parameters is what keeps that page off the save.
@@ -132,6 +136,29 @@ func _test_a_recipe_stands_in_for_the_run_flags(t: TestRunner) -> void:
 			"a release build keeps no recipe, whatever it is handed")
 	t.check(base.seed_override() == 3 and base.day_override() == 2,
 			"and the config it was put on is unchanged")
+
+## **How a run plays every charger** (`RunConfig.charger_timing()`): a debug build's `--chargers`,
+## or a release page's `?chargers=` once it asked `?debug=1`, which then counts as having used the
+## bundle; anywhere else the shipped timing, the one the catalogue is built from unless told
+## otherwise (minty-dolphin #834).
+func _test_the_charger_timing_is_the_flags_or_the_shipped_one(t: TestRunner) -> void:
+	var none := PackedStringArray()
+	var shipped := EventCatalogue.shipped_charger_timing()
+	var flagged := RunConfig.parse(_words(["--chargers", "1.5", "1.2"]), "", true).charger_timing()
+	t.check(is_equal_approx(flagged.warning(), 1.5)
+			and is_equal_approx(flagged.notice(100.0), 120.0),
+			"--chargers 1.5 1.2 warns for 1.5s with every radius at 1.2 times its own")
+	var page := RunConfig.parse(none, "?debug=1&chargers=1.25,0.85", false)
+	t.check(is_equal_approx(page.charger_timing().warning(), 1.25)
+			and is_equal_approx(page.charger_timing().notice(100.0), 85.0)
+			and page.used_a_web_debug_flag(),
+			"a release page that asked ?debug=1 reads ?chargers= and counts as having used"
+			+ " the bundle")
+	for config: RunConfig in [RunConfig.parse(none, "?chargers=1.25,0.85", false),
+			RunConfig.parse(_words(["--chargers", "1.5", "1.2"]), "", false),
+			RunConfig.parse(none, "", true)]:
+		t.check(config.charger_timing().same_as(shipped),
+				"a run that asked for no timing it can read plays the shipped one")
 
 ## A day's length is decided in one place and handed on as a number: `--day-length` for every day
 ## and every escape section when given, else each one's own.

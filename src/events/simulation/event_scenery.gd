@@ -1,10 +1,14 @@
 class_name EventScenery
 extends Node2D
-## A wide scene's static vector spans and cropped moving details, in their source painter order.
-## The event keeps its simulation clock and cues; only these small moving layers change phase.
-## One of these stands behind each slice of the scene (`SpreadLook.Slice`), holding the part of
+## A partly animated picture's static vector spans and cropped moving details, in their source
+## painter order (`EventSceneryParts`). The event keeps its simulation clock and cues; only these
+## small moving layers change phase, so a swap redraws them and nothing else.
+## One of these stands behind each slice of a wide scene (`SpreadLook.Slice`), holding the part of
 ## every span inside its slice's band (`clip`); the first slice's also holds the contact shadow,
-## whole, so it goes down before every other part of the scene.
+## whole, so it goes down before every other part of the scene. A figure whose idle frame moves part
+## of it (the busker's strumming arm, a café sitter's lean, a poster crew's brush) stands one on its
+## feet, over the shadow its owner draws, mirrored about its feet for a view that faces west.
+## Whether it stands behind its parent is its owner's to say.
 ## `EventManager` owns the events atlas page for its whole tree lifetime, including every scenery
 ## child and every streamed instance; a standalone fixture acquires that page around this node.
 
@@ -22,6 +26,9 @@ var _anchor: Vector2
 var _shadow: String
 ## The band of the scene this one draws, in the same space as `_anchor`; no area for all of it.
 var _clip := Rect2()
+## Whether the picture is drawn mirrored left to right about `_anchor`, as `Sprites.draw_standing()`
+## mirrors a figure about its feet.
+var _mirrored := false
 var _frame_b := false
 
 func _ready() -> void:
@@ -43,15 +50,15 @@ func draw_through(atlas: AtlasLibrary, drawer: SceneryDrawer) -> void:
 	_drawer = drawer
 
 func configure(picture: String, extent: Vector2, anchor: Vector2, shadow: String,
-		clip := Rect2()) -> void:
+		clip := Rect2(), mirrored := false) -> void:
 	_picture = picture
 	_extent = extent
 	_anchor = anchor
 	_shadow = shadow
 	_clip = clip
+	_mirrored = mirrored
 
 func _build() -> void:
-	show_behind_parent = true
 	var original := _atlas.region(_picture)
 	var scale_factor := _extent / original.get_size()
 	var top_left := _anchor - Vector2(_extent.x * 0.5, _extent.y)
@@ -59,7 +66,7 @@ func _build() -> void:
 		var contact := SceneryLayer.new()
 		contact.draw_through(_drawer)
 		contact.modulate = Palette.SHADOW
-		contact.append(_atlas.region(_shadow), Rect2(top_left, _extent))
+		contact.append(_atlas.region(_shadow), _laid(contact, Rect2(top_left, _extent)))
 		_static_layers.append(contact)
 		add_child(contact)
 	var stem := _picture.get_file()
@@ -79,13 +86,24 @@ func _build() -> void:
 			rect = inside
 		var layer := SceneryLayer.new()
 		layer.draw_through(_drawer)
-		layer.append(texture, rect, _atlas.region(region + "_b") if moving else null, source)
+		layer.append(texture, _laid(layer, rect), _atlas.region(region + "_b") if moving else null,
+				source)
 		if moving:
 			_moving_layers.append(layer)
 		else:
 			_static_layers.append(layer)
 		add_child(layer)
 	set_frame(_frame_b)
+
+## Where `rect` is laid in `layer`'s own space: where it stands, or, for a mirrored picture, the
+## same place with `layer` turned left to right about the anchor, since a texture cannot be flipped
+## by its rectangle (the **godot** skill, "Physics and drawing").
+func _laid(layer: SceneryLayer, rect: Rect2) -> Rect2:
+	if not _mirrored:
+		return rect
+	layer.position = _anchor
+	layer.scale = Vector2(-1.0, 1.0)
+	return Rect2(rect.position - _anchor, rect.size)
 
 func set_frame(frame_b: bool) -> void:
 	_frame_b = frame_b

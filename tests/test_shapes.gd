@@ -33,6 +33,10 @@ func run(t: TestRunner) -> void:
 	_test_zero_speed_gives_a_disc(t)
 	_test_approaching_costs_more_than_receding(t)
 	_test_no_emitting_segment_row_moves(t)
+	_test_a_side_on_car_casts_one_oval_per_wheel_pair(t)
+	_test_an_end_on_car_lays_its_far_pair_behind_the_near_one(t)
+	_test_a_point_vehicle_stands_on_two_pairs_inside_its_reach(t)
+	_test_a_shape_too_small_casts_no_shadow(t)
 
 # ------------------------------------------------------------------ the datum ---
 
@@ -104,8 +108,9 @@ func _shape_agrees(def: EventDef) -> bool:
 func _test_every_catalogue_row_agrees_with_its_shape(t: TestRunner) -> void:
 	var checked := 0
 	for def in CatalogueRows.every():
-		if def.picture() != EventDef.Look.NONE:
-			t.check(def.ground_shape() != null, "'%s' has a look and carries a shape" % def.id())
+		if def.look().is_drawn_in_the_world():
+			t.check(def.ground_shape() != null,
+					"'%s' is drawn in the world and carries a shape" % def.id())
 		if def.obstructs_within() > 0.0:
 			checked += 1
 			t.check(_shape_agrees(def),
@@ -120,9 +125,9 @@ func _test_every_heated_copy_agrees_with_its_shape(t: TestRunner) -> void:
 		for level in EventCatalogue.heat_levels():
 			var hot := EventCatalogue.heated(def, level)
 			checked += 1
-			if hot.picture() != EventDef.Look.NONE:
+			if hot.look().is_drawn_in_the_world():
 				t.check(hot.ground_shape() != null,
-						"'%s' at heat %d has a look and carries a shape" % [def.id(), level])
+						"'%s' at heat %d is drawn in the world and carries a shape" % [def.id(), level])
 			t.check(_shape_agrees(hot),
 					"'%s' at heat %d: obstructs %.1fpx, shape reaches %.1fpx"
 					% [def.id(), level, hot.obstructs_within(),
@@ -490,3 +495,80 @@ func _test_no_emitting_segment_row_moves(t: TestRunner) -> void:
 				% [def.id(), def.ground_shape().reach(), def.core_within()])
 				+ "core (D2: moving objects are points)")
 	t.check(checked >= 1, "and at least one emitting segment row was actually checked (%d)" % checked)
+
+# ------------------------------------------------------- the shadow of what it stands on ---
+
+func _bounds(points: PackedVector2Array) -> Rect2:
+	var rect := Rect2(points[0], Vector2.ZERO)
+	for point in points:
+		rect = rect.expand(point)
+	return rect
+
+## **A car seen side on casts one oval under each wheel pair, on its picture's ground line, and
+## nothing above it** (minty-hedgehog 1: a car's shadow only where its wheels would be, never above
+## its roof). The pairs are the capsule's two spine ends; each oval is centred on the line the
+## picture stands on, the two do not meet, and none reaches higher above the line than a point
+## shadow of the car's own width would, where the capsule's own shadow reached its whole width up.
+func _test_a_side_on_car_casts_one_oval_per_wheel_pair(t: TestRunner) -> void:
+	var shape := GroundShape.segment(11.0, 15.0)
+	var ground_line := 14.0
+	var outlines := shape.paired_shadow_outlines(Vector2.ZERO, Vector2.RIGHT, ground_line)
+	t.check(outlines.size() == 2, "a side-on car casts two ovals (%d)" % outlines.size())
+	if outlines.size() != 2:
+		return
+	var rear := _bounds(outlines[0])
+	var front := _bounds(outlines[1])
+	t.check(rear.get_center().distance_to(Vector2(-shape.spine_half_length(), ground_line)) < 0.01,
+			"the rear pair's oval is centred under the spine's rear end, on the ground line")
+	t.check(front.get_center().distance_to(Vector2(shape.spine_half_length(), ground_line)) < 0.01,
+			"the front pair's oval is centred under the spine's front end, on the ground line")
+	t.check(rear.end.x < front.position.x, "the two ovals do not meet (%.1f, %.1f)"
+			% [rear.end.x, front.position.x])
+	var point_shadow := _bounds(GroundShape.point(shape.rounding_radius()).shadow_outline(
+			Vector2(0.0, ground_line)))
+	t.check(minf(rear.position.y, front.position.y) >= point_shadow.position.y - 0.01,
+			"no oval reaches higher above the ground line than a point shadow of the car's width")
+
+## **End on, the near pair lies along the picture's bottom and the far one behind it**, nearer than
+## the ground's own distance between them, since the pictures foreshorten what lies behind, and
+## each oval spans the car's whole width.
+func _test_an_end_on_car_lays_its_far_pair_behind_the_near_one(t: TestRunner) -> void:
+	var shape := GroundShape.segment(11.0, 15.0)
+	var ground_line := 26.0
+	var outlines := shape.paired_shadow_outlines(Vector2.ZERO, Vector2.DOWN, ground_line)
+	t.check(outlines.size() == 2, "an end-on car casts two ovals (%d)" % outlines.size())
+	if outlines.size() != 2:
+		return
+	var far := _bounds(outlines[0])
+	var near := _bounds(outlines[1])
+	t.check(near.get_center().distance_to(Vector2(0.0, ground_line)) < 0.01,
+			"the near pair's oval is centred on the ground line")
+	var behind := near.get_center().y - far.get_center().y
+	t.check(behind > 0.0 and behind < 2.0 * shape.spine_half_length(),
+			"the far pair lies behind the near one, nearer than the ground's %.0fpx (%.1f)"
+			% [2.0 * shape.spine_half_length(), behind])
+	t.close_to(near.size.x, 2.0 * shape.rounding_radius(),
+			"the near oval spans the car's whole width", 0.5)
+
+## **A point-shaped vehicle stands on two pairs too**, either side of its centre along its axis and
+## inside its own reach, so a parked van's shadow is two patches rather than one disc its width.
+func _test_a_point_vehicle_stands_on_two_pairs_inside_its_reach(t: TestRunner) -> void:
+	var shape := GroundShape.point(22.0)
+	var outlines := shape.paired_shadow_outlines(Vector2.ZERO, Vector2.RIGHT, 0.0)
+	t.check(outlines.size() == 2, "a point vehicle casts two ovals (%d)" % outlines.size())
+	if outlines.size() != 2:
+		return
+	var rear := _bounds(outlines[0])
+	var front := _bounds(outlines[1])
+	t.close_to(rear.get_center().x, -front.get_center().x,
+			"the two pairs stand either side of its centre")
+	t.check(rear.end.x < front.position.x, "and their ovals do not meet")
+	t.check(rear.position.x >= -shape.reach() and front.end.x <= shape.reach(),
+			"both lie inside the van's own reach")
+
+## A shadow narrower than half a pixel is drawn neither way, the faded bird's case.
+func _test_a_shape_too_small_casts_no_shadow(t: TestRunner) -> void:
+	t.check(not GroundShape.point(GroundShape.MIN_DRAWN_SHADOW_RADIUS * 0.5).casts_a_shadow(),
+			"a shape under half a pixel casts no shadow")
+	t.check(GroundShape.point(GroundShape.MIN_DRAWN_SHADOW_RADIUS).casts_a_shadow(),
+			"and one of half a pixel does")

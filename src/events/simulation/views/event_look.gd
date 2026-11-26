@@ -86,7 +86,7 @@ var _picture := Vector4i(-1, 0, 0, 0)
 ##
 ## **A term missing from the key is a frozen picture rather than a crash**, which is why the key
 ## below names every time-varying thing `draw()` and `draw_body()` read rather than a plausible
-## subset, and why `_picture_never_settles()` stands beside it for the four cases whose picture is
+## subset, and why `_picture_never_settles()` stands beside it for the three cases whose picture is
 ## a continuous function of the clock and could not be named by a key at all.
 ##
 ## The key is stored on every drawn frame whether or not it asked for a draw, so the *transition out of*
@@ -97,14 +97,16 @@ var _picture := Vector4i(-1, 0, 0, 0)
 ## no redraw, never-settling pictures included, since most of a day's live instances are off screen
 ## and the key's caret was the projection's only caller there. The picture is left as it was, and
 ## the first drawn frame any of it is back inside the box redraws it from what it is now, caret included,
-## before the margin has let any of it onto the screen. The drawing nodes (`move_nodes()`) and the
-## scenery are still moved and shown. Answers whether it asked for a draw.
+## before the margin has let any of it onto the screen. The drawing nodes are still moved and shown
+## (`move_nodes()`); the moving layers of a partly animated picture turn to their frame only while
+## it is in the box (`_update_scenery()`), so the first frame back shows the frame its clock is on.
+## Answers whether it asked for a draw.
 func redraw_if_the_picture_changed() -> bool:
-	_update_scenery()
 	if not _in_the_drawn_view():
 		_picture_is_stale = true
 		move_nodes()
 		return false
+	_update_scenery()
 	var key := _picture_key()
 	var changed := key != _picture or _picture_is_stale
 	_picture = key
@@ -162,19 +164,31 @@ const SWELL_STEPS := 128.0
 ## Whether this row's picture keeps moving between one tick and the next whatever the key says, so
 ## that gating it on the key at all would freeze an animation.
 ##
-## Four, and each is a continuous function of the clock rather than a frame chosen from a set: a
+## Three, and each is a continuous function of the clock rather than a frame chosen from a set: a
 ## **flock**, whose eleven birds each hold their own position, lift and wingbeat phase; a **burning
-## building** and a **firefight**, whose flames and muzzle flashes are sized off `sin(age × k)` and
-## are drawn rather than authored; and an **abduction mid-take**, whose victim slides from her
-## standing offset to the van over `AbductionSpec.taken_over()` seconds. Every one of them is a
-## handful of instances on a day at most, and none of them was ever going to be gated.
+## building**, whose every flame is sized off `sin(age × k)` and is drawn rather than authored, so
+## no part of a street fire's picture holds still but its smoke; and an **abduction mid-take**, whose
+## victim slides from her standing offset to the van over `AbductionSpec.taken_over()` seconds.
+## Every one of them is a handful of instances on a day at most. A **firefight** is not one: its
+## gunmen and their shadow stand still, and only the muzzle flashes, drawn on its slices' fronts,
+## are redrawn on every drawn frame (`RankLook._update_scenery()`).
 func _picture_never_settles() -> bool:
 	if not event.birds().is_empty():
 		return true
 	if event.is_taking_a_victim():
 		return true
-	return _look.picture() == EventDef.Look.BURNING_BUILDING \
-			or _look.picture() == EventDef.Look.FIREFIGHT
+	return _look.picture() == EventDef.Look.BURNING_BUILDING
+
+## Which of its two idle frames the event's own picture shows right now, for the key: false for a
+## look whose own canvas draws no idle frame. **Only the looks that actually read an idle timer
+## carry one.** `idle_is_stepping()` is a function of the clock alone and knows nothing about the
+## row asking, so handing it to every instance would flip every seal's key twice a second for an
+## animation it does not have — the gate would then be paying its whole cost and buying nothing. And
+## a frame its own moving layers show (`EventScenery`: the crash's smoke, the burst main's fountain,
+## a café sitter's lean, the busker's strum, a poster crew's brush) is left out too, since swapping
+## it redraws those layers and nothing of the owner's.
+func _idle_frame_in_key() -> bool:
+	return false
 
 ## Which heading the next draw would pick the event's eight-view sector from.
 ##
@@ -220,20 +234,7 @@ func _picture_key() -> Vector4i:
 	if caret > 0:
 		swell = _share_of_its_peak_now()
 		flashed_off = _mark_is_flashed_off()
-	# **Only the looks that actually read an idle timer carry one.** `idle_is_stepping()` is a
-	# function of the clock alone and knows nothing about the row asking, so handing it to every
-	# instance would flip every seal's key twice a second for an animation it does not have — the
-	# gate would then be paying its whole cost and buying nothing. Smoke and fountain phases
-	# belong to their own small layers, while the steam is already a cloud-only picture.
-	var idle := false
-	if picture == EventDef.Look.CAFE:
-		idle = idle_is_stepping(EventPictures.SITTER_IDLE_PERIOD)
-	elif picture == EventDef.Look.BUSKER:
-		idle = idle_is_stepping(EventPictures.BUSKER_STRUM_PERIOD)
-	elif picture == EventDef.Look.POSTER_CREW:
-		idle = idle_is_stepping(EventPictures.POSTER_CREW_PASTE_PERIOD)
-	elif picture == EventDef.Look.STEAM:
-		idle = idle_is_stepping(EventPictures.STEAM_BILLOW_PERIOD)
+	var idle := _idle_frame_in_key()
 	var flags := 0
 	flags = flags * 2 + (1 if event.is_gone() else 0)
 	flags = flags * 2 + (1 if EventFootprints.hidden_by_its_hold(event) else 0)
@@ -274,16 +275,11 @@ func _picture_key() -> Vector4i:
 			roundi(current_bob() * BOB_STEPS_PER_PX),
 			roundi(swell * SWELL_STEPS))
 
-## The whole frame on the event's own canvas: the body, lifted by its bob, and the caret over it.
+## The whole frame on the event's own canvas: the body, lifted by its bob, and the caret over it,
+## unless a node of the look's own carries the caret over what stands on the event
+## (`_mark_has_its_own_node()`).
 func draw() -> void:
-	# `--skip events` returns before anything below is asked for, so a frame under the flag differs
-	# from an ordinary one by drawing alone — the excitement field, the telegraph and everything
-	# else `EventInstance` does keep running.
-	if _skip_draw:
-		return
-	if event.is_gone():
-		return
-	if EventFootprints.hidden_by_its_hold(event):
+	if _draws_nothing_now():
 		return
 	var bob := current_bob()
 	# Told to `Sprites` as well as to the canvas, for the reason `Sprites.BASE_TRANSFORM_META` gives:
@@ -296,7 +292,21 @@ func draw() -> void:
 	draw_body(event)
 	Sprites.set_base_transform(event, Transform2D.IDENTITY)
 	event.draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
-	_draw_mark()
+	if not _mark_has_its_own_node():
+		_draw_mark(event)
+
+## Whether nothing of the event is drawn this frame: under `--skip events`, once it is gone, and
+## while its hold hides it. `--skip events` answers before anything else is asked, so a frame
+## under the flag differs from an ordinary one by drawing alone — the excitement field, the
+## telegraph and everything else `EventInstance` does keep running.
+func _draws_nothing_now() -> bool:
+	return _skip_draw or event.is_gone() or EventFootprints.hidden_by_its_hold(event)
+
+## Whether the caret is drawn on a node of the look's own rather than on the event's canvas: a
+## figure whose parts stand as children of the event would otherwise paint over it
+## (`FigureLook`). None here.
+func _mark_has_its_own_node() -> bool:
+	return false
 
 ## **A moving event has to look like it is moving.** Without a gait a dog walker at 32px/s — a
 ## tile a second, against the player's three — slides along without a leg moving and reads as
@@ -395,19 +405,36 @@ func _draw_shape_shadow(canvas: CanvasItem, shape: GroundShape, at: Vector2 = Ve
 ## untouched: this is the one function that puts a shadow patch down, so refusing here is the whole
 ## of "no shadow" rather than a special case at each call site.
 func _draw_body_shadow(canvas: CanvasItem, origin := Vector2.ZERO) -> void:
-	if not _look.casts_a_shadow():
-		return
 	if canvas == event.rim():
 		return
-	var pieces := _stance.round_the_origin()
-	if event.drives():
-		var axis := event.solid_axis()
-		if _driven_pieces.is_empty() or axis != _driven_axis:
-			_driven_axis = axis
-			_driven_pieces = _stance.pieces_at(Vector2.ZERO, axis)
-		pieces = _driven_pieces
-	for piece in pieces:
-		piece.ground_shape().draw_shadow(canvas, origin + piece.center(), piece.axis())
+	for outline in shadow_outlines(origin):
+		canvas.draw_colored_polygon(outline, Palette.SHADOW)
+
+## The ground this row's body shadow covers with its node at `origin`, what `_draw_body_shadow()`
+## fills: one `GroundShape` outline per solid piece of its stance, none for a look that casts no
+## shadow (`LookSpec.casts_a_shadow()`). Read by the debug view's shadow layer (`DebugLayers`,
+## through `EventInstance.shadow_outlines()`) at the event's own position, so the layer and the
+## shadow cannot disagree.
+func shadow_outlines(origin := Vector2.ZERO) -> Array[PackedVector2Array]:
+	var outlines: Array[PackedVector2Array] = []
+	if not _look.casts_a_shadow():
+		return outlines
+	for piece in _shadow_pieces():
+		if piece.ground_shape().casts_a_shadow():
+			outlines.append(piece.ground_shape().shadow_outline(origin + piece.center(),
+					piece.axis()))
+	return outlines
+
+## The pieces of its stance a shadow is laid under, round the origin: the stance's own for a body
+## that stands, and for a car that drives laid out again along its heading whenever that turns.
+func _shadow_pieces() -> Array[StandingPiece]:
+	if not event.drives():
+		return _stance.round_the_origin()
+	var axis := event.solid_axis()
+	if _driven_pieces.is_empty() or axis != _driven_axis:
+		_driven_axis = axis
+		_driven_pieces = _stance.pieces_at(Vector2.ZERO, axis)
+	return _driven_pieces
 
 ## Whether this event is worth a mark at all.
 ##
@@ -466,10 +493,11 @@ func _mark_is_flashed_off() -> bool:
 func _mark_colour() -> Color:
 	return Palette.MARK_LETHAL if event.source().caret_strength() == 2 else Palette.MARK_COSTLY
 
-## A caret over anything worth looking at, breathing with what it is currently emitting.
+## A caret over anything worth looking at, breathing with what it is currently emitting, on
+## `canvas`: the event's own, or the node that carries it over a figure's parts.
 ##
 ## What is deliberately *not* here: any drawing of where the danger reaches. Nothing draws a field.
-func _draw_mark() -> void:
+func _draw_mark(canvas: CanvasItem) -> void:
 	if not _wants_a_mark():
 		return
 	# **The flash is the phase**, and the only channel that can carry it: it flashes while
@@ -484,10 +512,10 @@ func _draw_mark() -> void:
 	# pulsing event would read as flickering in and out of existence.
 	var scale := 0.55 + 0.45 * swell
 	var at := Vector2(0.0, _picture_drop_now() - (EventPictures.MARK_HEIGHT + 10.0 * swell))
-	_drawer.caret(event, at, EventPictures.MARK_WIDTH * scale, _mark_colour())
+	_drawer.caret(canvas, at, EventPictures.MARK_WIDTH * scale, _mark_colour())
 	if event.source().caret_strength() == 2:
 		# Doubled, so lethal reads at a glance and never has to be told apart by hue.
-		_drawer.caret(event, at - Vector2(0.0, EventPictures.MARK_WIDTH * scale * 0.85),
+		_drawer.caret(canvas, at - Vector2(0.0, EventPictures.MARK_WIDTH * scale * 0.85),
 				EventPictures.MARK_WIDTH * scale, _mark_colour())
 
 ## The rectangle, in the event's own space, the caret `_draw_mark()` would draw this frame — its one
@@ -517,7 +545,8 @@ func mark_rect() -> Rect2:
 ## **Public though no game class calls it, because nothing else can say what the first frame
 ## covers.** The suites that read it confirm that a thing that arrives is wholly off the screen on
 ## the frame it exists, and the extent they need is the union of the pictures, the shadow, the
-## caret and the halo margin: the caret is drawn straight onto the event (`Sprites.draw_caret()`)
+## caret and the halo margin: the caret is drawn straight onto the event, or onto a node of the look's
+## own over a figure drawn in parts (`Sprites.draw_caret()`),
 ## and a headless run draws no pixels, so no recording drawer holds it, and the pictures a drawer
 ## does hold are the ones named by the look's view for that heading rather than the worst case a
 ## thing that turns can reach. The look is what knows all of it, which the game asks only in
@@ -556,7 +585,8 @@ func draw_body(canvas: CanvasItem) -> void:
 	_draw_figure(canvas)
 
 ## What this family draws for its row, on `canvas`. Nothing here: a row with no picture of its own
-## (`NONE`, and `BURNT_SHELL`, which is drawn on the building it stands against).
+## in the world (`NONE`; `BURNT_SHELL`, which is drawn on the building it stands against; and
+## `EXPLOSION`, drawn only in its badge).
 func _draw_figure(_canvas: CanvasItem) -> void:
 	pass
 
@@ -587,9 +617,21 @@ func _draw_simple(picture: String, canvas: CanvasItem,
 ## car rounds a corner, and a picture anchored on the view would jump at every sector boundary. The
 ## caret over it is lowered by the same amount (`_picture_drop_now()`).
 func body_anchor(view: String) -> Vector2:
+	return Vector2(0.0, _south_reach()
+			+ float(EventPictures.canvas_margins(_look.picture()).get(view, 0.0)))
+
+## How far below its node this event's picture meets the ground: its body's southern reach for a car
+## drawn over its body (`body_anchor()`), zero for every other row, which stands on its node.
+func _ground_line() -> float:
+	if not EventPictures.is_anchored_over_its_body(_look.picture()) or event.ground_shape() == null:
+		return 0.0
+	return _south_reach()
+
+## The southern reach of its body, a capsule laid along `EventInstance.solid_axis()`: its spine's
+## half length times `|axis.y|` plus its rounding.
+func _south_reach() -> float:
 	var shape := event.ground_shape()
-	var south := shape.spine_half_length() * absf(event.solid_axis().y) + shape.rounding_radius()
-	return Vector2(0.0, south + float(EventPictures.canvas_margins(_look.picture()).get(view, 0.0)))
+	return shape.spine_half_length() * absf(event.solid_axis().y) + shape.rounding_radius()
 
 ## How far below its own node the event's picture is drawn this frame — a car's
 ## `body_anchor()`, zero for every other row — so the caret over it stands the same height
@@ -734,7 +776,9 @@ func draw_the_band(_canvas: CanvasItem, _at: Vector2) -> void:
 func _shows_its_nodes(_reach: Rect2) -> bool:
 	return false
 
-## The scenery's frame for this tick, on a look that has scenery.
+## The frame its clock is on for the moving layers of a partly animated picture (`EventScenery`),
+## and whether they are shown, on a look that has them: asked on every drawn frame the event is in
+## the box (`redraw_if_the_picture_changed()`).
 func _update_scenery() -> void:
 	pass
 

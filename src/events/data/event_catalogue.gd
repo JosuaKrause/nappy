@@ -42,11 +42,25 @@ const CAR_ACCIDENT_INTENSITY := 50.0
 const CAR_ACCIDENT_LETHAL_INNER_RADIUS := 56.0
 ## **How long a charger that waits for her warns before he charges**, in seconds, while she stays
 ## inside his one radius (`PursuitSpec.warns_for()`, `EventInstance.warns_by_radius()`; inbox #788 in
-## minty-lemur). If she leaves the radius the warning stops; if she stays, the charge starts. The
-## measurement that keeps it fair is per row (`tests/probes/charger_warning.gd`): a walker who turns
-## back the moment his warning starts is out of his radius before it runs out, and one who stands in
-## it is caught.
-const CHARGER_WARNING := 2.0
+## minty-lemur), and how long a door's guard warns once she has crossed its line
+## (`CheckpointController`). If she leaves the radius the warning stops; if she stays, the charge
+## starts. Shorter than the 2s the player found too long (curly-moose #803), and as short as the
+## radii it is played with allow: the measurement that keeps it fair is per row
+## (`tests/probes/charger_warning.gd`): a walker who turns back the moment his warning starts is out
+## of his radius before it runs out, and so is one he first sees just outside his stand-off, deep
+## inside his radius; one who stands in it is caught. The run plays it through `ChargerTiming`, so
+## `--chargers` can try another.
+const CHARGER_WARNING := 1.75
+## **How far every charger notices her against the radius its row is written with**: a factor on
+## every written notice radius (`ChargerTiming.notice()`), the waiting dog's 130px, the alley
+## robber's 180px (and every man drawn as him), the hunting roadblock's guard's and the hunting
+## vans' `EventDef.HEAT_HUNTS_WITHIN` and the investigating patrol's
+## `EventDef.HEAT_INVESTIGATE_WITHIN`, since the player found 180px way too small for a charger to
+## notice her within, in general (curly-moose #803). Played with `CHARGER_WARNING`, and as wide as
+## that warning lets it be: the warning still runs out with her out of his radius in every walk
+## `tests/probes/charger_warning.gd` takes. The run plays it through `ChargerTiming`, so
+## `--chargers` can try another.
+const CHARGER_REACH := 1.25
 ## How far past a door body's own solid edge the inspection starts (PLAYTEST-57).
 ##
 ## **Stated over the hut, never over her.** Her centre is stopped `obstructs_within() +
@@ -65,13 +79,34 @@ const CHECKPOINT_DETAIN_SECONDS := 2.0
 ## `EventDirector.AHEAD_INTERVAL` band: eight of them over a 180s clock flash the hallway windows
 ## more than once without the basement becoming a drum.
 const FINALE_EXPLOSION_INTERVAL := 22.0
+## **How far the escape city's explosion is heard**, in px: its field's outer radius
+## (`_finale_explosion()`).
+const FINALE_EXPLOSION_HEARD_WITHIN := 520.0
+## **How long the escape city's explosion's bang lasts**, in seconds: a sharp spike is a short
+## `duration` at high peak, since there is no `impulse` field (`CLAUDE.md`, "Things deliberately
+## not done"). What `FINALE_EXPLOSION_SET_OFF_WITHIN` is set against.
+const FINALE_EXPLOSION_SECONDS := 1.2
+## **How near she comes to an escape city's explosion before its place sets it off**, in px
+## (`_finale_explosion()`, `SetOffWatch`): its field's reach and as far again as she runs while
+## its badge is up (`Tuning.WARNING_ALONE_MAX`) and its bang lasts (`FINALE_EXPLOSION_SECONDS`),
+## about 890px. **Heading straight at one, at a walk or a run, she hears none of its bang**, and so
+## a runner is still out of its sight when its badge runs out (the view reaches about 400px ahead
+## of her), and the badge never comes down without its bang. Its bang reaches her only where she
+## comes at it from the side or turns toward it while it bangs.
+const FINALE_EXPLOSION_SET_OFF_WITHIN := FINALE_EXPLOSION_HEARD_WITHIN \
+		+ (Tuning.WARNING_ALONE_MAX + FINALE_EXPLOSION_SECONDS) * Tuning.RUN_SPEED
+## **How far the escape city's explosion is felt as a shake of her view**, in px: half as far again as
+## it is set off (`FINALE_EXPLOSION_SET_OFF_WITHIN`, about 1335px), so that one going off out of her
+## sight shakes the view, a third of the full shake where it goes off furthest, without its noise
+## reaching her (`FINALE_EXPLOSION_HEARD_WITHIN`). Open to the player (minty-lemur #785).
+const FINALE_EXPLOSION_FELT_WITHIN := FINALE_EXPLOSION_SET_OFF_WITHIN * 1.5
 ## How long after the masked man has finished his run before another one comes up the same shaft,
 ## in seconds: he respawns, forcing her to switch sides again.
 ##
 ## **Stated against what one run costs her.** A shaft is three floors of eight tiles (768px) and he
-## runs it at `Tuning.HEAT_HUNTS_SPEED` (130px/s), so a run is about six seconds, and before it he
-## stands at the foot with his hand raised until she comes within the masked man's
-## `NoticeSpec.runs_within()` of him. Six seconds of nothing between runs is long enough that
+## runs it at `Tuning.HEAT_HUNTS_SPEED` (130px/s), so a run is about six seconds, and the next is not
+## in the world until she is within the masked man's `EventDef.sets_off_within()` of the foot of
+## the shaft again. Six seconds of nothing between runs is long enough that
 ## stepping out of a door and straight back in is a real answer, short enough that waiting one
 ## out and strolling down is not. A first number, and the one to move if the shaft reads as
 ## either a corridor with a man in it or a corridor with a man near it.
@@ -154,12 +189,44 @@ const CLOSING_ROADBLOCK_REACH := Tuning.STREET_WIDTH * Tuning.TILE_SIZE * 0.5
 ## cannot walk through it; the field, not the pole, is what a route goes round.
 const MAST_BODY := 6.0
 
+## **How this run plays every charger's warning and notice** (`ChargerTiming`): the shipped timing
+## unless the run asked for another (`use_charger_timing()`). Every row the catalogue builds reads
+## it, so the rows below are built from it.
+static var _chargers: ChargerTiming = ChargerTiming.of(CHARGER_WARNING, CHARGER_REACH)
+
 static var _all: Array[EventDef] = []
 ## Derived rows, keyed `"<id>|<level>"`. See `heated()`.
 static var _hot: Dictionary[String, EventDef] = {}
 ## The building's two derived rows, built once. See `building_fire()` and `explosion_outside()`.
 static var _building_fire: EventDef = null
 static var _explosion_outside: EventDef = null
+
+## **The charger timing the game ships**: every charger warns for `CHARGER_WARNING` and notices her
+## within `CHARGER_REACH` times the radius its row is written with.
+static func shipped_charger_timing() -> ChargerTiming:
+	return ChargerTiming.of(CHARGER_WARNING, CHARGER_REACH)
+
+## **How this run plays every charger's warning and notice**: what the rows are built from, and what
+## a door's crossing warns for (`EventManager` hands `CheckpointController` its `warning()`).
+static func charger_timing() -> ChargerTiming:
+	return _chargers
+
+## **Builds every row from `timing` from now on**: the composition root hands it the run's own at
+## boot (`main.configure()`, `RunConfig.charger_timing()`), before anything is built from a row.
+## A timing that plays every charger as the one in use changes nothing, the timing held included;
+## another forgets every row and derived copy, so the next ask builds and validates them again.
+static func use_charger_timing(timing: ChargerTiming) -> void:
+	if timing.same_as(_chargers):
+		return
+	_chargers = timing
+	_all = []
+	_hot = {}
+	_building_fire = null
+	_explosion_outside = null
+	_lesson_dog = null
+	_task_guard = null
+	_task_guard_sent = null
+	_out_of_the_car = {}
 
 ## Every heat level a run can reach. Progress runs 0..`RESISTANCE_GOAL`; a task completed past the
 ## goal adds nothing, because full heat is the qualification rather than the last errand. A
@@ -202,7 +269,7 @@ static func heated(def: EventDef, level: int) -> EventDef:
 		return def
 	var key := "%s|%d" % [def.id(), level]
 	if not _hot.has(key):
-		_hot[key] = def.at_heat(level)
+		_hot[key] = def.at_heat(level, _chargers)
 	return _hot[key]
 
 ## **The roadblock the escape stands on its streets**: the row at full heat, its guards hunting,
@@ -259,6 +326,11 @@ static func explosion_outside() -> EventDef:
 		var bang := without_its_aftermath(by_id("finale_explosion"))
 		var draft := bang.redraft()
 		draft.field(bang.field().through_walls())
+		# Placed where she stands each time it comes, with its notice over, rather than set off by a
+		# place under a badge as it is on the escape's streets: the windows say it has happened. Its
+		# telegraph is never seen, and is the default's, which holds the contract for its band.
+		draft.warning(WarningSpec.lasting(WarningSpec.DEFAULT_SECONDS))
+		draft.set_off_within(0.0)
 		draft.comes_again(FINALE_EXPLOSION_INTERVAL, bang.comes_again_after())
 		_explosion_outside = draft.build()
 	return _explosion_outside
@@ -1507,15 +1579,19 @@ static func _charging_dog() -> EventDef:
 	# field that lets one row answer two days without ever mutating the shared resource.
 	row.sited(EventDef.SpawnMode.AHEAD_OF_PLAYER)
 	# From the day after the lesson it is a place on the map that waits for her inside its one
-	# radius, 130px, inside its 150px field (inbox #788 in minty-lemur). `EventDef.for_day()` hands
-	# a placement past the switch a copy carrying it.
-	row.switching_after(Tuning.RUN_TAUGHT_DAY, EventDef.SpawnMode.MAP, NoticeSpec.at(130.0))
+	# radius, written 130px and drawn at the run's charger reach (`ChargerTiming.notice()`, 162.5px
+	# as shipped), inside its field (inbox #788 in minty-lemur; curly-moose #803).
+	# `EventDef.for_day()` hands a placement past the switch a copy carrying it.
+	row.switching_after(Tuning.RUN_TAUGHT_DAY, EventDef.SpawnMode.MAP,
+			NoticeSpec.at(_chargers.notice(130.0)))
 	# Wider than the stand-off, a constraint rather than a taste: a pursuer holds its stand-off
 	# through its whole telegraph, so a field narrower than that is a field it is never inside; the
 	# dog would spend the entire warning emitting nothing at her, the `!` over her head would never
 	# go up, and the trace would attribute the mark to "nothing in reach". `validate_pursuit`
-	# refuses the arrangement.
-	row.field(FieldSpec.of(12.0, 26.0, 150.0))
+	# refuses the arrangement. Twenty pixels past its notice, so the meter says it is there before
+	# it has noticed her, growing with the notice (`ChargerTiming.field_reach()`: 182.5px as
+	# shipped).
+	row.field(FieldSpec.of(12.0, 26.0, _chargers.field_reach(150.0, 130.0)))
 	# The chase proper, once it can end the day: `Tuning.PURSUIT_TIME`, a long cap rather than an end
 	# a walk can outlast. Running is what ends it, at `Tuning.PURSUIT_SHAKEN_OFF`'s rate.
 	row.lasts(Tuning.PURSUIT_TIME)
@@ -1529,7 +1605,7 @@ static func _charging_dog() -> EventDef:
 	# From day 4, once it notices her, it warns on the clock every charger that waits for her keeps
 	# and stands in its alert pose rather than closing (woolly-penguin #748); the day-3 dog has no
 	# wait, so its approach is still its telegraph (`EventInstance.is_standing_for_its_notice()`).
-	row.pursuit(PursuitSpec.at(130.0).warning_for(CHARGER_WARNING).standing())
+	row.pursuit(PursuitSpec.at(130.0).warning_for(_chargers.warning()).standing())
 	# Its badge alone, sent at her down her heading, before it is placed just out of sight
 	# (`EventDef.warned_for()`): half a second, the gold timing's off-screen part, and the reason it is
 	# half a second is on `WarningSpec`'s badge notice (`_badge_notice`).
@@ -1785,10 +1861,11 @@ static func _curfew_announce() -> EventDef:
 ## structures. The band adds nothing to that sum and keeps the flag so the boundary kit stays one
 ## source by one rule; see `FieldSpec.as_one_barrier()`.
 ##
-## **The 179px cold field sits under the shared 180px trigger.** `EventDef.at_heat()` widens only
-## the hunting copy's outer radius to `maxf(heard_within(), EventDef.HEAT_HUNTS_WITHIN)`, the
-## smallest fix that holds for every `HUNTS` row, so the cold field is what it was and only the
-## moment the guard starts hunting reaches 180px. `tests/test_heat.gd`'s generic loop
+## **The 179px cold field sits under the shared hunting trigger**, `EventDef.HEAT_HUNTS_WITHIN` at
+## the run's charger reach (225px as shipped). `EventDef.at_heat()` widens only the hunting copy's
+## outer radius to `maxf(heard_within(), notice_within())`, the smallest fix that holds for every
+## `HUNTS` row, so the cold field is what it was and only the moment the guard starts hunting
+## reaches the trigger. `tests/test_heat.gd`'s generic loop
 ## (`_test_a_hunts_row_wakes_up_at_its_own_threshold`) catches a row whose field sits under the
 ## trigger; this one is the row that found it.
 static func _roadblock() -> EventDef:
@@ -1839,7 +1916,7 @@ static func _roadblock_draft(id: String, reach: float) -> EventDraft:
 	# this post and the masked man are the same figure, and warns at his post with his hand raised
 	# (woolly-penguin #748) on the clock every charger that waits for her keeps.
 	var chase := PursuitSpec.at(0.0).standing() \
-			.warning_for(CHARGER_WARNING).leaving_its_body().over_the_street().round_buildings()
+			.warning_for(_chargers.warning()).leaving_its_body().over_the_street().round_buildings()
 	row.hunt(HuntSpec.pursuing(chase, LethalSpec.within(MASKED_MAN_REACH)))
 	row.spanning_the_street()
 	# **Its weight on a kind of ground** (`EventDraft.weighed_on()`; `docs/EVENTS.md`, "The
@@ -1902,21 +1979,21 @@ static func _abduction() -> EventDef:
 ##
 ## Three numbers for three sentences, in order:
 ##
-## - **On sight.** 16 over a 200px field, so the far end of an alley is already expensive and the
-##   meter is what tells you he is there, before he has noticed her at all.
+## - **On sight.** 16 over a field twenty pixels past his notice (245px as shipped), so the far end
+##   of an alley is already expensive and the meter is what tells you he is there, before he has
+##   noticed her at all.
 ## - **Getting close is day ending.** Ending the day inside 26px, and it has to be **reachable**: he
 ##   carries no body, because a pursuer with one is a moving wall, and because a body that reaches
 ##   the inner radius means the kill can never fire.
-## - **Get close and he comes at you.** `EventDef.notice_within()` 180, his one radius:
-##   inside that he
-##   stands up, turns to face her and walks at her slowly, at 40px/s (`PursuitSpec.walk_speed()`),
-##   holding at his 116px stand-off, for his 2.0s warning (`PursuitSpec.warns_for()`; inbox #788 in
-##   minty-lemur), and if she is still inside his radius once it has run he lunges, and chases at
-##   130px/s until she has shaken him off. **Turning round from his warning is an answer**: she
-##   outwalks his slow walk, and once she is outside his radius he stops where he is and waits
-##   there (inbox #764 in minty-lemur). Once he has lunged, walking away does not work and running
-##   away does, which is `charging_dog`'s contract arriving in act III as a *place* rather than a
-##   moment.
+## - **Get close and he comes at you.** `EventDef.notice_within()`, his one radius, 180px at the
+##   run's charger reach (225px as shipped): inside that he stands up, turns to face her and walks
+##   at her slowly, at 40px/s (`PursuitSpec.walk_speed()`), holding at his 116px stand-off, for his
+##   warning (`CHARGER_WARNING`, `PursuitSpec.warns_for()`; inbox #788 in minty-lemur), and if she
+##   is still inside his radius once it has run he lunges, and chases at 130px/s until she has
+##   shaken him off. **Turning round from his warning is an answer**: she outwalks his slow walk,
+##   and once she is outside his radius he stops where he is and waits there (inbox #764 in
+##   minty-lemur). Once he has lunged, walking away does not work and running away does, which is
+##   `charging_dog`'s contract arriving in act III as a *place* rather than a moment.
 ##
 ## The alley is the warning, and it is not the only one.
 static func _alley_robbery() -> EventDef:
@@ -1937,8 +2014,10 @@ static func _alley_robbery() -> EventDef:
 	# rather than a taste: he may not notice her from outside his own field, because the meter is
 	# the only thing that says a stranger in an alley is worth crossing the road for. The twenty
 	# pixels between this and his notice are the row's first sentence, **on sight**, with
-	# somewhere to happen, and his slow walk is its second.
-	row.field(FieldSpec.of(16.0, 26.0, 200.0))
+	# somewhere to happen, and his slow walk is its second; they grow with his notice
+	# (`ChargerTiming.field_reach()`).
+	var written := _robber_field()
+	row.field(written.reaching(_chargers.field_reach(written.heard_within(), 180.0)))
 	# Read only by the pursuit contract's notice clause (`Tuning.validate_pursuit()`): no robber's
 	# notice runs on it. One who notices her by sight warns for his `PursuitSpec.warns_for()`
 	# (`EventInstance.warns_by_radius()`), and day 13's guard set on her by the task has the task's
@@ -1958,21 +2037,24 @@ static func _alley_robbery() -> EventDef:
 			# **He charges once his warning has run with her still inside his radius**, on the
 			# clock every charger that waits for her keeps (inbox #788 in minty-lemur), walking at
 			# her and holding at his stand-off while he warns.
-			.warning_for(CHARGER_WARNING))
+			.warning_for(_chargers.warning()))
 	# Outside his stand-off (116px) and inside his field, which leaves room for both halves of the
 	# row: far enough out that his notice walk is seen, near enough that she has felt him before he
-	# decides anything about her (inbox #761 in minty-lemur). 64px past his stand-off at the slow
-	# walk below is about half a second of him walking for a walker coming in (64 / (40 + 92)) and
-	# 1.6s for one who stops at the edge, and 180px is half the view's height; he notices her only
-	# once his warning would stand in her view (`EventInstance._would_stand_in_her_view()`). 180px is
-	# his one radius: he charges if she is still inside it once his warning has run
-	# (`PursuitSpec.warns_for()`, below).
+	# decides anything about her (inbox #761 in minty-lemur). Written 180px and drawn at the run's
+	# charger reach (`ChargerTiming.notice()`, 225px as shipped), as every charger's is
+	# (curly-moose #803): 109px past his stand-off at the slow walk below is under a second of him
+	# walking for a walker coming in (109 / (40 + 92)) and 2.7s for one who stops at the edge; he
+	# notices her only once his warning would stand in her view
+	# (`EventInstance._would_stand_in_her_view()`). That is his one radius: he charges if she is
+	# still inside it once his warning has run (`PursuitSpec.warns_for()`, below). The resistance
+	# sites a chalk mark's guard and day 13's task guard, who are this row, from the radius drawn
+	# (`ResistanceDirector._guard_position()`).
 	#
 	# The trap: with a chase that ends at a *distance*, a trigger at or past that distance is a
 	# pursuit that loses interest the instant it starts, and she can stroll away from him every
 	# time. `Tuning.PURSUIT_SHAKEN_OFF` ends a chase at a rate instead, so no trigger distance can
 	# reproduce it.
-	row.notice(NoticeSpec.at(180.0))
+	row.notice(NoticeSpec.at(_chargers.notice(180.0)))
 	# And he walks off when he has lost her, rather than being deleted where he stood.
 	row.leaves_at(100.0)
 	row.lethal(LethalSpec.at_its_core())
@@ -2011,6 +2093,12 @@ static func _alley_robbery() -> EventDef:
 ## once is more than a walker should answer is
 ## `docs/review/2026-09-25-hand-a-note-to-the-man.md`'s question, not settled here.
 ##
+## **The alley robber's field as written**: 16 over a 26 to 200px field, around his written 180px
+## notice. The waiting robber draws its outer edge at the run's charger reach
+## (`ChargerTiming.field_reach()`); every man sent at her charging keeps it as written.
+static func _robber_field() -> FieldSpec:
+	return FieldSpec.of(16.0, 26.0, 200.0)
+
 ## **His own look, `ROBBER_GIVING_CHASE`, drawing the alley robber's own pictures**, as `door_guard`
 ## draws a roadblock's guard: he never waits, so it is only ever the lunge, and the badge is the one
 ## view of it `ROBBER` does not already stand for.
@@ -2020,7 +2108,11 @@ static func _robber_giving_chase() -> EventDef:
 	row.scripted_on(0, 2)
 	row.look(LookSpec.of(EventDef.Look.ROBBER_GIVING_CHASE))
 	row.body(BodySpec.footprint(alley.ground_shape()).walked_through().going_on())
-	row.field(alley.field())
+	# The waiting robber's field as written, never as the run's charger reach draws it: the twenty
+	# pixels it keeps past his notice are for a man who waits for her, and this one arrives already
+	# charging, with no notice to feel him before. The charger timing moves notices and warnings
+	# (curly-moose #803); his cost moves only on the player's word (inbox #1278 in olive-ferret).
+	row.field(_robber_field())
 	# The day-3 dog's own timing, read off its row: its badge alone, its approach and its chase.
 	var dog := _charging_dog()
 	row.warning(WarningSpec.lasting(0.0)
@@ -2188,15 +2280,15 @@ static var _task_guard_sent: EventDef = null
 
 ## A building goes in the night. Enormous, static, and it closes the block.
 ##
-## **The `HUNTS` rung `abduction` climbs, but it hunts on foot**
-## (`HuntSpec.letting_out()`). Below `EventDef.HEAT_HUNTS_LEVEL` it is untouched: a closed
-## block and nothing more. At and above it, the derived copy `investigates`: the van stays where it
-## stands, and the moment she is within `EventDef.HEAT_HUNTS_WITHIN` (180px) of it along a clear
+## **The `HUNTS` rung `abduction` climbs, but it hunts on foot** (`HuntSpec.letting_out()`). Below
+## `EventDef.HEAT_HUNTS_LEVEL` it is untouched: a closed block and nothing more. At and above it,
+## the derived copy `investigates`: the van stays where it stands, and the moment she is within
+## `EventDef.HEAT_HUNTS_WITHIN` (at the run's charger reach, 225px as shipped) of it along a clear
 ## line it lets two men out at its door on her side, who pursue her under the pursuit contract
 ## (`EventCatalogue.out_of_the_car()`'s hunting copy, a guardsman on day 10) and whose catch ends
 ## the day (inbox #669 in coral-lark). Men who give up or run out their chase walk back to the van,
-## which stands over its block for the rest of the day. The van itself never ends the day, cold
-## or hot. See `EventDef.at_heat()`.
+## which stands over its block for the rest of the day. The van itself never ends the day, cold or
+## hot. See `EventDef.at_heat()`.
 ##
 ## **It shares the patrol-and-van threshold rather than minting a third constant, and the calendar
 ## is why that is load-bearing.** The resistance's tasks before it fall on days 6 to 9, so on day
@@ -2242,10 +2334,11 @@ static func _military_convoy() -> EventDef:
 	# `Tuning.OFFSCREEN_WARNING_MIN`.
 	row.warning(WarningSpec.lasting(4.43))
 	row.route(RouteSpec.at(120.0, RouteSpec.Kind.ALONG_STREET).up_to_tiles(50))
-	# **Sent ahead of her on an ordinary day** (`EventDraft.sent_ahead()`; inbox #1460 in silky-lemur, "the same for
-	# [...] the convoy"; "just spawn in the car just ahead of the player"): warned of first, its badge
-	# alone for a second, then created in the lane beside her just out of sight up the road ahead of
-	# her, as day 13's column is. The escape's trucks are the planned ones.
+	# **Sent ahead of her on an ordinary day** (`EventDraft.sent_ahead()`; inbox #1460 in
+	# silky-lemur, "the same for [...] the convoy"; "just spawn in the car just ahead of the
+	# player"): warned of first, its badge alone for a second, then created in the lane beside
+	# her just out of sight up the road ahead of her, as day 13's column is. The escape's trucks
+	# are this row too, handed to the director by its plan (`DaySpec.hands_the_director()`).
 	row.sent_ahead(SentAhead.warned_first())
 	row.drawn(2.0, 1)
 	return row.build()
@@ -2632,10 +2725,11 @@ static func _checkpoint_post() -> EventDef:
 ##
 ## **He charges at once** (`PursuitSpec.Start.CHARGES_AT_ONCE`): his warning came before he was set
 ## on her. From the frame she crosses the door's line, the guard at the hut across the road from her
-## raises his hand (`EventInstance.is_its_guard_warning()` is then true), or an alley post's
-## guard; back across before `CheckpointController.CROSSING_WARNING` has run, nobody comes, and still across once it has, this
-## man steps out of that hut or post and charges from his first frame (inbox #788 in minty-lemur).
-## The answer is the warning, go back or go on running, which `tests/test_checkpoints.gd` walks.
+## raises his hand (`EventInstance.is_its_guard_warning()` is then true), or an alley post's guard;
+## back across before his warning (`ChargerTiming.warning()`) has run, nobody comes, and still
+## across once it has, this man steps out of that hut or post and charges from his first frame
+## (inbox #788 in minty-lemur). The answer is the warning, go back or go on running, which
+## `tests/test_checkpoints.gd` walks.
 static func _door_guard() -> EventDef:
 	var row := EventDraft.new("door_guard")
 	row.scripted_on(0, 3)
@@ -2660,23 +2754,34 @@ static func _door_guard() -> EventDef:
 ## The bang she hears and does not see: explosions happen off screen (but loud enough to cause
 ## excitement), leaving craters on the street.
 ##
-## **It draws nothing at all**: there is no burst on the street, only the noise and the hole
-## afterwards. `Look.NONE`, the fourth row in the catalogue with no picture, alongside the
-## playground and the two loudspeaker sources, so it needs no shape either, and
-## `tests/test_events.gd` names all four by id.
+## **Off screen, announced by its badge** *(minty-lemur #785: explosions have to happen off-screen
+## with a warning sign showing the explosion; craters already there when she walks towards them)*.
+## A place sets it off (`EventDraft.set_off_within()`, `SetOffWatch`): the plan the escape's bag put
+## on the road is not in the world until she comes within `FINALE_EXPLOSION_SET_OFF_WITHIN` of it,
+## far enough out that heading straight at it, walking or running, she hears none of its bang. Then its screen-edge badge goes up, the mushroom cloud
+## (`EventDef.Look.EXPLOSION`, drawn only in the badge, `LookSpec.drawn_only_in_its_badge()`),
+## pointing at the place, for `Tuning.WARNING_ALONE_MAX`; and once that has run it goes off there,
+## its telegraph spent, only while everything it puts on the screen there is out of her sight, the
+## crater it leaves included (`EventFootprints.footprint_of()`), so no bang and no crater is ever
+## in her view. It comes all at once (`EventDef.comes_all_at_once()`): walking into the place does
+## not set it off at once (`EventDef.may_be_set_off_at_once()`), since the badge is the whole of
+## its notice, and the badge goes up only where it cannot come down without its bang
+## (`SetOffWatch`). The badge stays on it until it is over (`BadgeModel`).
 ##
-## **Off screen is bought with the streaming radius rather than with a rule.** A `MAP` placement
-## comes into the world at `Tuning.EVENT_STREAM_RADIUS` (900px), where the camera at zoom 2 sees
-## 640×360, so an explosion begins its telegraph roughly two and a half screens away, spends
-## its telegraph (`telegraphs_for()`) + `duration` (3.7s, about 340px of walking) getting to its bang, and is over
-## while it is still well outside the view.
+## **The crater comes as it goes off** (`Aftermath.then()`, `EventStreaming.set_off()`), at its
+## place on the tick its out-of-sight check passed, so a crater she walks toward is standing before
+## she can see it.
 ##
-## **The radii are sized against that distance and not against taste.** outer radius 520 reaches
+## **The sky lights up as it goes off** (`LookSpec.flashing_as_it_goes_off()`, `BlastLight`), and
+## the screen shakes a little by how loud it lands where she is.
+##
+## **The radii are sized against the screen and not against taste.** Outer radius 520 reaches
 ## a screen and a half; inner radius 300 puts the near half of that band at close to full
 ## strength, so a burst just beyond the screen edge (about 360px on the long axis) still lands
 ## roughly 22 of its 24 points per second on her. A narrower band would be an explosion she could
-## be next to and not hear. Its telegraph (`telegraphs_for()`) is the contract's own minimum for that band,
-## `(520 − 300) / WALK_SPEED` = 2.39s, with the ordinary margin on top.
+## be next to and not hear. Its fairness is its badge's (`EventDef.warning_time()`): the flat
+## second a warning first owes (`Tuning.OFFSCREEN_WARNING_MIN`), since it stands still and is heard
+## where it goes off.
 ##
 ## **Not lethal, and that is the tone rule rather than an omission** (`docs/NARRATIVE.md`: *the
 ## danger is always noise*). The thing that ends a section is being taken; an explosion wakes the
@@ -2684,14 +2789,14 @@ static func _door_guard() -> EventDef:
 static func _finale_explosion() -> EventDef:
 	var row := EventDraft.new("finale_explosion")
 	row.scripted_on(0, 4)
-	row.look(LookSpec.none())
+	row.look(LookSpec.of(EventDef.Look.EXPLOSION).drawn_only_in_its_badge().casting_no_shadow()
+			.flashing_as_it_goes_off())
 	row.body(BodySpec.none().unmet().parked())
 	row.ground([GameEnums.TileType.ROAD])
-	row.field(FieldSpec.of(24.0, 300.0, 520.0))
-	row.warning(WarningSpec.lasting(2.5))
-	# Short and over: a sharp spike is a short `duration` at high peak, since there is no
-	# `impulse` field (`CLAUDE.md`, "Things deliberately not done").
-	row.lasts(1.2)
+	row.field(FieldSpec.of(24.0, 300.0, FINALE_EXPLOSION_HEARD_WITHIN))
+	row.warning(WarningSpec.lasting(Tuning.WARNING_ALONE_MAX).warned_first())
+	row.set_off_within(FINALE_EXPLOSION_SET_OFF_WITHIN)
+	row.lasts(FINALE_EXPLOSION_SECONDS)
 	row.aftermath(Aftermath.none().then("impact_crater"))
 	return row.build()
 
@@ -2730,12 +2835,16 @@ static func _impact_crater() -> EventDef:
 ## letting him go past. It is `loose_dog`'s contract indoors: a thing coming down the corridor
 ## you are in, answered by leaving the corridor.
 ##
-## **Faster than a walk, so it cannot be out-walked**, which makes stepping aside the answer rather
-## than a preference, and makes the telegraph contract ask for a long one: at 130px/s it prices the
-## escape as the field's whole forward reach rather than its falloff band, so outer radius 120 at
-## `TELEGRAPH_HARD_FAIL_MARGIN` needs 3.53s and its telegraph (`telegraphs_for()`) carries a little over it. That
-## number is read only by the contract: he warns while she is in the stairwell and runs on a
-## distance, with no clock (below).
+## **Placed when he should appear, warned first** *(minty-dolphin #852: "Stair guard could as well
+## be placed when it should appear instead of when entering"; "The stair guard can become a charger
+## that is triggered by a location if necessary")*: a place on the stairwell sets him off
+## (`EventDraft.set_off_within()`), and until she reaches it he is not in the world. Walking into
+## it, she sets him off at once (`EventDef.as_set_off_at_once()`): his badge goes up, pointing at
+## the foot of the shaft he comes from, and he comes into the world there on the same tick, running
+## (`SetOffWatch`). Already inside it when he may come, or arriving in it through a door, his badge
+## is up alone for his own warning first, `Tuning.WARNING_ALONE_MAX`, so he never runs at her with
+## no warning at all (inbox #788 in minty-lemur). Faster than a walk, so it cannot be out-walked,
+## which makes stepping aside the answer rather than a preference.
 ##
 ## **No body**, like every other mobile row: a moving wall on a stairwell one tile wide would pin her
 ## against the shaft. What stops her walking into him is that it ends the section.
@@ -2745,45 +2854,33 @@ static func _masked_pursuer() -> EventDef:
 	row.look(LookSpec.of(EventDef.Look.MASKED_PURSUER))
 	row.body(BodySpec.footprint(GroundShape.point(9.0)).walked_through().going_on())
 	row.field(FieldSpec.of(18.0, MASKED_MAN_REACH, 120.0))
-	row.warning(WarningSpec.lasting(3.6).holding_still())
+	row.warning(WarningSpec.lasting(Tuning.WARNING_ALONE_MAX).warned_first())
 	row.route(RouteSpec.at(Tuning.HEAT_HUNTS_SPEED))
-	# **He waits at the foot of the shaft until she is in it**, rather than running his line the
-	# moment the section begins and being gone before she has come down a floor.
-	# A row that waits for her but does not pursue (`EventDef.waits_for_her()`,
-	# `EventDef.pursues()`) stands unclocked until she is in range and then runs its ordinary
-	# path, which is `alley_mouse`'s shape at a stairwell's scale. 900px is the shaft's own
-	# height (three floors of eight tiles is 768px) with room over it, so he notices her the
-	# moment she is anywhere in the same stairwell and never from the hallway two parts away.
-	row.notice(NoticeSpec.at(900.0)
-			# And the warning is spent standing, not approaching: a man already running when he first
-			# becomes visible has given no notice at all.
-			# **He warns while she is in the stairwell, and runs the moment she is within this of him, with
-			# no warning clock**: the one waiting charger outside the one-radius rule (inbox #788 in
-			# minty-lemur: no delay), since his warning is off screen and a delay only lets a walker reach
-			# the door. She has to run to the first floor's door (inbox #764 in minty-lemur) rather than walk
-			# down to it and out to the other shaft without meeting him (inbox #782 in minty-lemur: a bigger
-			# radius, and him not moved). No clock, so his telegraph (`telegraphs_for()`) above is read only by the
-			# telegraph contract. 426px is measured on the escape as built
-			# (`tests/probes/escape_stairwell_guard_trigger.gd`, stepped as the game steps, a 30Hz physics
-			# tick that moves her, then steps him and checks the catch): coming down from the second floor's
-			# door she meets it at the head of the second flight, and making for the first floor's door from
-			# there a runner gets through on every line onto the flight, while a walker is caught holding
-			# plain left from the row level with the flight's head tread or the row below it, or down-left
-			# from the landing tile between the two flights. **A walker holding plain left from that landing
-			# tile gets through**, and the margins are thin against his 23.5px catch
-			# (`MASKED_PURSUER_CATCH`): a runner who walks until he runs, then runs, turning plain left at
-			# row 11's centre, comes within 24.6px of him on the tick and clears it by 1.1px in the
-			# hand-stepped probe, and clears it on the real body, which slides along walls, in
-			# `tests/test_interior_masked_man.gd`; the walker down-left from the landing tile comes within
-			# 22.7px, 0.8px inside; a runner who runs the whole way is 33px from him at the closest. In the
-			# stairwell his warning is off screen, since the view reaches 180px from her and he starts about
-			# 400px below; only the edge badge shows his charge, from the frame he runs (`DangerEdge`). The
-			# player accepted both (inbox #782 in minty-lemur).
-			.running_within(426.0))
+	# **He comes the moment she is within this of the foot of his shaft**, rather than running his
+	# line the moment the section begins and being gone before she has come down a floor. She has
+	# to run to the first floor's door (inbox #764 in minty-lemur) rather than walk down to it and
+	# out to the other shaft without meeting him (inbox #782 in minty-lemur: a bigger radius, and
+	# him not moved). 426px is measured on the escape as built
+	# (`tests/probes/escape_stairwell_guard_trigger.gd`, stepped as the game steps, a 30Hz physics
+	# tick that moves her, then steps him and checks the catch): coming down from the second floor's
+	# door she reaches it at the head of the second flight, and making for the first floor's door
+	# from there a runner gets through on every line onto the flight, while a walker is caught
+	# holding plain left from the row level with the flight's head tread or the row below it, or
+	# down-left from the landing tile between the two flights. **A walker holding plain left from
+	# that landing tile gets through**, and the margins are thin against his 23.5px catch
+	# (`MASKED_PURSUER_CATCH`): a runner who walks until he runs, then runs, turning plain left at
+	# row 11's centre, comes within 24.6px of him on the tick and clears it by 1.1px in the
+	# hand-stepped probe, and clears it on the real body, which slides along walls, in
+	# `tests/test_interior_masked_man.gd`; the walker down-left from the landing tile comes within
+	# 22.7px, 0.8px inside; a runner who runs the whole way is 33px from him at the closest. In the
+	# stairwell the foot of his shaft is off screen, since the view reaches 180px from her and the
+	# foot is 426px below; his badge is what shows him coming, from the tick he is set off
+	# (`DangerEdge`). The player accepted both (inbox #782 in minty-lemur).
+	row.set_off_within(426.0)
 	row.lethal(LethalSpec.within(MASKED_PURSUER_CATCH))
-	# **One of him at a time, and there is always another**: a fresh one comes up the shaft this long
-	# after the last has run out of the top of it, so every run waits, warns and runs exactly as the
-	# first did (`EventManager`'s repeats).
+	# **One of him at a time, and there is always another**: a fresh one may come up the shaft this
+	# long after the last has run out of the top of it, set off by the same place as the first
+	# (`EventManager`'s repeats).
 	row.comes_again(0.0, FINALE_PURSUER_RESPAWN_SECONDS)
 	return row.build()
 

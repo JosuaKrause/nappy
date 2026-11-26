@@ -33,15 +33,17 @@ extends RefCounted
 ## - **Off the streets every marble takes one location**: a junction box, an alley's thirds, a
 ##   park's or a square's cells, every row the size of one.
 ##
-## - **Where the walk stands one event a unit** (`one_marble_a_unit`,
-##   `DaySpec.stands_one_event_a_street()`), the unit draws one marble: a row's stands alone in
-##   it and an empty one leaves it with nothing. A row the bag's `accepts` refuses stays in the bag and
-##   the bag offers the next marble inside the same draw, so a unit whose first row is refused
-##   draws again among the marbles left.
+## - **Where the walk draws a set number of marbles a unit** (`marbles_a_unit`,
+##   `DaySpec.marbles_a_street()`), the unit draws that many and stops: with one, a row's stands
+##   alone in it and an empty one leaves it with nothing; with two, a row and another, a row and an
+##   empty one, or two empty ones. A row the bag's `accepts` refuses stays in the bag and the bag
+##   offers the next marble inside the same draw, so a unit whose first row is refused draws again
+##   among the marbles left.
 ##
-## A row handed to her walk (`EventDef.is_handed_to_her_walk()`, the poster crew) is drawn and laid
-## as any other and kept with no position, for her walk to site (`_as_drawn()`), so the rows laid
-## after it are judged without it. Every location of the unit left open, or holding a beat her
+## A row handed to her walk (`EventDef.is_handed_to_her_walk()`, the poster crew) or to the director
+## (`hands_to_the_director`, the escape's trucks) is drawn and laid as any other and kept with no
+## position, for her walk or the director to site (`_as_drawn()`), so the rows laid after it are
+## judged without it. Every location of the unit left open, or holding a beat her
 ## walk stood on it, ends recorded as drawn.
 ##
 ## Handed the day's locations, which record each draw, the rows the bag's marbles name
@@ -56,7 +58,9 @@ const SIZE_ORDER := {
 var _locations: DayLocations
 var _rows: Dictionary
 var _ground: LocationGround
-var _one_marble_a_unit := false
+var _marbles_a_unit := 0
+## `(row: EventDef) -> bool`: whether a drawn row is the director's to send ahead of her.
+var _hands_to_the_director := Callable()
 
 ## One row of a layout: the row, what it takes of its unit, the location it stands in and its
 ## event as the location holds it.
@@ -85,15 +89,17 @@ class _Placing extends RefCounted:
 	func plan() -> EventPlan:
 		return _plan
 
-## `locations` records each draw (`DayLocations.record()`); `rows` the rows the
-## bag's marbles name (`id -> EventDef`); `ground` the judge; `one_marble_a_unit`, the unit
-## draws one marble and stops (the class comment).
+## `locations` records each draw (`DayLocations.record()`); `rows` the rows the bag's marbles
+## name (`id -> EventDef`); `ground` the judge; `marbles_a_unit`, how many marbles the unit
+## draws before it stops, zero for as many as its room holds (the class comment);
+## `hands_to_the_director`, `(row: EventDef) -> bool`, says which drawn rows the director sends (`DaySpec.hands_the_director()`), none by default.
 func _init(locations: DayLocations, rows: Dictionary, ground: LocationGround,
-		one_marble_a_unit := false) -> void:
+		marbles_a_unit := 0, hands_to_the_director := Callable()) -> void:
 	_locations = locations
 	_rows = rows
 	_ground = ground
-	_one_marble_a_unit = one_marble_a_unit
+	_marbles_a_unit = marbles_a_unit
+	_hands_to_the_director = hands_to_the_director
 
 ## **Draws `unit`'s marbles from `bag` and lays its rows out**, judged among `among`: answers the
 ## events placed, in the order drawn, a row handed to her walk among them with no position. Every
@@ -121,6 +127,7 @@ func draw(unit: PlacementUnit, bag: ViewBag, among: Array[EventPlan]) -> Array[E
 	var weight := func(id: String) -> float:
 		var def: EventDef = _rows.get(id)
 		return _weight(def, unit, open, scales) if def else 0.0
+	var made := 0
 	while room.is_open():
 		var marble := bag.draw(accepts, weight)
 		if marble == ViewBag.EMPTY:
@@ -131,7 +138,8 @@ func draw(unit: PlacementUnit, bag: ViewBag, among: Array[EventPlan]) -> Array[E
 			var trial: Array[_Placing] = trials[marble]
 			laid.assign(trial)
 			room.take(_share_of(def, street))
-		if _one_marble_a_unit:
+		made += 1
+		if _marbles_a_unit > 0 and made >= _marbles_a_unit:
 			break
 	for placing in laid:
 		_locations.record(placing.location(), placing.plan())
@@ -308,9 +316,11 @@ static func _open_of(unit: PlacementUnit) -> Array[Location]:
 	return open
 
 ## `plan` as its location holds it: a row handed to her walk (`EventDef.is_handed_to_her_walk()`,
-## the poster crew) with no position (`EventScheduler.owed_to_her_walk()`), for her walk to site;
-## any other plan as drawn.
-static func _as_drawn(plan: EventPlan) -> EventPlan:
-	if plan.is_handed_to_her_walk():
+## the poster crew) or to the director with no position (`EventScheduler.owed_to_her_walk()`), for
+## her walk or the director to site; any other plan as drawn.
+func _as_drawn(plan: EventPlan) -> EventPlan:
+	var row := plan.row()
+	if plan.is_handed_to_her_walk() \
+			or (_hands_to_the_director.is_valid() and _hands_to_the_director.call(row)):
 		return EventScheduler.owed_to_her_walk(plan)
 	return plan

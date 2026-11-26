@@ -85,7 +85,8 @@ func start_day(day: int, tree: RouteTree) -> void:
 		if plan.is_sited_from_her_walk() and not plan.is_placed():
 			_siting_for(day, plan)
 	_director.start_day(day, _walk.plans(), world.run().calendar().day_rng(day, "ahead"),
-			_spec.director_sends(), _siting, world.run().resistance().progress())
+			_spec.director_sends(), _siting, world.run().resistance().progress(),
+			_spec.handout_wait_share())
 
 ## **The day's placement context for a row left for her walk to site** (`plan`), made the first
 ## time one needs it, over the day's tree (`start_day()`), and its first attempt's one-time scans
@@ -130,7 +131,7 @@ func start_a_given_walk(day: int, tree: RouteTree = null) -> void:
 	if _director:
 		_director.start_day(day, _walk.plans(),
 				world.run().calendar().day_rng(day, "finale-ahead"),
-				_spec.director_sends())
+				_spec.director_sends(), null, 0, _spec.handout_wait_share())
 
 ## Forwards to `EventDirector.owe_the_return()` the moment the baby is asleep and the day turns to
 ## `RETURNING`, for the day `day` at the run's heat.
@@ -606,7 +607,7 @@ func _warn_in_its_lane(def: EventDef, her: Vector2, sited: PackedVector2Array) -
 		_spawner.spawn_warned(def, path).go_on_by(_director.way_on())
 		world.trace().note("ahead",
 				"%s comes down the road at her from ahead of her, %.0fpx up it, at %s, its warning over"
-				% [def.id(), place.distance_to(at), RunTrace.tile(world.map().world_to_tile(at))])
+				% [def.id(), path[0].distance_to(at), RunTrace.tile(world.map().world_to_tile(at))])
 		return true
 	_warnings.warn_first(def, her, where, arrive)
 

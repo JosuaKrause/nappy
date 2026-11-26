@@ -132,14 +132,14 @@ The events:
   (`VisitCounter._charger_counter_name()` names it, `EventInstance.counts_a_charge()` says which):
   - `-warned` — its warning goes up (`EventBus.pursuit_warned`), the level below the charge: a
     charger that waited for her noticing her (the dog that waits past the teaching day, the alley
-    robber and the guards drawn from him, the hunting roadblock's guard), the masked man's raised
-    hand at the foot of the escape's stairwell, and the raised hand of the man a vehicle lets out
+    robber and the guards drawn from him, the hunting roadblock's guard), the masked man on the escape's
+    stairs on the tick he comes, with his charge, since his badge was his warning, and the raised hand of the man a vehicle lets out
     and of day 13's guard set on her in her view — each once per instance — and the checkpoint
     guard's, `door-guard-warned`, each time the guard at a hut or an alley's post raises his hand
     from her crossing of the door's line (`CheckpointController.warn_at_the_doors()`).
   - `-chased` — its charge (`EventBus.pursuit_began`), never its warning: a waiting charger when
     its warning has run with her still inside its radius; a vehicle's man and day 13's guard in her
-    view when their raised hand has been up its second; the masked man when he starts his run; the
+    view when their raised hand has been up its second; the masked man from his first tick; the
     checkpoint guard from his first frame, once the crossing's warning has run with her still
     across, at a boom or an alley's door alike; the day-3 dog, whose approach is its telegraph, and
     every charger sent from off screen, from their first frame.
@@ -255,6 +255,19 @@ The events:
   tear's own `poster-torn`, the moment his warning goes up (`EventManager.send_a_pursuer()`): one
   per pursuer sent. A marble drawn while one is still on his way or after her sends nobody and
   nothing here, and nothing is sent during the escape.
+- `nappy-day-1-first-obstacle` / `nappy-day-1-first-crossing` / `nappy-day-1-park-reached` /
+  `nappy-day-1-asleep` — day one's milestones, so `tools/goatcounter.sh` shows where a new player
+  stops: the first event she has left behind (`EventBus.encounter_passed`: an encounter she had
+  **seen**, above, that is over while the day goes on, because the instance has been out of sight
+  for `EncounterWatch.ENCOUNTER_GAP` or is gone; the day ending on it is not a pass, and she may
+  have turned back, so it reads "saw an event and moved on", not "got past it"), the first step onto a
+  road or crossing (`EventBus.road_entered`), the first onto calm ground of any kind, park, forest,
+  square, courtyard or alley (`EventBus.calm_ground_entered`), and the baby put to sleep
+  (`EventBus.return_phase_started`). `DayController.tick()` emits the two ground ones as she
+  steps onto the ground. Each is sent **once per attempt at day 1** — a fresh day 1, a retry after a lost day
+  and a return to checkpoint day 1 each begin one (the run flow's `day_started`) — and on no other day. The last
+  milestone, home, is the existing `nappy-day-1-won`. *(striped-marten, the player: "agree with the
+  goat measuring", curly-moose #819.)*
 - `nappy-day-N-restarted` — a held restart, on the day it abandoned. Not fired for the ordinary
   return to the title after an ending already reported through `nappy-ending-*`.
 - `nappy-ending-bad` / `nappy-ending-neutral` / `nappy-ending-good` — the ending reached. `bad` is a
@@ -286,7 +299,7 @@ Every signal named above that exists purely for this page — `event_sighted`,
 `resistance_mark_seen`, `player_detained`, `poster_torn`, `poster_pursuit_sent`, `run_mode_chosen`,
 `went_back_to_a_checkpoint`, `pelican_spawned`,
 `pelican_sighted`, `pelican_excited_her`, `pelican_struck_her`, `encounter_seen`,
-`encounter_influenced`, `run_bout_began` — is listen-only: it rolls no RNG and
+`encounter_influenced`, `encounter_passed`, `road_entered`, `calm_ground_entered`, `run_bout_began` — is listen-only: it rolls no RNG and
 changes nothing gameplay reads, and carries a doc comment on `EventBus` saying so. The day's and
 the escape's own events are the run flow's facts, each emitted where it happens, and no listener is
 called inline. A walk begins on the run flow (`RunFlow`), the same way for a day, an authored
@@ -500,10 +513,10 @@ watched by the observer a day has, so what a day writes about the walk the escap
 ```
 day 15 Escape the building  run seed 1674637177  length 180.0s
    0.0  start    entered the building at (129,2), facing 0°
-   4.2  cue      edge badge: masked_pursuer at 670px, closing 110px/s
-   9.6  cue      edge badge gone: masked_pursuer after 5.4s, now 208px away
-  10.2  near     masked_pursuer at (132,5), 120px, exc 1, in 5.5/s (crowd 0.0, events 10.2), sleep 100
-  11.0  lost     lost_hard_fail in the building after 11.0s to masked-pursuer — He caught you on the stairs. | exc 7, ... | near: masked_pursuer 25px
+   4.2  cue      edge badge: masked_pursuer at 421px, closing 130px/s
+   5.9  cue      edge badge gone: masked_pursuer after 1.7s, now 175px away
+   6.2  near     masked_pursuer at (132,5), 120px, exc 1, in 5.5/s (crowd 0.0, events 10.2), sleep 100
+   6.9  lost     lost_hard_fail in the building after 6.9s to masked-pursuer — He caught you on the stairs. | exc 7, ... | near: masked_pursuer 25px
 
 day 15 Escape the building  run seed 1674637177  length 180.0s
    0.0  start    restarted the building at (7,1), facing 0°
@@ -1255,7 +1268,7 @@ build has nothing in `project.godot` to reach:
   **`readout_requested()` also gates `DevFlags.live_debug_requested()`**, the second, smaller
   bundle M193 opens on a release page beside the readout — `?day=`, `?invincible=1`, `?layers=`,
   `?controls=`, `?escape=1`, `?meters=`, `?daylength=`, `?ending=`/`?blackout=1`,
-  `?groundmode=` and `?framerecord=1` — so the
+  `?escapebag=`, `?groundmode=` and `?framerecord=1` — so the
   snapshot key and everything that drives input, takes a picture or writes a file are the only
   things still unreachable from a visitor's address bar, except the frame record's own file, which
   reaches the visitor only through the browser's download when they tap the page's button for it

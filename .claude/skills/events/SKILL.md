@@ -29,7 +29,7 @@ area each, to be read whole before the first edit there:
 
 | Before touching | Read |
 |---|---|
-| `WarningSpec.warned_first()`, `PendingWarning`, `EventSpawner.as_warned()`, a thing sent from out of her sight | `references/warned-first.md` |
+| `WarningSpec.warned_first()`, `PendingWarning`, `EventSpawner.as_warned()`, `SetOffWatch`, a thing sent from out of her sight | `references/warned-first.md` |
 | `VehicleSpec`, `EventCarDriving`, the patrol car, the fire engine | `references/event-cars.md` |
 | `EventDef.pursuit()`, `EventDef.notice()`, `PursuitSpec`, `EventPursuit`, a charger, robber or guard | `references/pursuits.md` |
 | `EventDef.flock()`, `FlockSpec`, `EventFlock`, a look that moves, a partly animated picture | `references/flocks-and-moving-pictures.md` |
@@ -119,7 +119,7 @@ off to make a contract pass**: whether it telegraphs is the rule's question, not
 holds. **The warning time is the row's own number** (PLAYTEST-145 1): nothing about where a thing is
 created is derived from its telegraph. **No pursuer gives up on a walker** (olive-hedgehog #598).
 The design is `docs/EVENTS.md`, "Everything arrives from off screen"; the contract such a row is
-held to, what is created with its telegraph spent, and the two things that are not warned first are
+held to, what is created with its telegraph spent, and the one thing that is not warned first is
 `references/warned-first.md`.
 
 ## The contract is per event and the player experiences the sum
@@ -155,9 +155,10 @@ direction.
 
 Four exemptions, each written down in `docs/EVENTS.md`, "Solid things are solid": anything
 **mobile** (a moving wall pins her) but a car that drives, anything **director-sited**
-(`validate()` refuses it), anything with no silhouette, and a **flock** (`validate()` refuses that
-too — several bodies wheeling inside one disc have no silhouette to be half of, and being walked into
-is the event). `tests/test_events_solid.gd` requires everything else to have one.
+(`validate()` refuses it), anything with nothing drawn in the world
+(`LookSpec.is_drawn_in_the_world()`: no picture, or one drawn only in its badge), and a **flock**
+(`validate()` refuses that too — several bodies wheeling inside one disc have no silhouette to be
+half of, and being walked into is the event). `tests/test_events_solid.gd` requires everything else to have one.
 
 **A body is a route cost, not a closure.** `DawnSpoilers.OBSTRUCTION_A_PARK_CAN_HOLD` is the
 `obstructs_within()` a spoiler may carry and still count as something a park can hold — a body you can

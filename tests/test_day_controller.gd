@@ -15,6 +15,7 @@ func run(t: TestRunner) -> void:
 	await _test_a_drawn_frame_shows_the_escape_clock_between_ticks(t)
 	_test_the_formatters(t)
 	_test_a_frozen_escape_clock_stays_silent(t)
+	_test_a_step_onto_the_road_or_calm_ground_is_told_once(t)
 	_test_each_section_is_won_at_its_own_goal(t)
 	for child in t.get_children():
 		if not child in standing:
@@ -37,6 +38,48 @@ func _rig(t: TestRunner) -> DayController:
 	day.setup(run)
 	day.use_the_walk(null, player)
 	return day
+
+## A map that answers only what `DayController` asks of the ground under her: sidewalk left of
+## x = 100, road to x = 200, a park beyond.
+class StripMap extends CityMap:
+	## Overrides CityMap.tile_type_at_world.
+	func tile_type_at_world(world_position: Vector2) -> GameEnums.TileType:
+		if world_position.x < 100.0:
+			return GameEnums.TileType.SIDEWALK
+		return GameEnums.TileType.ROAD if world_position.x < 200.0 else GameEnums.TileType.PARK
+
+	## Overrides CityMap.is_calm_zone.
+	func is_calm_zone(world_position: Vector2) -> bool:
+		return Tile.is_calm(tile_type_at_world(world_position))
+
+## A step onto the road and a step onto calm ground are each one `EventBus` signal, standing on
+## either is none, and where she stands at dawn is no arrival.
+func _test_a_step_onto_the_road_or_calm_ground_is_told_once(t: TestRunner) -> void:
+	var day := _rig(t)
+	var map := StripMap.new()
+	day.use_the_walk(map, _her)
+	var told: Array[String] = []
+	var on_road := func() -> void: told.append("road")
+	var on_calm := func() -> void: told.append("calm")
+	EventBus.road_entered.connect(on_road)
+	EventBus.calm_ground_entered.connect(on_calm)
+	_her.global_position = Vector2(50.0, 0.0)
+	day.start(100.0)
+	day.tick(0.016)
+	t.check(told.is_empty(), "standing on the sidewalk at dawn tells nothing (%s)" % [told])
+	_her.global_position = Vector2(150.0, 0.0)
+	day.tick(0.016)
+	day.tick(0.016)
+	t.check(told == ["road"], "stepping onto the road tells once however long she stays (%s)" % [told])
+	_her.global_position = Vector2(250.0, 0.0)
+	day.tick(0.016)
+	t.check(told == ["road", "calm"], "then onto the park tells once (%s)" % [told])
+	_her.global_position = Vector2(150.0, 0.0)
+	day.tick(0.016)
+	t.check(told == ["road", "calm", "road"], "back onto the road is another arrival (%s)" % [told])
+	EventBus.road_entered.disconnect(on_road)
+	EventBus.calm_ground_entered.disconnect(on_calm)
+	day.free()
 
 func _test_the_clock_emits_once_per_second_crossed(t: TestRunner) -> void:
 	var day := _rig(t)
@@ -246,10 +289,17 @@ func _test_each_section_is_won_at_its_own_goal(t: TestRunner) -> void:
 	city.tick(0.016)
 	t.check(results.is_empty(), "the city is won by neither its building's exit nor standing away "
 			+ "from its two ways out (%s)" % [results])
-	_her.global_position = Vector2(-1000.0 + DayController.FINALE_EXIT_REACH - 1.0, 0.0)
+	# The street before the bridge, one tile short of its last row, is where the walk is still on.
+	_her.global_position = Vector2(-1000.0, -float(Tuning.TILE_SIZE))
+	city.tick(0.016)
+	t.check(results.is_empty(),
+			"a tile short of the bridge's last row she is still in the city (%s)" % [results])
+	# On the last row, at the carriageway's far side, she is on the bridge.
+	_her.global_position = Vector2(-1000.0 + Tuning.carriageway_width() * 0.5 - 1.0,
+			float(Tuning.TILE_SIZE) * 0.5 - 1.0)
 	city.tick(0.016)
 	t.check(results == [GameEnums.DayResult.WON] and city.exit_taken() == CityExit.Kind.BRIDGE,
-			"at the bridge deck, awake, the city section is won by the bridge (%s, %d)"
+			"on the bridge's last row, awake, the city section is won by the bridge (%s, %d)"
 			% [results, city.exit_taken()])
 	city.free()
 

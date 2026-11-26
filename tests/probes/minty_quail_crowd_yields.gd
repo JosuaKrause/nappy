@@ -449,7 +449,7 @@ class Meeting extends RefCounted:
 			return "waiting"
 		if instance.is_telegraphing():
 			return "warning"
-		return "charging" if instance.has_charged() else "active"
+		return "charging" if instance.is_chasing() else "active"
 
 	func report() -> Dictionary:
 		var minutes := float(_ticks) * STEP / 60.0

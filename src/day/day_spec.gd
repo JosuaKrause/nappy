@@ -19,36 +19,62 @@ extends RefCounted
 ## hands it its title, so this layer names nothing of the UI's. `for_day()` and `for_section()` are
 ## the two shapes the run uses; a test builds one either way, or by hand.
 
-const FINALE_BAG_EMPTY := 9
-const FINALE_BAG_EXPLOSIONS := 8
-const FINALE_BAG_ROADBLOCKS := 2
-## The escape's marble bag. Its four rows are in the player's order of how many *(inbox #785 in
-## minty-lemur: "frequency order is trucks > explosions > vans > barriers > empty")*: army trucks,
-## off-screen explosions, unmarked vans and roadblocks (the barriers). **The two rows that take her
-## have the fewest marbles of the four**, vans 3 and roadblocks 2, and the trucks and explosions,
-## which only wake the baby, make up the rest: a van's catch and a guard's end the section, and a
-## van's field is most of what the probe's walks that cried had landed.
+## **The escape's marble bags, by name**: a marble -> how many of it one fill holds, in the order
+## the player gave for how many of each there are *(inbox #785 in minty-lemur: "frequency order is
+## trucks > explosions > vans > barriers > empty")*: army trucks, off-screen explosions, unmarked
+## vans and roadblocks (the barriers), then empty. **The two rows that take her have the fewest
+## marbles of the four**, vans and roadblocks, and the trucks and explosions, which only wake the
+## baby, make up the rest: a van's catch and a guard's end the section.
 ##
 ## The empty marbles, where the street that draws one stands nothing, are counted apart from that
-## order: a marble a street's rules refuse stays in the bag (`ViewBag`), so the empty marbles are
-## what leaves a street with nothing, and `FINALE_BAG_EMPTY` is the count at which about a third of
-## the streets stand nothing, the share the escape had when a refused marble was spent. Nine puts
-## the empty marble second most numerous, against the player's order with empty last: the
-## orchestrator's reading of the player's approval of the design review (inbox #1268 in
-## olive-ferret), open to the player. One measurement (`tests/probes/escape_winnable.gd`), not a
-## fit; the entry lilac-marten (the fuller escape) sets the count from here. A fill is the sum of
-## the five and a plan has about 31 open streets.
-const FINALE_BAG_TRUCKS := 10
-const FINALE_BAG_VANS := 3
+## order, since a marble a street's rules refuse stays in the bag (`ViewBag`), so the empty marbles
+## are what leaves a street with nothing. `DEFAULT_ESCAPE_BAG` is the one the game plays: **one
+## empty marble, the fewest of the five and under the roadblocks' two** (the lilac-marten entry:
+## *"the escape is basically empty now"*, curly-moose #803), with the vans and roadblocks as they
+## were and the marbles the empty ones left to trucks and explosions. It is the orchestrator's pick
+## among the four measured, open to the player. The others are what `--escape-bag` plays, to
+## compare: `A` the bag the escape shipped with (nine empty marbles, about half the streets with
+## nothing), `B` the player's order with the freed marbles spread over the other rows in
+## proportion, `C` the bag of `A` drawn twice a street (`ESCAPE_MARBLES_A_STREET`).
+## One fill is the sum of the five, and a plan has about 31 open streets.
+const _BAG_A := {"military_convoy": 10, "finale_explosion": 8, "abduction": 3, "roadblock": 2,
+		EMPTY_MARBLE: 9}
+const ESCAPE_BAGS := {
+	"A": _BAG_A,
+	"B": {"military_convoy": 13, "finale_explosion": 11, "abduction": 4, "roadblock": 3,
+			EMPTY_MARBLE: 1},
+	"C": _BAG_A,
+	"D": {"military_convoy": 14, "finale_explosion": 12, "abduction": 3, "roadblock": 2,
+			EMPTY_MARBLE: 1},
+}
+## The bag the escape plays when no `--escape-bag` names another.
+const DEFAULT_ESCAPE_BAG := "D"
+## How many marbles each street of a bag draws: one, but for the bag `C`, which draws two.
+const ESCAPE_MARBLES_A_STREET := {"A": 1, "B": 1, "C": 2, "D": 1}
 
-## What the event director may send her while she walks (`director_sends()`). A walk that sends
-## something of its own (the escape's army trucks on her route) adds a value here.
+## **The share of the director's usual wait between two handouts that the escape city lets
+## pass** (`handout_wait_share()`). The escape is one walk of about a minute and the ten army
+## trucks its bag draws are all owed to it, so at a day's pace of 11 to 26 seconds between
+## handouts she would meet about half the trucks the escape met while they stood on its streets,
+## and none at all in over half her walks. The filer's proposal, set by measurement
+## (`tests/probes/escape_winnable.gd`, twelve seeds and both exits) so that she meets as many
+## trucks a minute as with the trucks placed; open to the player. It sets how many she meets,
+## not which walks meet one: where a truck can come is the lanes' (`docs/EVENTS.md`, the
+## escape's section).
+const ESCAPE_HANDOUT_WAIT_SHARE := 0.25
+
+## What the event director may send her while she walks (`director_sends()`).
 enum DirectorSends {
 	## The rows the calendar's day sends, by the day's number: the route's bag of cats, cyclists, dog
 	## walkers, patrols and the rest, with the day-one rig and the sprinkled charging dog.
 	THE_DAYS_ROWS,
 	## Nothing: no route bag, nothing owed from the plan, no rig and no sprinkled dog.
 	NOTHING,
+	## **The rows its own plan hands it** (`hands_the_director()`): a route bag of the sent-ahead
+	## rows the walk's plan leaves unplaced for the director, one marble each, and nothing else: no
+	## row of an ordinary day, no rig and no sprinkled dog. The escape city's, whose bag's army
+	## trucks are those rows.
+	SENT_AHEAD_ROWS_OF_ITS_PLAN,
 }
 
 ## Where the walk is: the city, or the building the escape starts in.
@@ -62,7 +88,8 @@ enum Goal {
 	## covered the screen (`InteriorScene.exit_requested`), and `DayController.reach_the_exit()` is
 	## what that reaches.
 	SERVICE_EXIT,
-	## The tunnel mouth or the bridge deck (`exit_points()`), reached however the baby is.
+	## The threshold of the tunnel or the bridge (`exit_points()`): her centre on the spine's last
+	## row, reached however the baby is. Her own control ends there and the game walks her in.
 	CITY_EDGE,
 }
 
@@ -84,7 +111,8 @@ var _section := Section.NONE
 var _world := World.CITY
 var goal := Goal.HOME
 ## Where `Goal.CITY_EDGE`'s two ways out stand, in world space — `CityExit.Kind` -> position, the
-## last walkable tile of the spine at each end rather than where the portal's picture is anchored.
+## middle of the carriageway on the spine's last row at each end, the threshold, rather than
+## where the portal's picture is anchored.
 ## Handed in by the start once the world it stands in is stood (`DayWorld.exits()`, through
 ## `use_exits()`); empty for any other goal. Read through `exit_points()`.
 var _exits := {}
@@ -150,6 +178,9 @@ var _shuts_the_spent_calm := true
 var _owes_a_return := true
 ## What the event director may send her (`director_sends()`).
 var _director_sends := DirectorSends.THE_DAYS_ROWS
+## The share of the director's usual wait between two handouts this walk lets pass
+## (`handout_wait_share()`): all of it on a day.
+var _handout_wait_share := 1.0
 ## Whether a torn poster sends a pursuer on foot at her (`EventManager.send_a_pursuer()`): on every
 ## day, and never in the escape.
 var _poster_pursuits := true
@@ -173,14 +204,15 @@ var bag := {}
 ## What each of `bag`'s marbles stands, a marble -> `EventDef`; `EMPTY_MARBLE` has none. Read
 ## through `walk_bag_rows()`.
 var _bag_rows := {}
-## Whether a unit of the walk draws one marble and no more (`MarbleDraw`): a row's stands alone in
-## the unit, an empty one leaves it with nothing. *(Inbox #1185 in gentle-owl's board answer: "one
+## How many marbles a unit of the walk draws and no more (`MarbleDraw`), `ESCAPE_MARBLES_A_STREET`
+## for the escape's bag: with one, a row's stands alone in the unit and an empty one leaves it with
+## nothing. *(Inbox #1185 in gentle-owl's board answer: "one
 ## per street. fill empty in if any segment or location in the street has an event".)* It also
 ## stands one roadblock a street at most, so a crossing is one band and one guard on her side of it
 ## to lure *(inbox #771 in minty-lemur: "Luring away one guard (the challenge) is not enough to make
-## the obstacle survivable")*. A day's unit draws until its room is spoken for. Read through
-## `stands_one_event_a_street()`.
-var _one_event_a_street := false
+## the obstacle survivable")*. Zero where a day's unit draws until its room is spoken for. Read
+## through `marbles_a_street()`.
+var _marbles_a_street := 0
 ## Whether every unit of the walk is drawn at dawn, in the order the walk names its streets, each
 ## judged among everything drawn before it (`UnitDraw.draw_in_their_order()`): a walk that knows
 ## every street she can take before she sets off. A day's units draw as she comes near them. Read
@@ -291,7 +323,8 @@ static func for_day(day: int, day_length := Tuning.DAY_LENGTH_SECONDS) -> DaySpe
 ## One of the escape's two sections, `section_length` seconds long, titled `section_title` — its own
 ## words, handed in by whoever builds it (`main._escape_section_spec()`). `which` is a `Section`
 ## passed as an `int`, the way `run.facts().escape_section()` holds it.
-static func for_section(which: int, section_length: float, section_title := "") -> DaySpec:
+static func for_section(which: int, section_length: float, section_title := "",
+		escape_bag := DEFAULT_ESCAPE_BAG) -> DaySpec:
 	var spec := DaySpec.new()
 	spec._section = which
 	spec._length = section_length
@@ -326,7 +359,9 @@ static func for_section(which: int, section_length: float, section_title := "") 
 		spec.goal = Goal.CITY_EDGE
 		spec._start = Start.SERVICE_EXIT
 		spec._events_stream = "finale"
-		_place_the_escape_city(spec)
+		spec._director_sends = DirectorSends.SENT_AHEAD_ROWS_OF_ITS_PLAN
+		spec._handout_wait_share = ESCAPE_HANDOUT_WAIT_SHARE
+		_place_the_escape_city(spec, escape_bag)
 	return spec
 
 ## **The escape city's placement**: the streets the chains walk are known before she sets off, so
@@ -337,14 +372,10 @@ static func for_section(which: int, section_length: float, section_title := "") 
 ## explosions > vans > barriers > empty"* — at `Tuning`'s counts. The rows: the convoy, as traffic;
 ## the masked men in their van; the escape's own roadblock at full heat, whose guards leave the post
 ## and come for her on foot; and the explosion.
-static func _place_the_escape_city(spec: DaySpec) -> void:
-	spec.bag = {
-		"military_convoy": FINALE_BAG_TRUCKS,
-		"finale_explosion": FINALE_BAG_EXPLOSIONS,
-		"abduction": FINALE_BAG_VANS,
-		"roadblock": FINALE_BAG_ROADBLOCKS,
-		EMPTY_MARBLE: FINALE_BAG_EMPTY,
-	}
+static func _place_the_escape_city(spec: DaySpec, escape_bag: String) -> void:
+	assert(ESCAPE_BAGS.has(escape_bag), "the escape has no bag named %s" % escape_bag)
+	var counts: Dictionary = ESCAPE_BAGS[escape_bag]
+	spec.bag = counts.duplicate()
 	spec._bag_rows = {
 		"military_convoy": EventCatalogue.by_id("military_convoy"),
 		"finale_explosion": EventCatalogue.by_id("finale_explosion"),
@@ -353,7 +384,7 @@ static func _place_the_escape_city(spec: DaySpec) -> void:
 	}
 	spec._keeps_unused_calm_clear = false
 	spec._holds_the_home_streets = false
-	spec._one_event_a_street = true
+	spec._marbles_a_street = int(ESCAPE_MARBLES_A_STREET[escape_bag])
 	spec._drawn_before_she_sets_off = true
 	spec._one_notice_at_a_time = true
 	spec._keeps_the_walk_open = true
@@ -456,10 +487,10 @@ func walk_bag() -> Dictionary:
 func walk_bag_rows() -> Dictionary:
 	return _bag_rows
 
-## Whether a street of the walk stands one event at most (`_one_event_a_street`): its unit draws
-## one marble (`MarbleDraw`).
-func stands_one_event_a_street() -> bool:
-	return _one_event_a_street
+## How many marbles a unit of the walk draws (`_marbles_a_street`), and so how many events a street
+## of it stands at most (`MarbleDraw`): zero where a unit draws until its room is spoken for.
+func marbles_a_street() -> int:
+	return _marbles_a_street
 
 ## Whether every unit of the walk is drawn before she sets off (`_drawn_before_she_sets_off`).
 func draws_before_she_sets_off() -> bool:
@@ -481,10 +512,26 @@ func owes_her_a_return() -> bool:
 	return _owes_a_return
 
 ## What the event director may send her while she walks this walk (`DirectorSends`): an ordinary
-## day's rows on a day, nothing on either of the escape's sections, whose every danger is placed
-## before she sets off. The day's number decides none of it.
+## day's rows on a day, the trucks of its own bag on the escape's city, nothing in its building.
+## The day's number decides none of it.
 func director_sends() -> DirectorSends:
 	return _director_sends
+
+## **Whether a marble of the walk's bag that stands `row` is the director's to send ahead of
+## her** rather than a place on the street that drew it
+## (`DirectorSends.SENT_AHEAD_ROWS_OF_ITS_PLAN`): a row the director sends ahead of her on a day
+## (`EventDef.is_sent_ahead()`), the army truck. The street that draws one stands nothing, as
+## for the poster crew's marble, and the director is owed the truck
+## (`EventDirector.start_day()`); the barrier trucks that seal the streets off her walk stay
+## placed (`SealPlanner`).
+func hands_the_director(row: EventDef) -> bool:
+	return _director_sends == DirectorSends.SENT_AHEAD_ROWS_OF_ITS_PLAN and row.is_sent_ahead()
+
+## **The share of the director's usual wait between two handouts this walk lets pass**
+## (`EventDirector.AHEAD_INTERVAL`): all of it on a day, `ESCAPE_HANDOUT_WAIT_SHARE` of it in the
+## escape's city, whose trucks are all owed to one short walk.
+func handout_wait_share() -> float:
+	return _handout_wait_share
 
 ## Whether a torn poster sends a pursuer on foot at her on this walk (`_poster_pursuits`): every
 ## day's does, the escape's never.

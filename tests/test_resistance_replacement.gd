@@ -52,11 +52,11 @@ func _test_an_unseen_mark_moves_to_the_nearest_alley_she_comes_near(t: TestRunne
 	var mark_at := director.contact_position()
 	t.check(mark_at != Vector2.INF, "day 6 places the mark")
 
-	# She stands exactly on a distant alley — the nearest reachable one to her is itself,
-	# at distance 0, which is what makes the assertion below exact rather than approximate.
+	# She stands just outside a distant alley's mouth: the nearest mark tile a move may take is that
+	# alley's, which is what makes the assertion below exact rather than approximate.
 	var far_alley := _alley_farther_than(ResistanceDirector.NOTICE_RADIUS, mark_at)
 	t.check(far_alley != Vector2.INF, "the test city has an alley far from the mark")
-	var player := _rig_player(t, far_alley)
+	var player := _rig_player(t, _outside_the_alley_at(far_alley))
 	director.use_player(player)
 
 	var lines: Array[String] = []
@@ -140,7 +140,7 @@ func _test_an_onscreen_but_far_mark_is_not_seen_and_still_relocates(t: TestRunne
 
 	var far_alley := _alley_farther_than(ResistanceDirector.NOTICE_RADIUS, mark_at)
 	t.check(far_alley != Vector2.INF, "the test city has an alley far from the mark")
-	var player := _rig_player(t, far_alley)
+	var player := _rig_player(t, _outside_the_alley_at(far_alley))
 	director.use_player(player)
 
 	director.tick(STEP)
@@ -189,7 +189,7 @@ func _test_the_siting_reads_the_days_region_off_the_streets(t: TestRunner) -> vo
 ## the alley she has come near is, by construction, wherever she is standing or right beside it,
 ## which is on screen more often than not, so it has to actively refuse whatever the siting calls
 ## on screen rather than pick the plain nearest blind. A first city, with nothing on screen,
-## relocates the mark to the plain-nearest alley — the one she stands on; hiding only that one
+## relocates the mark to the plain-nearest alley — the one she stands just outside; hiding only that one
 ## tile, in a second city of the same seed, is what makes the assertion below discriminate the
 ## refusal: the search has to find some other candidate still in `NOTICE_RADIUS` rather than the
 ## one nearest tile it would otherwise answer.
@@ -198,19 +198,19 @@ func _test_a_relocated_mark_never_lands_where_she_can_see_it_appear(t: TestRunne
 	var old_at := probe.contact_position()
 	var far_alley := _alley_farther_than(ResistanceDirector.NOTICE_RADIUS, old_at)
 	t.check(far_alley != Vector2.INF, "the test city has an alley far from the mark")
-	var probe_player := _rig_player(t, far_alley)
+	var probe_player := _rig_player(t, _outside_the_alley_at(far_alley))
 	probe.use_player(probe_player)
 	probe.tick(STEP)
 	var raw_nearest := probe.contact_position()
 	t.check(raw_nearest.distance_to(far_alley) < 0.5,
-			"with no screen test at all, the nearest reachable alley is the one she stands on")
+			"with no screen test at all, the nearest reachable alley is the one she stands outside")
 	probe_player.free()
 	probe.free()
 
 	var director := _on_day_six(t)
 	t.check(director.contact_position().distance_to(old_at) < 0.5,
 			"the same seed puts the mark in the same place")
-	var player := _rig_player(t, far_alley)
+	var player := _rig_player(t, _outside_the_alley_at(far_alley))
 	director.use_player(player)
 	_look_at(Rect2(raw_nearest - Vector2(0.5, 0.5), Vector2.ONE))
 	director.set_sight(RunCity.events(_city).sees)
@@ -332,7 +332,7 @@ func _test_a_mark_under_a_covered_corner_is_not_noticed(t: TestRunner) -> void:
 		var far_alley := _alley_farther_than(ResistanceDirector.NOTICE_RADIUS, mark_at)
 		t.check(far_alley != Vector2.INF, "%s scheme: the test city has an alley far from the mark" % scheme)
 		_look_at(Rect2(Vector2(-4000.0, -4000.0), Tuning.VIEW_HALF_EXTENT * 2.0))
-		player.global_position = far_alley
+		player.global_position = _outside_the_alley_at(far_alley)
 		director.tick(STEP)
 		var moved := director.contact_position().distance_to(mark_at) > 0.5
 		t.check(moved == joystick,

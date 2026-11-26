@@ -119,6 +119,9 @@ var _building_seed := 0
 var _player: Stroller
 var _baby: Baby
 var _day: DayController
+## The escape's last steps, the game walking her into the tunnel or across the bridge once the
+## city section is won (`_walk_out_of_the_city()`). Built with the day.
+var _walk_in: EscapeWalkIn
 var _resistance: ResistanceDirector
 ## The run log's owner for this boot — see `RunSession`. Built first in `_ready()`; null for a
 ## script-only `main` a test drives with no boot behind it.
@@ -132,6 +135,9 @@ var _hud: HudScript
 ## warned about; the layer around it is kept only so the title screen can take it off the street.
 var _edge: DangerEdge
 var _edge_layer: CanvasLayer
+## The light of the bombs over the escape city (`BlastLight`), built with the escape's city alone and
+## kept so each start of its walk starts its night again (`_the_world_of()`).
+var _blast_light: BlastLight
 ## What is currently charging the meter, drawn under the world rather than over it — see
 ## `_add_excitement_halo()`.
 var _halo: ExcitementHalo
@@ -269,6 +275,9 @@ class Worlds extends DayWorldSource:
 ## recipe's boot hands it the same run with the recipe on top.
 func configure(run_config: RunConfig) -> void:
 	config = run_config
+	# Before anything is built from a catalogue row: every charger's warning and notice as this
+	# run plays them.
+	EventCatalogue.use_charger_timing(config.charger_timing())
 	_escape_scene_requested = config.starts_in_the_escape()
 	_no_focus_pause = config.skips_the_focus_pause()
 	_touch_available = TouchInput.available(config)
@@ -494,6 +503,11 @@ func _ready() -> void:
 	_pauses_with_the_game(_day)
 	_day.setup(_run)
 	_day.day_finished.connect(_on_day_finished)
+	# Deliberately **not** `_pauses_with_the_game()`: the walk-in runs while the tree is paused, the
+	# world frozen around her (`_walk_out_of_the_city()`).
+	_walk_in = EscapeWalkIn.new()
+	_walk_in.name = "WalkIn"
+	add_child(_walk_in)
 	if _readout:
 		_readout.watch(_player, _baby, _day)
 
@@ -680,7 +694,7 @@ func _the_first_day() -> DaySpec:
 		var start_at_the_city := _escape_start_part() == "city" \
 				or (_flow.escape_from_a_run() and _facts.escape_section() == DaySpec.Section.CITY)
 		return _escape_section_spec(DaySpec.Section.CITY if start_at_the_city
-				else DaySpec.Section.BUILDING, config.escape_section_length())
+				else DaySpec.Section.BUILDING, config.escape_section_length(), config.escape_bag())
 	return _day_spec(config, _run.header().day())
 
 ## One of the fourteen days as this boot walks it: `day`, its clock `config`'s length for it
@@ -693,9 +707,9 @@ static func _day_spec(run_config: RunConfig, day: int) -> DaySpec:
 ## building"* and *"Escape the city"*, the player's names for the two screens — handed to the spec
 ## here, since the spec is data and names nothing of the UI's. `section` is a `DaySpec.Section` as
 ## an `int`.
-static func _escape_section_spec(section: int, length: float) -> DaySpec:
+static func _escape_section_spec(section: int, length: float, escape_bag: String) -> DaySpec:
 	return DaySpec.for_section(section, length, Texts.ESCAPE_BUILDING
-			if section == DaySpec.Section.BUILDING else Texts.ESCAPE_CITY)
+			if section == DaySpec.Section.BUILDING else Texts.ESCAPE_CITY, escape_bag)
 
 ## The screens every boot stands around the walk, built the same way whichever day it opens on:
 ## the HUD; the screen-edge badge, the halo and the debug view when a world already stands (the
@@ -951,6 +965,10 @@ func _the_world_of(spec: DaySpec) -> DayWorld:
 		_building_simulation.events().stand_down()
 	if _interior:
 		_interior.stop_the_night()
+	if _blast_light:
+		# The same seed on every start of the city's walk, so a retry is the same night.
+		_blast_light.start_the_night(
+				_run.calendar().day_rng(_run.header().day(), "finale-city-night").randi())
 	var home_map: CityMap = _city.map() if spec.goal_kind() == DaySpec.Goal.HOME else null
 	var exits: Dictionary = _the_city_exits() if spec.goal_kind() == DaySpec.Goal.CITY_EDGE else {}
 	var start_at := _city.map().doorstep_world_position()
@@ -1097,6 +1115,7 @@ func _build_the_escape_city(spec: DaySpec) -> void:
 	# Built here for a boot straight onto the street, and pointed at the street here when she has
 	# walked out of the building, which built them first — see `_add_danger_edge()`.
 	_add_danger_edge()
+	_add_blast_light()
 	_add_excitement_halo()
 	_add_debug_layers()
 	_add_route_lines()
@@ -1105,19 +1124,38 @@ func _build_the_escape_city(spec: DaySpec) -> void:
 	# — see `_apply_orientation()`, which is idempotent and is asked the same question every frame.
 	_apply_orientation()
 
-## The city's two ways out, for a `DaySpec.Goal.CITY_EDGE` day: the **tiles** the chains end on
-## rather than the points `CityEdge` draws its pictures at. The portal's own face is anchored on
-## the map edge, past the last ground she can stand on, so a reach measured from it would have to
-## be wide enough to cover the difference and would then also cover the street before it.
-## `FinalePlanner.exit_tile()` is the carriageway under the portal, which is where being out of the
-## city actually happens.
+## **The light of the bombs over the escape city** (`BlastLight`): handed the city whose sky it
+## lights and her, told of every event that goes off, and paused with the game. Once, with the
+## escape's city.
+func _add_blast_light() -> void:
+	if _blast_light:
+		return
+	_blast_light = BlastLight.new()
+	_blast_light.name = "BlastLight"
+	_blast_light.use_the_sky(_city)
+	_blast_light.use_player(_player)
+	EventBus.event_activated.connect(_blast_light.see_it_go_off)
+	_pauses_with_the_game(_blast_light)
+	add_child(_blast_light)
+
+## The city's two ways out, for a `DaySpec.Goal.CITY_EDGE` day: the thresholds, the middle of the
+## carriageway on the spine's last row (`FinalePlanner.exit_tile()`'s row, the spine's centre line)
+## rather than the points `CityEdge` draws its pictures at. The portal's own face is anchored on the
+## map edge, past the last ground she can stand on, so the last row is where her control ends and
+## the game walks her in (`EscapeWalkIn`).
 func _the_city_exits() -> Dictionary:
 	return {
-		CityExit.Kind.TUNNEL: _city.map().tile_to_world(
-				FinalePlanner.exit_tile(_city.map(), CityExit.Kind.TUNNEL)),
-		CityExit.Kind.BRIDGE: _city.map().tile_to_world(
-				FinalePlanner.exit_tile(_city.map(), CityExit.Kind.BRIDGE)),
+		CityExit.Kind.TUNNEL: _exit_point(CityExit.Kind.TUNNEL),
+		CityExit.Kind.BRIDGE: _exit_point(CityExit.Kind.BRIDGE),
 	}
+
+## One way out's threshold: the spine's centre line at that end (the tunnel's or the bridge's own
+## column) on the centre of the last walkable row.
+func _exit_point(exit_kind: int) -> Vector2:
+	var row := _city.map().tile_to_world(FinalePlanner.exit_tile(_city.map(), exit_kind))
+	var spine := _city.tunnel_world_position() if exit_kind == CityExit.Kind.TUNNEL \
+			else _city.bridge_world_position()
+	return Vector2(spine.x, row.y)
 
 ## `--start-escape`'s raw word (`config.start_escape_at()`), mapped onto a building part's waypoint to
 ## teleport to before the first frame — `"hallway_third"`, her own door, for every word this does
@@ -1615,8 +1653,9 @@ func _exit_tree() -> void:
 ## pipeline cache is a Forward+/Mobile (RenderingDevice) feature, and the engine's own proposal
 ## tracker still carries "Add shader precompilation to the Compatibility rendering method" as an
 ## open request — so the only lever left is a real draw call. Two throwaway `Node2D`s draw the
-## halo material and the actual water atlas region through `SceneryWater.material_for()`, then are
-## freed after the frame reaches the renderer. Their shader outputs are transparent, so the boot
+## halo material and the south water's lines (`SouthWaterTile.lines_material()`, the material its
+## tile draws with), then are freed after the frame reaches the renderer. Their shader outputs are
+## transparent (the water's draws a transparent colour its shader multiplies in), so the boot
 ## cannot flash either probe even though both sit inside the visible canvas.
 ##
 ## **At `ground`, not off in the distance.** A canvas item outside the camera's visible rect is
@@ -1644,14 +1683,12 @@ func _warm_the_canvas_shaders(ground: Vector2) -> void:
 	_pauses_with_the_game(halo_probe)
 	halo_probe.queue_redraw()
 
-	var water_texture := _sitting.atlas().region(&"tiles/water") as AtlasTexture
 	var water_probe := Node2D.new()
 	water_probe.name = "WaterWarm"
 	water_probe.global_position = ground
-	water_probe.material = SceneryWater.material_for(water_texture)
+	water_probe.material = SouthWaterTile.lines_material()
 	water_probe.draw.connect(func() -> void:
-		water_probe.draw_texture_rect(water_texture,
-				Rect2(Vector2.ZERO, water_texture.get_size()), false, Color.TRANSPARENT))
+		water_probe.draw_rect(Rect2(Vector2.ZERO, Vector2.ONE), Color.TRANSPARENT))
 	add_child(water_probe)
 	_pauses_with_the_game(water_probe)
 	water_probe.queue_redraw()
@@ -1967,6 +2004,7 @@ func _write_dawn_for_a_resumed_run() -> void:
 ## nothing should be different.")*
 func _on_day_finished(result: GameEnums.DayResult) -> void:
 	var end := _new_director().finish_day(result)
+	_facts.set_last_day_seconds(end.lasted_seconds())
 	if end.ends_a_section():
 		_finish_the_section(end)
 		return
@@ -2031,7 +2069,8 @@ func _finish_the_section(end: DayEnd) -> void:
 			_reload_the_scene()
 		return
 	if won and spec.a_win_leads_into() != DaySpec.Section.NONE:
-		_start(_escape_section_spec(spec.a_win_leads_into(), config.escape_section_length()))
+		_start(_escape_section_spec(spec.a_win_leads_into(), config.escape_section_length(),
+				config.escape_bag()))
 		_show_the_section_brief()
 		return
 	if won:
@@ -2039,7 +2078,7 @@ func _finish_the_section(end: DayEnd) -> void:
 		# walk has nothing after its epilogue but walking it again.
 		_flow.escape_won()
 		_hud.visible = false
-		_summary.show_summary(SummaryModel.epilogue(end), _flow.mode())
+		_walk_out_of_the_city(end)
 		return
 	# The end-of-section write, as a lost day's is, so closing the game on this screen cannot take a
 	# hard run's spent nerve back. Skipped when the run just ended, whose save
@@ -2047,6 +2086,35 @@ func _finish_the_section(end: DayEnd) -> void:
 	if not run_over:
 		_save_now(false)
 	_summary.show_summary(SummaryModel.day_over(_run, end, spec.title()), _flow.mode())
+
+## **The game walks her in** once the section is won at the threshold of the tunnel or the bridge:
+## her own control ends there and she walks on by herself into the tunnel's dark or across the
+## whole deck (`EscapeWalkIn`), the camera following her past the map's edge, and the epilogue comes
+## up when she is in. **Nothing can catch her on the way**: the day is already won (no loss path is
+## listening), and the tree is paused with only her (and her camera) and the walk-in left running,
+## so no car, walker or event moves, and **the baby stays with the paused world**: she is a child
+## of hers and would inherit her exemption, so her meters would climb at a run's rate on the deck
+## and wake her after the win, which the epilogue then denies. The map's walkable set is untouched; she is led through the
+## boundary wall over what `CityEdge` draws. Esc and a lost focus open nothing meanwhile
+## (`_unhandled_input()`, `_pause_on_focus_lost()`).
+func _walk_out_of_the_city(end: DayEnd) -> void:
+	if not is_inside_tree() or end.exit_taken() < 0:
+		_summary.show_summary(SummaryModel.epilogue(_run, end), _flow.mode())
+		return
+	_edge_layer.visible = false
+	get_tree().paused = true
+	_player.process_mode = Node.PROCESS_MODE_ALWAYS
+	_baby.process_mode = Node.PROCESS_MODE_PAUSABLE
+	var threshold: Vector2 = _day.spec().exit_points()[end.exit_taken()]
+	_walk_in.arrived.connect(_on_walked_in.bind(end), CONNECT_ONE_SHOT)
+	_walk_in.begin(_player, end.exit_taken(), threshold)
+
+## She is in the tunnel or across the bridge: the world is handed back to the pause and the
+## epilogue comes up over it.
+func _on_walked_in(end: DayEnd) -> void:
+	_player.process_mode = Node.PROCESS_MODE_PAUSABLE
+	_baby.process_mode = Node.PROCESS_MODE_INHERIT
+	_summary.show_summary(SummaryModel.epilogue(_run, end), _flow.mode())
 
 ## The continue of every screen `_summary` shows, carried out as the flow's `RunFlow.continued()`
 ## says: the screen decides it by the mode it was raised in (`raised_in`, a `RunFlow.Mode` sent with
@@ -2391,7 +2459,7 @@ func _unhandled_input(event: InputEvent) -> void:
 	# a test drives straight through this function without also calling `_ready()` may not have.
 	if not _pause:
 		return
-	if _pause.is_open() or _title.is_open():
+	if _pause.is_open() or _title.is_open() or _walk_in.is_walking():
 		return
 	# The escape's own guard — see this function's own doc, "The escape's brief and its epilogue
 	# are the one exception": a section's brief up, whichever way it came, or the epilogue.
@@ -2431,7 +2499,8 @@ func _pause_on_focus_lost() -> void:
 	# `_summary.is_showing()` already excludes every screen the escape raises (a section's brief,
 	# a lost section's outcome screen and the epilogue) on exactly the same terms it excludes a
 	# day's own summary and ending — nothing escape-specific to add here, unlike Esc.
-	if _pause.is_open() or _title.is_open() or (_summary and _summary.is_showing()):
+	if _pause.is_open() or _title.is_open() or _walk_in.is_walking() \
+			or (_summary and _summary.is_showing()):
 		return
 	_pause.open()
 

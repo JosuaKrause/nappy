@@ -138,8 +138,8 @@ a suite preloads nothing to name it (inbox #1282 in grassy-trout). `t.check()`, 
 the runner's own `Node` calls (`t.add_child()`, `t.get_tree()`) are then typed calls. A bare
 `func run(t)` does not parse: the parameter is an untyped
 declaration and `t.check()` an unsafe method access, and the suite is a `LOAD FAIL`. **No suite
-carries the opt-out line, and a new one never has it**: `tools/check_field_reads.py` fails a file
-that gains the line.
+opts out of the typing warnings**: `tools/check_field_reads.py` fails a file that carries an
+`@warning_ignore` of them.
 
 ## A realistic mock is made in two steps
 

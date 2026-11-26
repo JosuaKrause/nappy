@@ -1,0 +1,17 @@
+atlases: up to date (png mode), nothing baked
+Godot Engine v4.7.2.stable.official.ed1daf0bf - https://godotengine.org
+
+RAMP city 4242 day1 89 day14 134 ratio 1.51
+RAMP city 77 day1 101 day14 135 ratio 1.34
+RAMP city 1301 day1 105 day14 123 ratio 1.17
+RAMP city 90210 day1 124 day14 130 ratio 1.05
+RAMP city 90241 day1 119 day14 118 ratio 0.99
+RAMP city 90272 day1 105 day14 125 ratio 1.19
+RAMP city 90303 day1 103 day14 124 ratio 1.20
+RAMP city 90334 day1 95 day14 125 ratio 1.32
+RAMP city 2024 day1 129 day14 123 ratio 0.95
+RAMP city 31337 day1 111 day14 126 ratio 1.14
+-- ramp_cities.gd                         45826 ms
+
+1 checks, 0 failures
+PARTIAL RUN — only suites matching probes/ramp_cities.gd. Not a green build.

@@ -69,11 +69,92 @@ func _draw_figure(canvas: CanvasItem) -> void:
 			_draw_stationary_vehicle(EventDef.Look.BURNT_OUT_CAR,
 					_body.drawn_width(), canvas)
 
+## A vehicle's shadow lies where its wheels meet the ground (minty-hedgehog 1; azure-koala 10): one
+## oval per wheel pair of the body its wheels stand under (`_wheel_shape()`,
+## `GroundShape.paired_shadow_outlines()`), laid along the way its picture faces
+## (`_wheel_axis()`), the nearer pair on the picture's own ground line — the bottom of its body
+## for a car drawn over its body (`_ground_line()`), its node for every other vehicle — so no
+## shadow shows above a roof or behind a body with nothing under its tyres.
+##
+## Overrides EventLook.shadow_outlines.
+func shadow_outlines(origin := Vector2.ZERO) -> Array[PackedVector2Array]:
+	var shape := _wheel_shape()
+	if not _look.casts_a_shadow() or shape == null or not shape.casts_a_shadow():
+		var none: Array[PackedVector2Array] = []
+		return none
+	return shape.paired_shadow_outlines(origin, _wheel_axis(), _ground_line())
+
+## The two vehicle looks whose ground shape is the scene round the vehicle rather than its own
+## body, so it says nothing about where its wheels are: the night raid's riot van, whose 44px disc
+## holds the officers round it, and the moving van, whose band runs along the street under its ramp
+## and its boxes. Their wheels stand under a body of their own (`_wheel_shape()`), and the ground
+## shape keeps what the scene needs it for.
+const SCENE_SHAPED: Array[EventDef.Look] = [EventDef.Look.RIOT_VAN, EventDef.Look.MOVING_VAN]
+
+## How far a scene-shaped vehicle's own body reaches from its centre, as a share of half the length
+## its side picture is drawn: the share the other vehicles' bodies keep to their pictures (the
+## delivery van's 22px under its 48px side picture, the lorry's 28 under 62, the army truck's 26
+## under 60), so its wheel pairs stand `GroundShape.POINT_WHEEL_SHARE` of that from its centre, the
+## riot van's 15px either side, round the tyres its 54px side picture draws 13px either side.
+const SCENE_BODY_SHARE := 0.9
+
+## The body a scene-shaped vehicle's wheels stand under, made the first time it is asked for
+## (`_wheel_shape()`); null until then and for every other vehicle.
+var _own_body: GroundShape = null
+
+## The body its wheel pairs stand under: its own ground shape for every vehicle but the two whose
+## ground shape is their scene (`SCENE_SHAPED`), and for those a point reaching
+## `SCENE_BODY_SHARE` of half the length its side picture is drawn (`_side_length()`), the way
+## the other vehicles' bodies reach, since where its wheels are is in the picture and not in the
+## ground its scene takes.
+func _wheel_shape() -> GroundShape:
+	if _look.picture() not in SCENE_SHAPED:
+		return event.ground_shape()
+	if _own_body == null:
+		_own_body = GroundShape.point(_side_length() * 0.5 * SCENE_BODY_SHARE)
+	return _own_body
+
+## How long a scene-shaped vehicle's side picture is drawn: a stationary vehicle's fitted to its
+## body's drawn width (`_draw_stationary_vehicle()`), the riot van's at its own size
+## (`_draw_eight_view()` stands every view at its native size).
+func _side_length() -> float:
+	var side := EventPictures.stationary_vehicle_texture(_look.picture(), true)
+	if not side.is_empty():
+		return EventPictures.stationary_vehicle_extent(side, true, _body.drawn_width()).x
+	return EventPictures.native_size(EventPictures.RIOT_VAN_BY_VIEW["side"]).x
+
+## The row of `moving_van_vertical.svg` (its 38 by 56 end-on picture) its rear tyres stand on: they
+## fill rows 30 to 43, and the ramp runs on to the picture's bottom row 13px below them. The nearer
+## pair's ovals lie on this row (`_ground_line()`), not on the picture's bottom row, which is the
+## ramp's foot.
+const MOVING_VAN_END_TYRE_FOOT_ROW := 43.0
+
+## How far below its node the nearer wheel pair stands: the picture's bottom row for every vehicle
+## (`EventLook._ground_line()`), except the moving van seen end on, whose bottom row is the ramp's
+## foot and whose tyres stand `MOVING_VAN_END_TYRE_FOOT_ROW` down its picture, that many rows
+## above the bottom row it is stood on.
+##
+## Overrides EventLook._ground_line.
+func _ground_line() -> float:
+	if _look.picture() == EventDef.Look.MOVING_VAN and not event.stands_side_on():
+		var picture := EventPictures.stationary_vehicle_texture(_look.picture(), false)
+		return MOVING_VAN_END_TYRE_FOOT_ROW - EventPictures.native_size(picture).y
+	return super()
+
+## The axis its wheel pairs lie along: the way its picture faces. A stationary vehicle — the
+## burnt-out car, the moving van — shows its side along an east-west street and its end along a
+## north-south one (`EventInstance.stands_side_on()`, `_draw_stationary_vehicle()`); every other
+## vehicle is drawn facing `facing_now()`, the heading of one that drives and the side a parked one
+## was sited showing.
+func _wheel_axis() -> Vector2:
+	if not EventPictures.stationary_vehicle_texture(_look.picture(), true).is_empty():
+		return Vector2.RIGHT if event.stands_side_on() else Vector2.DOWN
+	return event.facing_now()
+
 ## A stationary vehicle projected along the axis of the street it occupies. Its side silhouette
 ## may mirror with its facing; an end-on silhouette keeps its authored proportions and orientation.
-## Its shadow is `def.ground_shape()` — a point for `burnt_out_car`, a capsule along the street for
-## `moving_van`, whose `obstructs_within()` clears `GroundShape.BAND_RADIUS` — rather than a
-## hand-picked radius of its own.
+## Its shadow is the ovals `shadow_outlines()` lays under its wheel pairs, along the street it
+## occupies (`_wheel_axis()`).
 func _draw_stationary_vehicle(look: EventDef.Look, side_width: float,
 		canvas: CanvasItem) -> void:
 	var picture := EventPictures.stationary_vehicle_texture(look, event.stands_side_on())

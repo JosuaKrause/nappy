@@ -34,6 +34,7 @@ func run(t: TestRunner) -> void:
 	_test_one_of_a_row_in_a_unit(t)
 	_test_a_rows_weight_is_the_largest_of_its_locations(t)
 	_test_a_row_handed_to_her_walk_is_recorded_unplaced(t)
+	_test_a_row_handed_to_the_director_is_recorded_unplaced(t)
 	_test_a_row_that_travels_a_sidewalk_takes_one_location(t)
 	_test_every_open_location_ends_drawn(t)
 	_test_a_location_that_held_a_beat_while_its_unit_filled_in_reads_drawn_once_given_back(t)
@@ -41,6 +42,7 @@ func run(t: TestRunner) -> void:
 	_test_one_marble_a_unit_stands_a_row_alone(t)
 	_test_one_marble_a_unit_an_empty_marble_leaves_it_empty(t)
 	_test_one_marble_a_unit_a_refused_row_gives_way_to_the_next(t)
+	_test_two_marbles_a_unit_stand_two_rows(t)
 
 const ON := PlacementView.View.ON_THE_ROUTE
 
@@ -156,10 +158,10 @@ static func _rows(ids: Array[String]) -> Dictionary:
 
 ## `unit` drawn from `bag` among `among`, its rows the marbles' and the catalogue's.
 static func _drawn(unit: PlacementUnit, bag: _Bag, ground: _Ground, locations: _Locations,
-		among: Array[EventPlan] = [], one_marble_a_unit := false) -> Array[EventPlan]:
+		among: Array[EventPlan] = [], marbles_a_unit := 0) -> Array[EventPlan]:
 	var ids: Array[String] = ["cafe_tables", "busker", "roadblock", "chatting_mother",
 			"poster_crew", "market_stall", "leaf_blower", "homeless_yeller"]
-	return MarbleDraw.new(locations, _rows(ids), ground, one_marble_a_unit).draw(unit, bag, among)
+	return MarbleDraw.new(locations, _rows(ids), ground, marbles_a_unit).draw(unit, bag, among)
 
 ## Where `id` was recorded, or null.
 static func _where(locations: _Locations, id: String) -> Location:
@@ -348,6 +350,23 @@ func _test_a_row_handed_to_her_walk_is_recorded_unplaced(t: TestRunner) -> void:
 			without = without and not (plan.row_id() == "poster_crew" and plan.is_placed())
 	t.check(without, "the cafe is judged among no placed crew (%d asks)" % asks.size())
 
+## **A row the walk hands the director** (`DaySpec.hands_the_director()`, the escape's truck) is
+## recorded with no position like the crew, and a draw handed no such rule places the same row.
+func _test_a_row_handed_to_the_director_is_recorded_unplaced(t: TestRunner) -> void:
+	var rows := _rows(["military_convoy"] as Array[String])
+	var escape := DaySpec.for_section(DaySpec.Section.CITY, RunConfig.FINALE_LENGTH_SECONDS)
+	var locations := _Locations.new()
+	var handed := MarbleDraw.new(locations, rows, _Ground.new(), true, escape.hands_the_director) \
+			.draw(_street(), _Bag.new(["military_convoy"] as Array[String]), [])
+	t.check(handed.size() == 1 and not handed[0].is_placed(),
+			"a truck the walk hands the director is answered with no position")
+	t.check(handed.size() == 1 and locations.recorded.values().has(handed[0]),
+			"and it is what its location records, so its street stands nothing else")
+	var kept := MarbleDraw.new(_Locations.new(), rows, _Ground.new(), 1) \
+			.draw(_street(), _Bag.new(["military_convoy"] as Array[String]), [])
+	t.check(kept.size() == 1 and kept[0].is_placed(),
+			"the same truck on a walk that hands the director none is placed on its street")
+
 ## A chatting mother, a row that paces its sidewalk, takes one sidewalk location and no more: drawn
 ## first, it leaves the street five more, so five more rows are placed beside it, each on a
 ## location of its own.
@@ -432,7 +451,7 @@ func _test_one_marble_a_unit_stands_a_row_alone(t: TestRunner) -> void:
 	var street := _street()
 	var bag := _Bag.new(["cafe_tables", "busker"] as Array[String])
 	var ground := _Ground.new()
-	var placed := _drawn(street, bag, ground, _Locations.new(), [], true)
+	var placed := _drawn(street, bag, ground, _Locations.new(), [], 1)
 	t.check(placed.size() == 1 and placed[0].row_id() == "cafe_tables",
 			"one plan is answered, the first row's (%d placed)" % placed.size())
 	t.check(bag.said == [["cafe_tables", true]] and ground.asks_for("busker").is_empty(),
@@ -444,7 +463,7 @@ func _test_one_marble_a_unit_stands_a_row_alone(t: TestRunner) -> void:
 func _test_one_marble_a_unit_an_empty_marble_leaves_it_empty(t: TestRunner) -> void:
 	var street := _street()
 	var bag := _Bag.new([ViewBag.EMPTY, "cafe_tables"] as Array[String])
-	var placed := _drawn(street, bag, _Ground.new(), _Locations.new(), [], true)
+	var placed := _drawn(street, bag, _Ground.new(), _Locations.new(), [], 1)
 	t.check(placed.is_empty() and bag.said == [[ViewBag.EMPTY, true]],
 			"an empty marble stands nothing and the row after it is still in the script (%s)"
 			% [bag.said])
@@ -458,9 +477,20 @@ func _test_one_marble_a_unit_a_refused_row_gives_way_to_the_next(t: TestRunner) 
 	for location in street.locations():
 		ground.refused.append(["cafe_tables", location])
 	var bag := _Bag.new(["cafe_tables", "busker", "chatting_mother"] as Array[String])
-	var placed := _drawn(street, bag, ground, _Locations.new(), [], true)
+	var placed := _drawn(street, bag, ground, _Locations.new(), [], 1)
 	t.check(placed.size() == 1 and placed[0].row_id() == "busker",
 			"the refused cafe gives way, and the street stands the musician alone (%d placed)"
 			% placed.size())
 	t.check(not ground.asks_for("cafe_tables").is_empty() and bag.said.size() == 2,
 			"the cafe was asked of the ground, and the draw stopped at the musician (%s)" % [bag.said])
+
+## The setting at two (`DaySpec.marbles_a_street()` of the escape's bag `C`): the unit draws two
+## marbles and stops, so two rows stand in it and the third marble of the script is never drawn.
+func _test_two_marbles_a_unit_stand_two_rows(t: TestRunner) -> void:
+	var street := _street()
+	var bag := _Bag.new(["cafe_tables", "busker", "chatting_mother"] as Array[String])
+	var placed := _drawn(street, bag, _Ground.new(), _Locations.new(), [], 2)
+	t.check(placed.size() == 2 and bag.said.size() == 2,
+			"two plans are answered from two draws of the bag (%d placed, %s)"
+			% [placed.size(), [bag.said]])
+	t.check(_none_open(street), "and every location of the unit is no longer open")

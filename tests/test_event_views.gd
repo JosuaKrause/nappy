@@ -148,7 +148,7 @@ func run(t: TestRunner) -> void:
 	_test_robber_waiting_falls_back_to_its_siting_with_no_player(t)
 	_test_cat_state_predicate_selects_the_telegraph_posture(t)
 	_test_chatting_mother_state_predicate_selects_the_conversation_posture(t)
-	await _test_masked_man_is_drawn_standing_until_he_goes(t)
+	await _test_masked_man_is_drawn_lunging_from_the_tick_he_comes(t)
 	await _test_the_waiting_dog_rests_stands_alert_and_gallops(t)
 	await _test_the_day_3_dog_gallops_through_its_approach(t)
 	await _test_the_robber_waits_walks_alert_and_lunges(t)
@@ -161,6 +161,7 @@ func run(t: TestRunner) -> void:
 	_test_reversing_lorry_only_ever_faces_the_side_view(t)
 	_test_vehicle_views_are_grounded_at_the_canvas_bottom(t)
 	_test_burst_water_main_draws_no_body_shadow(t)
+	_test_a_scene_shaped_van_casts_its_shadow_under_its_wheels(t)
 	_test_every_moving_vehicle_has_wheels_on_its_own_canvas(t)
 	_test_a_moving_vehicle_bobs_on_its_wheels_and_a_stopped_one_sits_still(t)
 	_test_a_walking_event_keeps_its_stride_bob(t)
@@ -224,19 +225,18 @@ func _test_cafe_sitters_face_their_own_tables(t: TestRunner) -> void:
 				spread_vertical)
 		var drawer: RecordingEventDrawer = DrawnEvent.drawer_of(instance)
 		var axis := Vector2.DOWN if spread_vertical else Vector2.RIGHT
-		# Each table's slice draws its own sitter and table; the first two tables are a pair, the
-		# second the mirrored chair.
+		# Each table's slice holds its sitter's own layers (`EventScenery`) and, over them, its
+		# table on its front; the first two tables are a pair, the second the mirrored chair.
+		var sitter_in := {}
+		for entry in drawer.draws:
+			if entry.kind == &"scenery" and sitters.has(entry.picture) \
+					and is_instance_valid(entry.canvas):
+				sitter_in[(entry.canvas as Node).get_parent()] = entry
 		var tables: Array = []
 		for canvas in drawer.canvases():
-			var sitter := {}
-			var table := {}
 			for entry in drawer.shown_on(canvas):
-				if sitters.has(entry.picture):
-					sitter = entry
-				elif entry.picture == EventPictures.CAFE_TABLE:
-					table = entry
-			if not sitter.is_empty() and not table.is_empty():
-				tables.append([sitter, table])
+				if entry.picture == EventPictures.CAFE_TABLE and sitter_in.has(canvas.get_parent()):
+					tables.append([sitter_in[canvas.get_parent()], entry])
 		tables.sort_custom(func(a: Array, b: Array) -> bool:
 			return RecordingEventDrawer.foot_about(a[1], instance).dot(axis) \
 					< RecordingEventDrawer.foot_about(b[1], instance).dot(axis))
@@ -479,9 +479,12 @@ func _test_setup_resets_the_view_to_the_exact_siting(t: TestRunner) -> void:
 	await DrawnEvent.frames(t)
 	for sector in range(8):
 		var instance := sited[sector]
+		# He stands as layers of his own on the event (`EventScenery`), built for his view's first
+		# frame and mirrored as the view is, so his strum swaps one arm and nothing else.
 		var drawn_as := {}
-		for entry in DrawnEvent.shown(instance):
-			if entry.canvas == instance and entry.kind == &"stand":
+		for entry in DrawnEvent.drawer_of(instance).draws:
+			if entry.kind == &"scenery" and is_instance_valid(entry.canvas) \
+					and (entry.canvas as Node).get_parent() == instance:
 				drawn_as = entry
 		var view := EXPECTED_VIEW[sector]
 		t.check(not drawn_as.is_empty()
@@ -547,38 +550,27 @@ func _test_chatting_mother_state_predicate_selects_the_conversation_posture(t: T
 	t.check(instance.is_chatting(), "and talking for the length of the conversation")
 	instance.free()
 
-## The masked man on the escape's stairs stands while he waits for her, stands with his hand raised
-## through his notice *(inbox #764 in minty-lemur, the player: an event that does not spawn already charging always
-## needs a warning)*, and is drawn lunging only once the notice is over
-## and he runs his line.
-func _test_masked_man_is_drawn_standing_until_he_goes(t: TestRunner) -> void:
+## **The masked man on the escape's stairs is drawn lunging from the tick he comes** *(minty-dolphin
+## #852: "The stair guard can become a charger that is triggered by a location if necessary")*: a
+## place on the stairwell sets him off and his warning is his badge before he exists
+## (`SetOffWatch`), so he comes with his telegraph spent, running, and has no wait or notice to be
+## drawn standing through. Created as `EventStreaming.set_off()` creates him.
+func _test_masked_man_is_drawn_lunging_from_the_tick_he_comes(t: TestRunner) -> void:
 	var def := EventCatalogue.by_id("masked_pursuer")
 	var instance_where := WhereSheIs.nowhere()
 	var instance := EventInstance.new()
-	instance.setup(def, Vector2.ZERO, PackedVector2Array(), Vector2.RIGHT,
-			EventSurroundings.new().hearing(instance_where) \
+	instance.setup(def, Vector2.ZERO, PackedVector2Array([Vector2.ZERO, Vector2(0.0, -600.0)]),
+			Vector2.RIGHT, EventSurroundings.new().hearing(instance_where) \
 				.drawing_through(DrawnEvent.recording(instance, RecordingEventDrawer.new())))
-	t.check(instance.is_waiting()
-			and await _drawn_from(t, instance, [EventPictures.GUARD_STANDING_BY_VIEW]),
-			"waiting at the foot of the shaft he is drawn standing")
-	# Inside `EventDef.notice_within()` (900px), outside `NoticeSpec.runs_within()`:
-	# one step notices her, and he warns for as long as she stays there, longer than
-	# his `telegraphs_for()`.
-	instance_where.tell(Vector2(0.0, def.notice().runs_within() + 100.0))
-	instance.step(STEP)
-	t.check(not instance.is_waiting() and instance.is_telegraphing(), "he has noticed her")
-	var alert := true
-	for i in int(round((def.telegraphs_for() + 2.0) / STEP)):
-		alert = alert \
-				and await _drawn_from(t, instance, [EventPictures.GUARD_ALERT_BY_VIEW])
+	instance.arrive_from_its_warning()
+	instance.restore(EventSave.aged(EventSpawner.age_when_warned(def)))
+	instance_where.tell(Vector2(0.0, -400.0))
+	var lunging := true
+	for i in int(round(1.0 / STEP)):
 		instance.step(STEP)
-	t.check(alert, "and stands with his hand raised for as long as she stays out of his reach")
-	instance_where.tell(Vector2(0.0, def.notice().runs_within() - 10.0))
-	for i in int(round(0.1 / STEP)):
-		instance.step(STEP)
-	t.check(not instance.is_telegraphing()
-			and await _drawn_from(t, instance, [EventPictures.GUARD_LUNGING_BY_VIEW]),
-			"once she comes within his charge distance he is drawn lunging")
+		lunging = lunging and not instance.is_waiting() and not instance.is_telegraphing() \
+				and await _drawn_from(t, instance, [EventPictures.GUARD_LUNGING_BY_VIEW])
+	t.check(lunging, "from the tick he comes he is drawn lunging up his line")
 	instance.free()
 
 # ----------------------------------------------------------- every charger's three stages ---
@@ -1049,6 +1041,86 @@ func _test_burst_water_main_draws_no_body_shadow(t: TestRunner) -> void:
 			"burst_water_main opts out of the body shadow every other seal draws")
 	t.check(EventCatalogue.by_id("fallen_tree").look().casts_a_shadow(),
 			"fallen_tree, burst_water_main's same-geometry sibling, keeps the ordinary body shadow")
+
+## **The riot van and the moving van cast one oval per wheel pair, under a body of their own**
+## (minty-hedgehog 1): their ground shape is the scene round them (`EventVehicleLook.SCENE_SHAPED`,
+## the night raid's disc holding its officers, the moving van's band under its ramp), wider than the
+## van, so their shadow is laid under a body read off the picture they are drawn with. The riot van
+## at every sector, and the moving van side on and end on, cast two ovals together no wider than the
+## picture drawn for that view, where the night raid's scene is wider than the riot van.
+func _test_a_scene_shaped_van_casts_its_shadow_under_its_wheels(t: TestRunner) -> void:
+	var raid := EventCatalogue.by_id("night_raid")
+	var raid_side := EventPictures.native_size(EventPictures.RIOT_VAN_BY_VIEW["side"]).x
+	t.check(_outlines_bounds([raid.ground_shape().shadow_outline(Vector2.ZERO)]).size.x
+			> raid_side, "the night raid's scene is wider than the riot van's side picture")
+	for sector in range(8):
+		var instance := FakeEvent.new()
+		instance.heading = Vector2.from_angle(deg_to_rad(sector * 45.0))
+		instance.shape = raid.ground_shape()
+		var look := instance.look_for(raid)
+		var drawn := EventPictures.native_size(
+				EventPictures.RIOT_VAN_BY_VIEW[look.select_view(instance.heading)]).x
+		var outlines := look.shadow_outlines(Vector2.ZERO)
+		var width := _outlines_bounds(outlines).size.x
+		t.check(outlines.size() == 2 and width <= drawn,
+				"the riot van at sector %d casts two ovals no wider than its %.0fpx picture (%d, %.1fpx)"
+				% [sector, drawn, outlines.size(), width])
+		instance.free()
+	var moving := EventCatalogue.by_id("moving_van")
+	for side_on: bool in [true, false]:
+		var instance := FakeEvent.new()
+		instance.side_on = side_on
+		instance.solid_direction = Vector2.RIGHT if side_on else Vector2.DOWN
+		instance.shape = moving.ground_shape()
+		var look := instance.look_for(moving)
+		var picture := EventPictures.stationary_vehicle_texture(EventDef.Look.MOVING_VAN, side_on)
+		var drawn := EventPictures.stationary_vehicle_extent(picture, side_on,
+				moving.body().drawn_width()).x
+		var outlines := look.shadow_outlines(Vector2.ZERO)
+		var width := _outlines_bounds(outlines).size.x
+		if not side_on:
+			_check_the_end_on_van_stands_on_its_tyres(t, outlines, picture)
+		t.check(outlines.size() == 2 and width <= drawn,
+				"the moving van %s casts two ovals no wider than its %.0fpx picture (%d, %.1fpx)"
+				% ["side on" if side_on else "end on", drawn, outlines.size(), width])
+		instance.free()
+
+## The moving van end on is stood on its picture's bottom row, the ramp's foot, `picture`'s height
+## below its node, and its rear tyres end rows above it: the nearer oval's middle lies on the row
+## its tyres' feet stand on, read off the picture's own source (the lowest edge of its dark tyre
+## rectangles), and not the ramp's foot below it.
+func _check_the_end_on_van_stands_on_its_tyres(t: TestRunner, outlines: Array[PackedVector2Array],
+		picture: String) -> void:
+	var source := FileAccess.get_file_as_string("res://art/events/moving_van_vertical.svg")
+	var tyre_feet: Array[float] = []
+	var tyre := RegEx.create_from_string(
+			"<rect x=\"[0-9.]+\" y=\"([0-9.]+)\" width=\"[0-9.]+\" height=\"([0-9.]+)\" fill=\"#221f28\"")
+	for found in tyre.search_all(source):
+		tyre_feet.append(float(found.get_string(1)) + float(found.get_string(2)))
+	t.check(tyre_feet.size() == 2, "the end-on moving van's source draws two rear tyres (%d)" % tyre_feet.size())
+	if tyre_feet.size() != 2:
+		return
+	var picture_height := EventPictures.native_size(picture).y
+	var tyre_line: float = float(tyre_feet.max()) - picture_height
+	var nearer := -INF
+	for outline in outlines:
+		nearer = maxf(nearer, _outlines_bounds([outline]).get_center().y)
+	t.check(absf(nearer - tyre_line) < 1.0,
+			"the end-on moving van's nearer oval lies on the line its tyres stand on (%.1f against %.1f; the ramp's foot is at 0)"
+			% [nearer, tyre_line])
+
+## The box round every point of `outlines`.
+func _outlines_bounds(outlines: Array[PackedVector2Array]) -> Rect2:
+	var bounds := Rect2()
+	var first := true
+	for outline in outlines:
+		for point in outline:
+			if first:
+				bounds = Rect2(point, Vector2.ZERO)
+				first = false
+			else:
+				bounds = bounds.expand(point)
+	return bounds
 
 # ------------------------------------------------------------ the wheels ---
 

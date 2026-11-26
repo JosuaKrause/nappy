@@ -24,7 +24,7 @@ enum WarningPicture {
 }
 
 ## The picture the row is drawn as, which is the silhouette its badge carries. Every visible row
-## states its own; `tests/test_events.gd` names the three that are legitimately invisible.
+## states its own; `tests/test_events_catalogue.gd` names the two that are legitimately invisible.
 var _picture := EventDef.Look.NONE
 
 ## The picture a row standing in its warning is drawn in.
@@ -68,6 +68,17 @@ var _may_be_a_pelican := false
 ## roadblock's look when it draws the band and the barrier post when its guards leave (the side the
 ## far guard walks off from, which posts still have a man).
 var _guard_sides: Array[int] = [-1, 1]
+
+## **Whether the sky lights up as it goes off**: the escape city's explosion, a bright flash over the
+## whole screen the moment its telegraph is over, wherever it is (`BlastLight`; minty-lemur #785).
+## The light is all it changes: the field, the cost and the crater are the row's own either way.
+var _flashes := false
+
+## **Whether its picture is drawn only in its screen-edge badge, never in the world**: the escape
+## city's explosion, whose mushroom of smoke the badge carries for a thing only ever heard on the
+## street. The row states it, as it states its flash, so nothing asks which picture a row has to
+## know whether that picture stands on the street.
+var _only_in_its_badge := false
 
 ## A row with no picture of its own: nothing is drawn for it.
 static func none() -> LookSpec:
@@ -117,6 +128,18 @@ func maybe_a_pelican() -> LookSpec:
 	spec._may_be_a_pelican = true
 	return spec
 
+## The same look, the sky lighting up as it goes off.
+func flashing_as_it_goes_off() -> LookSpec:
+	var spec := _copy()
+	spec._flashes = true
+	return spec
+
+## The same look, its picture drawn only in its screen-edge badge and nothing of it in the world.
+func drawn_only_in_its_badge() -> LookSpec:
+	var spec := _copy()
+	spec._only_in_its_badge = true
+	return spec
+
 ## The same look posting a guard on `sides` of its band (`-1`/`+1`), and on none for an empty list.
 func guarded_on(sides: Array[int]) -> LookSpec:
 	var spec := _copy()
@@ -127,6 +150,14 @@ func guarded_on(sides: Array[int]) -> LookSpec:
 ## (`EventPictures.icon_for()`).
 func picture() -> EventDef.Look:
 	return _picture
+
+## **Whether anything of it is drawn in the world**: not for a row with no picture
+## (`EventDef.Look.NONE`), nor for one whose picture is drawn only in its screen-edge badge
+## (`drawn_only_in_its_badge()`, the escape city's explosion). What a row puts on the street is
+## measured only where this holds (`EventFootprints.box_of()`), so a badge's picture is never
+## taken for a thing standing there, and only such a row owes a shape and, standing still, a body.
+func is_drawn_in_the_world() -> bool:
+	return _picture != EventDef.Look.NONE and not _only_in_its_badge
 
 ## The picture it stands in while it warns, whose largest decides whether its warning would stand
 ## in her view.
@@ -150,6 +181,10 @@ func vanishes_into_its_hold() -> bool:
 func may_be_drawn_as_a_pelican() -> bool:
 	return _may_be_a_pelican
 
+## Whether the sky lights up as it goes off: the escape city's explosion.
+func flashes_as_it_goes_off() -> bool:
+	return _flashes
+
 ## The sides of its band a guard stands on, `-1`/`+1` (a copy: nothing changes the look's own).
 func guard_sides() -> Array[int]:
 	return _guard_sides.duplicate()
@@ -163,4 +198,6 @@ func _copy() -> LookSpec:
 	spec._vanishes_into_its_hold = _vanishes_into_its_hold
 	spec._may_be_a_pelican = _may_be_a_pelican
 	spec._guard_sides = _guard_sides.duplicate()
+	spec._flashes = _flashes
+	spec._only_in_its_badge = _only_in_its_badge
 	return spec

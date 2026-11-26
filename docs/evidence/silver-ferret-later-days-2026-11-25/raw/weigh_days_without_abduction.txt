@@ -1,0 +1,114 @@
+# Per row: price of one pass, awake / asleep (nearest line), flags
+ROW alley_mouse               -      -  ends 0 pursues 0 waits 1 hunts 0
+ROW alley_robbery             -      -  ends 1 pursues 1 waits 1 hunts 0
+ROW busker                 12.0   -4.5  ends 0 pursues 0 waits 0 hunts 0
+ROW cafe_tables             0.5   -3.3  ends 0 pursues 0 waits 0 hunts 0
+ROW cat_dash               -0.9   -2.5  ends 0 pursues 0 waits 0 hunts 0
+ROW charging_dog              -      -  ends 1 pursues 1 waits 0 hunts 0
+ROW chatting_mother        -2.1   -4.4  ends 0 pursues 0 waits 0 hunts 0
+ROW construction          -25.9  -25.9  ends 0 pursues 0 waits 0 hunts 0
+ROW curfew_announce        55.3   18.1  ends 0 pursues 0 waits 0 hunts 0
+ROW cyclist                 5.5    1.1  ends 1 pursues 0 waits 0 hunts 0
+ROW delivery_van          -19.4  -19.4  ends 0 pursues 0 waits 0 hunts 0
+ROW dog_walker             16.1    4.3  ends 0 pursues 0 waits 0 hunts 0
+ROW firefight              66.4   14.6  ends 1 pursues 0 waits 0 hunts 0
+ROW homeless_yeller        11.1   -3.2  ends 0 pursues 0 waits 0 hunts 0
+ROW ice_cream_van          -0.3  -14.2  ends 0 pursues 0 waits 0 hunts 0
+ROW leaf_blower            22.6    1.3  ends 0 pursues 0 waits 0 hunts 0
+ROW loose_dog              24.3   10.0  ends 0 pursues 0 waits 0 hunts 0
+ROW loudspeaker            14.4   -4.3  ends 0 pursues 0 waits 0 hunts 0
+ROW market_stall            2.5   -2.2  ends 0 pursues 0 waits 0 hunts 0
+ROW military_convoy        29.8    8.8  ends 0 pursues 0 waits 0 hunts 0
+ROW night_raid             36.2    0.6  ends 0 pursues 0 waits 0 hunts 1
+ROW pigeon_flock              -      -  ends 0 pursues 0 waits 1 hunts 0
+ROW playground            -19.5  -19.5  ends 0 pursues 0 waits 0 hunts 0
+ROW police_patrol           3.3   -4.2  ends 0 pursues 0 waits 0 hunts 0
+ROW poster_crew_square     -5.3   -9.3  ends 0 pursues 0 waits 0 hunts 0
+ROW protest                26.0   -1.5  ends 0 pursues 0 waits 0 hunts 0
+ROW reversing_lorry         5.6   -7.1  ends 1 pursues 0 waits 0 hunts 0
+ROW roadblock             -23.2  -23.2  ends 0 pursues 0 waits 0 hunts 1
+
+# The whole city: per day, a city-day (sums over the seeds / 18)
+DAY  1 placed 90.0 | lethal 0.0 (0.0%) | with rung 0.0 (0.0%) | waits 12.8 | priced 77.2, costly 65.7 | paid awake 493.5 a city-day, 6.40 an event | paid asleep 19.0, 0.25 | net awake 4.21 an event
+DAY  2 placed 90.1 | lethal 0.0 (0.0%) | with rung 0.0 (0.0%) | waits 9.9 | priced 80.2, costly 58.2 | paid awake 459.9 a city-day, 5.73 an event | paid asleep 15.7, 0.20 | net awake 1.71 an event
+DAY  3 placed 85.7 | lethal 1.8 (2.1%) | with rung 1.8 (2.1%) | waits 9.3 | priced 76.4, costly 55.6 | paid awake 411.1 a city-day, 5.38 an event | paid asleep 13.7, 0.18 | net awake 1.42 an event
+DAY  4 placed 101.6 | lethal 6.2 (6.1%) | with rung 6.2 (6.1%) | waits 11.1 | priced 86.2, costly 63.2 | paid awake 477.7 a city-day, 5.54 an event | paid asleep 15.0, 0.17 | net awake 1.53 an event
+DAY  5 placed 106.9 | lethal 5.9 (5.6%) | with rung 5.9 (5.6%) | waits 11.4 | priced 91.9, costly 66.7 | paid awake 541.1 a city-day, 5.89 an event | paid asleep 14.4, 0.16 | net awake 2.10 an event
+DAY  6 placed 111.5 | lethal 5.8 (5.2%) | with rung 5.8 (5.2%) | waits 11.4 | priced 96.2, costly 71.1 | paid awake 861.2 a city-day, 8.95 an event | paid asleep 114.4, 1.19 | net awake 4.98 an event
+DAY  7 placed 101.3 | lethal 5.3 (5.3%) | with rung 10.1 (9.9%) | waits 12.2 | priced 85.4, costly 59.2 | paid awake 497.4 a city-day, 5.82 an event | paid asleep 12.6, 0.15 | net awake 1.13 an event
+DAY  8 placed 111.9 | lethal 10.4 (9.3%) | with rung 15.8 (14.2%) | waits 10.3 | priced 93.3, costly 63.6 | paid awake 509.1 a city-day, 5.46 an event | paid asleep 11.9, 0.13 | net awake 0.17 an event
+DAY  9 placed 76.5 | lethal 5.6 (7.3%) | with rung 11.3 (14.8%) | waits 9.8 | priced 62.6, costly 42.9 | paid awake 366.0 a city-day, 5.84 an event | paid asleep 6.7, 0.11 | net awake 0.61 an event
+DAY 10 placed 73.4 | lethal 5.3 (7.2%) | with rung 10.1 (13.8%) | waits 10.4 | priced 59.4, costly 42.7 | paid awake 409.5 a city-day, 6.90 an event | paid asleep 7.1, 0.12 | net awake 2.42 an event
+DAY 11 placed 71.2 | lethal 5.2 (7.3%) | with rung 10.1 (14.1%) | waits 9.6 | priced 57.7, costly 41.3 | paid awake 377.9 a city-day, 6.55 an event | paid asleep 7.1, 0.12 | net awake 1.76 an event
+DAY 12 placed 88.5 | lethal 5.8 (6.6%) | with rung 11.3 (12.7%) | waits 10.4 | priced 74.0, costly 54.8 | paid awake 644.9 a city-day, 8.72 an event | paid asleep 8.9, 0.12 | net awake 4.30 an event
+DAY 13 placed 104.9 | lethal 7.6 (7.2%) | with rung 27.6 (26.3%) | waits 11.7 | priced 88.5, costly 55.6 | paid awake 757.0 a city-day, 8.55 an event | paid asleep 23.6, 0.27 | net awake 1.28 an event
+DAY 14 placed 89.3 | lethal 7.3 (8.1%) | with rung 12.3 (13.7%) | waits 11.4 | priced 73.1, costly 54.7 | paid awake 662.5 a city-day, 9.07 an event | paid asleep 8.7, 0.12 | net awake 5.05 an event
+# per act, the mean of its days
+ACT 1 placed 88.6 | lethal 0.6 (0.7%) | with rung 0.6 (0.7%) | waits 10.7 | priced 77.9, costly 59.8 | paid awake 454.9 a city-day, 5.84 an event | paid asleep 16.1, 0.21 | net awake 2.44 an event
+ACT 2 placed 105.3 | lethal 5.8 (5.5%) | with rung 7.0 (6.6%) | waits 11.6 | priced 89.9, costly 65.1 | paid awake 594.3 a city-day, 6.61 an event | paid asleep 39.1, 0.43 | net awake 2.50 an event
+ACT 3 placed 83.2 | lethal 6.6 (8.0%) | with rung 11.8 (14.2%) | waits 10.0 | priced 68.2, costly 47.6 | paid awake 415.6 a city-day, 6.09 an event | paid asleep 8.2, 0.12 | net awake 1.10 an event
+ACT 4 placed 94.2 | lethal 6.9 (7.3%) | with rung 17.0 (18.1%) | waits 11.2 | priced 78.5, costly 55.1 | paid awake 688.1 a city-day, 8.76 an event | paid asleep 13.7, 0.17 | net awake 3.40 an event
+
+# On her route (view 0): per day, a city-day (sums over the seeds / 18)
+DAY  1 placed 21.8 | lethal 0.0 (0.0%) | with rung 0.0 (0.0%) | waits 1.7 | priced 20.1, costly 15.3 | paid awake 50.7 a city-day, 2.52 an event | paid asleep 0.0, 0.00 | net awake -0.71 an event
+DAY  2 placed 23.2 | lethal 0.0 (0.0%) | with rung 0.0 (0.0%) | waits 2.2 | priced 21.0, costly 13.9 | paid awake 51.1 a city-day, 2.44 an event | paid asleep 0.0, 0.00 | net awake -2.88 an event
+DAY  3 placed 19.8 | lethal 0.0 (0.0%) | with rung 0.0 (0.0%) | waits 1.6 | priced 18.3, costly 11.7 | paid awake 32.8 a city-day, 1.80 an event | paid asleep 0.0, 0.00 | net awake -3.90 an event
+DAY  4 placed 29.7 | lethal 0.1 (0.2%) | with rung 0.1 (0.2%) | waits 2.3 | priced 27.3, costly 18.1 | paid awake 58.4 a city-day, 2.14 an event | paid asleep 0.0, 0.00 | net awake -3.18 an event
+DAY  5 placed 30.7 | lethal 0.2 (0.5%) | with rung 0.2 (0.5%) | waits 2.8 | priced 27.7, costly 17.2 | paid awake 67.3 a city-day, 2.43 an event | paid asleep 0.0, 0.00 | net awake -3.54 an event
+DAY  6 placed 30.3 | lethal 0.2 (0.5%) | with rung 0.2 (0.5%) | waits 2.8 | priced 27.4, costly 18.1 | paid awake 101.6 a city-day, 3.71 an event | paid asleep 10.1, 0.37 | net awake -2.11 an event
+DAY  7 placed 29.0 | lethal 0.1 (0.2%) | with rung 2.9 (10.2%) | waits 3.1 | priced 25.8, costly 15.8 | paid awake 57.8 a city-day, 2.24 an event | paid asleep 0.0, 0.00 | net awake -4.73 an event
+DAY  8 placed 32.6 | lethal 0.1 (0.3%) | with rung 3.0 (9.2%) | waits 2.6 | priced 29.9, costly 17.3 | paid awake 65.4 a city-day, 2.19 an event | paid asleep 0.0, 0.00 | net awake -5.62 an event
+DAY  9 placed 17.5 | lethal 0.1 (0.6%) | with rung 2.5 (14.3%) | waits 1.9 | priced 15.4, costly 8.0 | paid awake 38.0 a city-day, 2.46 an event | paid asleep 0.0, 0.00 | net awake -5.33 an event
+DAY 10 placed 15.1 | lethal 0.1 (0.4%) | with rung 1.5 (9.9%) | waits 1.9 | priced 13.1, costly 7.7 | paid awake 37.8 a city-day, 2.89 an event | paid asleep 0.0, 0.00 | net awake -4.02 an event
+DAY 11 placed 16.1 | lethal 0.0 (0.0%) | with rung 2.6 (16.3%) | waits 1.7 | priced 14.3, costly 8.2 | paid awake 45.3 a city-day, 3.16 an event | paid asleep 0.0, 0.00 | net awake -4.75 an event
+DAY 12 placed 16.6 | lethal 0.2 (1.0%) | with rung 2.7 (16.4%) | waits 1.4 | priced 15.0, costly 8.4 | paid awake 36.1 a city-day, 2.41 an event | paid asleep 0.0, 0.00 | net awake -5.78 an event
+DAY 13 placed 13.2 | lethal 0.1 (0.8%) | with rung 0.1 (0.8%) | waits 0.8 | priced 12.3, costly 8.4 | paid awake 36.8 a city-day, 2.98 an event | paid asleep 0.0, 0.00 | net awake -1.83 an event
+DAY 14 placed 12.9 | lethal 0.0 (0.0%) | with rung 1.6 (12.1%) | waits 1.1 | priced 11.8, costly 6.8 | paid awake 33.4 a city-day, 2.83 an event | paid asleep 0.0, 0.00 | net awake -4.38 an event
+# per act, the mean of its days
+ACT 1 placed 21.6 | lethal 0.0 (0.0%) | with rung 0.0 (0.0%) | waits 1.8 | priced 19.8, costly 13.6 | paid awake 44.9 a city-day, 2.27 an event | paid asleep 0.0, 0.00 | net awake -2.46 an event
+ACT 2 placed 29.9 | lethal 0.1 (0.4%) | with rung 0.8 (2.8%) | waits 2.8 | priced 27.1, costly 17.3 | paid awake 71.3 a city-day, 2.63 an event | paid asleep 2.5, 0.09 | net awake -3.37 an event
+ACT 3 placed 20.3 | lethal 0.1 (0.3%) | with rung 2.4 (11.8%) | waits 2.0 | priced 18.2, costly 10.3 | paid awake 46.7 a city-day, 2.56 an event | paid asleep 0.0, 0.00 | net awake -5.10 an event
+ACT 4 placed 14.2 | lethal 0.1 (0.7%) | with rung 1.5 (10.3%) | waits 1.1 | priced 13.0, costly 7.9 | paid awake 35.4 a city-day, 2.72 an event | paid asleep 0.0, 0.00 | net awake -4.11 an event
+
+# The rows that carry the paid points, per act: row count a city-day, paid awake a city-day
+TOPACT 1 leaf_blower 12.4 / 280.4, homeless_yeller 9.1 / 101.5, busker 2.7 / 32.9, market_stall 9.6 / 24.0, cafe_tables 25.3 / 12.7, reversing_lorry 0.6 / 3.3, playground 2.4 / 0.0, alley_mouse 3.4 / 0.0
+TOPACT 2 leaf_blower 10.9 / 246.4, homeless_yeller 10.0 / 111.2, curfew_announce 1.4 / 76.0, loudspeaker 4.1 / 59.0, busker 4.7 / 56.2, market_stall 9.3 / 23.2, cafe_tables 22.7 / 11.4, reversing_lorry 2.0 / 11.0
+TOPACT 3 leaf_blower 6.2 / 140.0, homeless_yeller 8.8 / 97.1, loudspeaker 5.7 / 82.2, busker 4.7 / 56.5, market_stall 5.7 / 14.2, reversing_lorry 1.6 / 9.2, night_raid 0.2 / 9.1, cafe_tables 14.7 / 7.3
+TOPACT 4 protest 9.5 / 246.5, leaf_blower 6.8 / 154.0, homeless_yeller 8.8 / 97.8, loudspeaker 5.6 / 81.3, busker 4.7 / 56.2, firefight 0.3 / 22.1, market_stall 5.0 / 12.5, reversing_lorry 2.0 / 11.4
+
+# The moments the dawn owes her, a city-day (sent ahead of her, not placed)
+MOM  1 moments 26.0 (RD 26.0) | lethal 0.0 | unpriced 0.0 | paid awake 388.0
+MOM  2 moments 26.0 (RD 26.0) | lethal 3.9 | unpriced 0.0 | paid awake 349.8
+MOM  3 moments 26.1 (RD 26.1) | lethal 5.2 | unpriced 2.1 | paid awake 318.4
+MOM  4 moments 27.0 (RD 27.0) | lethal 3.3 | unpriced 0.0 | paid awake 299.8
+MOM  5 moments 27.0 (RD 27.0) | lethal 2.6 | unpriced 0.0 | paid awake 285.8
+MOM  6 moments 27.0 (RD 27.0) | lethal 3.1 | unpriced 0.0 | paid awake 309.3
+MOM  7 moments 27.0 (RD 27.0) | lethal 3.4 | unpriced 0.0 | paid awake 299.4
+MOM  8 moments 29.0 (RD 29.0) | lethal 2.6 | unpriced 0.0 | paid awake 339.3
+MOM  9 moments 29.0 (RD 29.0) | lethal 2.9 | unpriced 0.0 | paid awake 339.0
+MOM 10 moments 29.0 (RD 29.0) | lethal 2.6 | unpriced 0.0 | paid awake 343.8
+MOM 11 moments 29.0 (RD 29.0) | lethal 2.7 | unpriced 0.0 | paid awake 323.9
+MOM 12 moments 32.0 (RD 32.0) | lethal 3.2 | unpriced 0.0 | paid awake 369.8
+MOM 13 moments 32.0 (RD 32.0) | lethal 4.1 | unpriced 0.0 | paid awake 381.4
+MOM 14 moments 32.0 (RD 32.0) | lethal 3.1 | unpriced 0.0 | paid awake 389.1
+# per act, the mean of its days, and the moments' rows
+MOMACT 1 moments 26.0 | lethal 3.0 | paid awake 352.0 a city-day, 13.53 a moment | dog_walker 10.9, loose_dog 6.7, cat_dash 5.4, cyclist 2.4, charging_dog 0.7
+MOMACT 2 moments 27.0 | lethal 3.1 | paid awake 298.6 a city-day, 11.06 a moment | dog_walker 8.2, police_patrol 5.9, loose_dog 5.3, cat_dash 4.4, cyclist 3.1
+MOMACT 3 moments 29.0 | lethal 2.7 | paid awake 336.5 a city-day, 11.60 a moment | dog_walker 9.4, loose_dog 6.2, police_patrol 6.1, cat_dash 4.7, cyclist 2.7
+MOMACT 4 moments 32.0 | lethal 3.4 | paid awake 380.1 a city-day, 11.88 a moment | dog_walker 10.0, loose_dog 6.6, police_patrol 6.3, cat_dash 5.1, cyclist 3.4, military_convoy 0.7
+
+# RD placed a city-day against the RV sum
+RDCHK  1 90.0 90.0
+RDCHK  2 90.1 90.1
+RDCHK  3 85.7 85.7
+RDCHK  4 101.6 101.6
+RDCHK  5 106.9 106.9
+RDCHK  6 111.5 111.5
+RDCHK  7 101.3 101.3
+RDCHK  8 126.1 111.9
+RDCHK  9 83.4 76.5
+RDCHK 10 82.4 73.4
+RDCHK 11 81.4 71.2
+RDCHK 12 99.0 88.5
+RDCHK 13 116.9 104.9
+RDCHK 14 101.9 89.3

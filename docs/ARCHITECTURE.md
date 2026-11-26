@@ -64,6 +64,8 @@ src/
 	summary_model.gd      what a summary screen says, pure; the run's standing and the tally, once
   player/
 	stroller.gd           movement, input, speed state
+	view_shake.gd         the small eased shake of her view an explosion near gives (full on top of
+	                      it, none at its reach), which the stroller adds to its camera's follow
 	baby.gd               the two meters + baby state machine
   city/
 	city_map.gd           tile data, queries (walkable, is_calm_zone); holds the city's street lattice
@@ -99,7 +101,8 @@ src/
 	                      ground it covers, and the switch; a building, the home door and
 	                      every scenery sprite are each composed of one
 	scenery_sprite.gd     persistent placements with independently releasable drawing commands
-	scenery_water.gd      separate south-water surface; pausable shader clock, no ground redraw
+	scenery_water.gd      separate south-water surface: its cells drawn from the one water tile
+	south_water_tile.gd   the south water's one live tile of drifting Voronoi lines, on the city clock
 	ground_tiles.gd       which ground tile a cell gets
 	tile.gd               TileType enum + per-tile metadata
 	city_edge.gd          where the main road leaves the map: the tunnel, the bridge, the spine's ends
@@ -186,6 +189,7 @@ src/
 	    notice_spec.gd        how a row that waits notices her: its radius, a quiet wait, a run distance
 	    pursuit_spec.gd       how a pursuer comes after her: its speed, how its chase begins, its warning
 	    hunt_spec.gd          how a row hunts her once heated: a vehicle letting men out, or a man pursuing
+	    charger_timing.gd     how a run plays every charger's warning and notice radius (`--chargers`)
 	    day_switch.gd         how a row is sited and noticed from the day after its first appearance
 	    on_her_way.gd         where her walk sites a row the day leaves unsited at dawn
 	    sent_ahead.gd         how the director sends a row ahead of her: at once or warned first
@@ -403,10 +407,13 @@ src/
 	                         own table with the clock of a plan that comes again, carrying its state
 	                         out and back; the repeats, the masts, a finished plan spent
 	  event_spawner.gd      every instance made, with its scar, its body and the bang outside;
-	                         what a finished row leaves; the rows summoned on sight; the pelican bag,
+	                         what a row leaves where it goes off; the rows summoned on sight; the pelican bag,
 	                         and the pelican's first landing on her
 	  warning_board.gd      the screen-edge badges up for something not in the world yet, and the
 	                         mark over her head
+	  set_off_watch.gd      the places that set a row off, the masked man's on the escape's stairs and
+	                         the escape city's explosions: its warning put up as she reaches its
+	                         place, and it brought in there after it, out of her sight
 	  events_ahead.gd       what the director puts in front of her while she walks: sited on her
 	                         way, owed ahead, the men a vehicle lets out, the poster tear's pursuer,
 	                         a task's mast placed after dawn and day 13's roadblock put across a
@@ -436,6 +443,10 @@ src/
 	day_controller.gd     the clock, the two phases, the four ways a day ends, handed the day's
 	                      spec: her front door, the building's service exit or the city's two
 	                      ways out is its goal; ticked by `main` on the walk's physics tick
+	escape_walk_in.gd     the escape's last steps: once the city section is won at the threshold of
+	                      the tunnel or the bridge, leads her on by herself into the tunnel's
+	                      opening or across the deck and says when she is in; `main` freezes the
+	                      world for it and raises the ending after
 	loss_cause.gd         what ended a hard-fail or crying day: pure rules over plain values, no
 	                      nodes and no globals; `DayDirector` reads the world and hands them in
 	day_world_source.gd   where the day director gets the world a spec is walked in: stands it and
@@ -596,6 +607,10 @@ src/
 	badge_model.gd        which dangers get a screen-edge badge and when: plain data in, badges out, no scene
 	danger_edge.gd        the screen-edge badge: builds the model's inputs each frame and draws what it decides
 	excitement_halo.gd    which sources earn a halo this frame, and how each rim reads
+	blast_light.gd        the light of the bombs over the escape city: the city's light lifted by
+	                      each explosion's flash and the far ones between, her view shaken by a near one
+	flash_rhythm.gd       when the sky over the escape city lights up and how brightly, no second
+	                      holding more than three flashes
 	source_rim.gd         one source's rim as the halo lights it (`SourceRim`): built on its first
 	                      glow, given back once faded; an event's adds its band
 	entity_halo.gd        the ring shared by EventInstance and CrowdAgent for the excitement halo (on
@@ -677,7 +692,7 @@ art/                      the authoring pictures, behind a .gdignore: the engine
                           header, the social card the deploy publishes, store and social-media
                           headers. The game itself loads none of them
 assets/                   what the engine still reads at runtime, and only that
-  shaders/                the excitement halo's silhouette rim and the shared south-water ripple;
+  shaders/                the excitement halo's silhouette rim and the south water's Voronoi lines;
                           both boot paths issue real transparent canvas draws before play because
                           Compatibility has no shader-precompile call
   atlases/membership.json which picture belongs on which atlas page, with each group's
@@ -711,7 +726,8 @@ tools/
   pycheck.sh              ruff, mypy and the unit tests for the Python here
   check_layers.py         holds src/ to its layers; layer_map.py is the map, as data, and the
                           place a break that has to stand is listed
-  split-scenes.py         regenerate or check the pipe/crash static and moving SVG spans,
+  split-scenes.py         regenerate or check the static and moving SVG spans of the pipe and
+                          crash scenes and the busker, café-sitter and poster-crew figures,
                           runtime registration and atlas membership; evidence metadata is an
                           explicit output rather than an ordinary regeneration side effect
   run.sh                  play; rebuilds the import cache first when a pull left it stale
@@ -808,8 +824,8 @@ onto a building part's name, with the command line taken out of it; the real `ma
 flags": "on the published site behind debug=1 we'd want some of the debug flags (like day,
 invincible, etc.) so debugging the live build is easier".)* `RunConfig.is_live_debug()` — a debug
 build, or `?debug=1` (`RunConfig.asks_for_the_readout()`) — is the gate: `?day=`,
-`?invincible=1`, `?layers=`, `?controls=`, `?escape=1`, `?meters=`, `?daylength=`,
-`?ending=`/`?blackout=1`, `?groundmode=`, `?framerecord=1` and `?dpr=<x>` each read it; the frame record is the one of them that hands
+`?invincible=1`, `?layers=`, `?controls=`, `?escape=1`, `?meters=`, `?chargers=`, `?daylength=`,
+`?ending=`/`?blackout=1`, `?escapebag=`, `?groundmode=`, `?framerecord=1` and `?dpr=<x>` each read it; the frame record is the one of them that hands
 over a file, through the browser's download when its page button is tapped.
 `--seed` past a positive integer, `--spawn`, `--follow`, `--overview`, `--zoom` and anything that
 drives input, takes a picture or writes a file — the frame record's download aside — stay behind
@@ -1309,8 +1325,9 @@ one figure a slice, a wide scene one
   internals each step, its incomplete regions separately owned until complete and paused
   between the load and retention boundaries. State edits and leaving retention cancel them.
   In every mode the safety guard completes a region synchronously. The camera's transformed viewport determines coverage, including rotation
-  and overview; lifecycle relocations prepare their destination before play. A city clock keeps
-  resident water surfaces in phase and restores returning roof animation phases.
+  and overview; lifecycle relocations prepare their destination before play. A city clock drives
+  the south water's one tile, which every resident water surface draws from, and restores
+  returning roof animation phases.
 - Buildings: `StaticBody2D` whose collision is the whole lot, plus a `_draw()` that
   assembles that same lot out of 32px tiles — a front wall (the southern `Building.height()` px) and a
   roof (the remainder). Fitting the mass inside the lot keeps extrusions off the *ground* she

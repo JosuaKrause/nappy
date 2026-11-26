@@ -75,3 +75,10 @@ func palette() -> Array:
 ## silhouette, and the ordinary frame once at the agent itself.
 func draw_body(_canvas: CanvasItem) -> void:
 	pass
+
+## The ground this agent's shadow covers with the agent at `at`: the one oval of its own ground
+## shape (`GroundShape.shadow_outline()`) for anything not on wheels. What `CrowdAgent.draw_shadow()`
+## fills and the debug view's shadow layer traces, so the two cannot disagree.
+func shadow_outlines(at: Vector2) -> Array[PackedVector2Array]:
+	var outlines: Array[PackedVector2Array] = [_agent.shape().shadow_outline(at)]
+	return outlines

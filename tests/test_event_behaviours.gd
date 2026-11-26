@@ -13,8 +13,7 @@ func run(t: TestRunner) -> void:
 	_test_the_pursuit_round_trips(t)
 	_test_a_robber_out_of_his_radius_keeps_waiting(t)
 	_test_a_robber_who_notices_her_turns_to_face_her_exactly(t)
-	_test_the_masked_mans_warning_round_trips(t)
-	_test_the_masked_man_waits_again_once_she_leaves_after_his_warning_ran(t)
+	_test_the_set_off_run_has_no_state_of_its_own(t)
 	_test_the_hold_round_trips(t)
 	_test_the_flock_round_trips(t)
 	_test_the_investigation_round_trips(t)
@@ -118,51 +117,28 @@ func _is_warning(instance: EventInstance) -> bool:
 			and not instance.has_parked() and not instance.is_only_its_barrier() \
 			and not instance.has_stopped_her()
 
-## Stood inside his run distance as he notices her, he runs once his warning has run, and one
-## streamed out half way through it runs on the same tick as one that never left.
-func _test_the_masked_mans_warning_round_trips(t: TestRunner) -> void:
+## **A row a place set off runs its line from its first tick and keeps no state of its own**
+## (`EventSetOffRun`, the masked man): created as `EventStreaming.set_off()` creates it, its telegraph
+## spent, it has moved along his line after one tick, saves nothing of its own, and one restored
+## where it had got to stands there.
+func _test_the_set_off_run_has_no_state_of_its_own(t: TestRunner) -> void:
 	var def := EventCatalogue.by_id("masked_pursuer")
 	var path := PackedVector2Array([Vector2.ZERO, Vector2(0.0, -600.0)])
-	var her := Vector2(def.notice().runs_within() - 20.0, 0.0)
-	var first_where := WhereSheIs.nowhere()
-	var first := _instance(t, def, Vector2.ZERO, path, first_where)
-	first_where.tell(her)
-	_advance(first, 0.5)
-	t.check(_is_warning(first),
-			"inside his run distance, he warns first")
-	var second := _round_trip(t, first, "the masked man's warning", &"EventNoticeRun",
-			first_where)
-	first_where.tell(her)
-	var first_ran := -1
-	var second_ran := -1
-	for i in int(Tuning.WARNING_ALONE_MAX / STEP) + 3:
-		first.step(STEP)
-		second.step(STEP)
-		if first_ran < 0 and first.is_past_its_warning():
-			first_ran = i
-		if second_ran < 0 and second.is_past_its_warning():
-			second_ran = i
-	t.check(first_ran >= 0, "he runs once his warning has run")
-	t.check(second_ran == first_ran,
-			"and streamed back in he runs on the same tick (%d, %d)" % [first_ran, second_ran])
+	var first := _instance(t, def, Vector2.ZERO, path)
+	first.arrive_from_its_warning()
+	first.restore(EventSave.aged(EventSpawner.age_when_warned(def)))
+	first.step(STEP)
+	t.check(first.global_position.y < 0.0 and not first.is_telegraphing(),
+			"on his first tick he runs his line (%.1fpx up it)" % -first.global_position.y)
+	_advance(first, 1.0)
+	t.check(first.save().state_of("EventSetOffRun").is_empty(),
+			"the run saves nothing of its own")
+	var second := _instance(t, def, Vector2.ZERO, path)
+	second.restore(first.save())
+	t.check(second.global_position.is_equal_approx(first.global_position),
+			"restored, he stands where he had run to")
 	first.free()
 	second.free()
-
-## His warning, run out with her outside his run distance, is still called off by her leaving his
-## notice: he waits again rather than standing warning for ever.
-func _test_the_masked_man_waits_again_once_she_leaves_after_his_warning_ran(t: TestRunner) -> void:
-	var def := EventCatalogue.by_id("masked_pursuer")
-	var path := PackedVector2Array([Vector2.ZERO, Vector2(0.0, -600.0)])
-	var instance_where := WhereSheIs.nowhere()
-	var instance := _instance(t, def, Vector2.ZERO, path, instance_where)
-	instance_where.tell(Vector2((def.notice().runs_within() + def.notice_within()) * 0.5, 0.0))
-	_advance(instance, Tuning.WARNING_ALONE_MAX + 0.5)
-	t.check(_is_warning(instance),
-			"outside his run distance he is still warning after his warning's length")
-	instance_where.tell(Vector2(def.notice_within() + 50.0, 0.0))
-	instance.step(STEP)
-	t.check(instance.is_waiting(), "she leaving his notice has him wait again")
-	instance.free()
 
 # ----------------------------------------------------------------------- hold ---
 

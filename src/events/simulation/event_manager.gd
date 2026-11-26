@@ -15,6 +15,7 @@ extends Node
 ##   leaves behind, the rows summoned on sight and the run's pelican bag;
 ## - `WarningBoard`: the screen-edge badges up for something not in the world yet, and the mark over
 ##   her head;
+## - `SetOffWatch`: the places that set a row off, warned first, the masked man's;
 ## - `EventsAhead`: what the director puts in front of her while she walks;
 ## - `CheckpointController`: the district doors as she meets them, whose holds and releases come
 ##   back as intents this applies to the player it was handed (`_take_her_in()`, `_hold_her()`,
@@ -56,6 +57,8 @@ var _spawner: EventSpawner
 var _warnings: WarningBoard
 ## What the director puts in front of her while she walks.
 var _ahead: EventsAhead
+## The places that set a row off, the masked man's (`SetOffWatch`).
+var _set_off: SetOffWatch
 ## **The district doors as she meets them** (`CheckpointController`): the holds, the releases, the
 ## walks under a raised boom and the guard a crossing sets on her, over this manager's own live
 ## instances.
@@ -106,7 +109,9 @@ func _init(surroundings: EventSurroundings = null) -> void:
 	_streaming = EventStreaming.new(world, _spawner, _walk_events)
 	_ahead = EventsAhead.new(world, _streaming, _spawner, _warnings, _walk_events)
 	_ahead.use_sitings(SitingMaker.new(world, _walk_events))
-	_checkpoints = CheckpointController.new(world, _spawner.spawn, EventCatalogue.door_guard())
+	_set_off = SetOffWatch.new(world, _streaming, _warnings, _walk_events)
+	_checkpoints = CheckpointController.new(world, _spawner.spawn, EventCatalogue.door_guard(),
+			EventCatalogue.charger_timing().warning())
 	_encounters = EncounterWatch.new(world.reports())
 	_sources = EventSources.new(world, _checkpoints)
 	_checkpoints.door_crossed.connect(func(at: Vector2, axis: Vector2, inspected: bool) -> void:
@@ -236,17 +241,18 @@ func _owe_the_return() -> void:
 ## `focus` is where the player will be standing when the walk starts, so the events already
 ## around her are in the world on the first frame rather than appearing during it.
 ##
-## **A day is keyed by its own number** (`DaySpec.day_number()`): its streams and the rows it sends. **The
-## escape's sections keep the run's last day**, on whose streams their plans are drawn
-## (`DaySpec.day_number()`'s own doc), and count her encounters under their own number. A day leaves the
-## director what it owes her walk (`EventsAhead.start_day()`) and records its bodies for
-## the crowd; a walk planned whole before she sets off owes the director no plan of the dawn's
-## and hands it the walk's own setting of what it may send her (`EventsAhead.start_a_given_walk()`,
-## `DaySpec.director_sends()`: none, for the escape's city), and a plan of it that comes again
-## (`EventPlan.repeats()`) comes on its own clock
-## (`EventStreaming.bring_back_what_repeats()`). The streaming, the successors, the scars, the
-## detentions and the hard fails are the same for all three: an explosion leaves its crater through
-## the same `aftermath.leaves_behind()` mechanism on the escape's streets as it would anywhere.
+## **A day is keyed by its own number** (`DaySpec.day_number()`): its streams and the rows it
+## sends. **The escape's sections keep the run's last day**, on whose streams their plans are
+## drawn (`DaySpec.day_number()`'s own doc), and count her encounters under their own number. A
+## day leaves the director what it owes her walk (`EventsAhead.start_day()`) and records its
+## bodies for the crowd; a walk planned whole before she sets off owes the director no plan of
+## the dawn's and hands it the walk's own setting of what it may send her
+## (`EventsAhead.start_a_given_walk()`, `DaySpec.director_sends()`: its own trucks, for the
+## escape's city), and a plan of it that comes again (`EventPlan.repeats()`) comes on its own
+## clock (`EventStreaming.bring_back_what_repeats()`). The streaming, the successors, the scars,
+## the detentions and the hard fails are the same for all three: an explosion leaves its crater
+## through the same `aftermath.leaves_behind()` mechanism on the escape's streets as it would
+## anywhere.
 func start_day(spec: DaySpec, rng: RandomNumberGenerator, consumed_one_shots: Array[String],
 		focus := Vector2.ZERO) -> void:
 	_begin(spec)
@@ -404,6 +410,7 @@ func _clear() -> void:
 	_checkpoints.clear()
 	_spawner.clear()
 	_warnings.clear()
+	_set_off.clear()
 	_encounters.end_day()
 
 ## The page's counter's encounters and bouts of running — see `EncounterWatch`. Telemetry only: it
@@ -434,10 +441,9 @@ func _watch_the_encounters(delta: float) -> void:
 func visible_view() -> VisibleView:
 	return world.visible_view()
 
-## Whether a world point is in sight this frame: `VisibleView.sees()` on `world.visible_view()`. `margin`
-## world px past the edge count as in sight as well.
-func sees(world_position: Vector2, margin := 0.0) -> bool:
-	return world.visible_view().sees(world_position, margin)
+## Whether a world point is in sight this frame: `VisibleView.sees()` on `world.visible_view()`.
+func sees(world_position: Vector2) -> bool:
+	return world.visible_view().sees(world_position)
 
 ## Tells `world.visible_view()` this frame's view and scheme (`VisibleView.look_from()`): the camera's
 ## view, `Tuning.VIEW_HALF_EXTENT` about the centre of the screen, which her look-ahead moves off
@@ -515,6 +521,9 @@ func _tick_the_events(delta: float) -> void:
 		_spawner.summon_what_has_been_sighted(_walk_events.plans())
 		_spawner.report_the_pelicans_in_view()
 		_watch_the_encounters(delta)
+		# A place she has reached sets its row off before the warnings run, so a row set off at once
+		# comes on this tick.
+		_set_off.watch(world.player().global_position)
 		_warnings.run(delta, world.player().global_position)
 	step_the_encounters(delta)
 	if she_is_here:

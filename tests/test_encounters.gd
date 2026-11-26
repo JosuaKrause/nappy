@@ -22,6 +22,7 @@ const VIEW_SIZE := Tuning.VIEW_HALF_EXTENT * 2.0
 var _seen: Array[String] = []
 var _influenced: Array[String] = []
 var _ran: Array[int] = []
+var _passed: Array[String] = []
 
 func run(t: TestRunner) -> void:
 	await PhysicsTicks.settle(t)
@@ -29,6 +30,8 @@ func run(t: TestRunner) -> void:
 	var on_influenced := func(day: int, name: String, seen: bool) -> void:
 		_influenced.append("%d:%s:%s" % [day, name, "seen" if seen else "unseen"])
 	var on_ran := func(day: int) -> void: _ran.append(day)
+	var on_passed := func(day: int, name: String) -> void: _passed.append("%d:%s" % [day, name])
+	EventBus.encounter_passed.connect(on_passed)
 	EventBus.encounter_seen.connect(on_seen)
 	EventBus.encounter_influenced.connect(on_influenced)
 	EventBus.run_bout_began.connect(on_ran)
@@ -37,6 +40,7 @@ func run(t: TestRunner) -> void:
 	_test_coming_back_after_the_gap_is_a_second_encounter(t)
 	_test_coming_back_inside_the_gap_is_the_same_encounter(t)
 	_test_a_sliver_at_the_edge_is_not_seen(t)
+	_test_a_seen_encounter_is_passed_once_it_is_left_behind(t)
 	_test_the_joystick_corners_are_not_visible(t)
 	_test_a_thing_under_the_joystick_controls_is_not_seen(t)
 	_test_a_tenth_of_the_meter_is_one_influence_per_encounter(t)
@@ -50,6 +54,7 @@ func run(t: TestRunner) -> void:
 	await _test_the_manager_tells_the_encounter_under_its_day(t)
 	await _test_the_manager_reads_the_controls_scheme(t)
 
+	EventBus.encounter_passed.disconnect(on_passed)
 	EventBus.encounter_seen.disconnect(on_seen)
 	EventBus.encounter_influenced.disconnect(on_influenced)
 	EventBus.run_bout_began.disconnect(on_ran)
@@ -58,6 +63,7 @@ func _clear() -> void:
 	_seen.clear()
 	_influenced.clear()
 	_ran.clear()
+	_passed.clear()
 
 ## A manager over a bare map and a run of its own, set up as the escape's building is
 ## (`EventSurroundings.on()`, then `EventManager.setup()`), in the tree. `_free_manager()` frees
@@ -151,6 +157,36 @@ func _test_coming_back_inside_the_gap_is_the_same_encounter(t: TestRunner) -> vo
 	_run(watch, instances, Vector2.ZERO, 1.0)
 	t.check(_seen.size() == 1, "off screen for less than the gap and back sends nothing more (%d)"
 			% _seen.size())
+	yeller.free()
+
+## An encounter is passed when it was seen and is then over while the day goes on: not while she
+## is still in sight of it or inside the gap, and never for one the day's end closes or one never seen.
+func _test_a_seen_encounter_is_passed_once_it_is_left_behind(t: TestRunner) -> void:
+	_clear()
+	var watch := _watch()
+	var yeller := _instance(t, "homeless_yeller", Vector2.ZERO)
+	var instances: Array[EventInstance] = [yeller]
+	_run(watch, instances, Vector2.ZERO, 3.0)
+	t.check(_passed.is_empty(), "in full view it is not passed")
+	_run(watch, instances, AWAY, EncounterWatch.ENCOUNTER_GAP - 1.0)
+	t.check(_passed.is_empty(), "out of sight for less than the gap it is not passed yet")
+	_run(watch, instances, AWAY, 2.0)
+	t.check(_passed == ["%d:homeless_yeller" % DAY],
+			"out of sight for the gap it is passed, once, carrying the day and the row (%s)" % [_passed])
+	_run(watch, instances, AWAY, 3.0)
+	t.check(_passed.size() == 1, "and not again while she stays away (%d)" % _passed.size())
+	_clear()
+	_run(watch, instances, Vector2.ZERO, 3.0)
+	watch.end_day()
+	t.check(_passed.is_empty(), "an encounter the day's end closes is not passed (%s)" % [_passed])
+	_clear()
+	var other := _watch()
+	var unseen := _instance(t, "homeless_yeller", Vector2(Tuning.VIEW_HALF_EXTENT.x, 0.0))
+	var unseen_list: Array[EventInstance] = [unseen]
+	_run(other, unseen_list, Vector2.ZERO, 1.0)
+	_run(other, unseen_list, AWAY, EncounterWatch.ENCOUNTER_GAP + 1.0)
+	t.check(_passed.is_empty(), "an encounter that was never seen is never passed (%s)" % [_passed])
+	unseen.free()
 	yeller.free()
 
 ## The yeller's drawn box straddling the view's right edge: in view but mostly out of it is an
@@ -518,7 +554,8 @@ func _test_a_catch_on_the_frame_a_door_releases_her_counts(t: TestRunner) -> voi
 func _test_a_static_row_is_seen_and_never_influenced(t: TestRunner) -> void:
 	var boxless: Array[String] = []
 	for def in CatalogueRows.every():
-		if EventPictures.icon_for(def.picture()).is_empty():
+		if EventPictures.icon_for(def.picture()).is_empty() \
+				or not def.look().is_drawn_in_the_world():
 			continue
 		var instance := EventInstance.new()
 		instance.setup(def, Vector2.ZERO)

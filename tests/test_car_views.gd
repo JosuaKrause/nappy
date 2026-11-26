@@ -33,6 +33,7 @@ func run(t: TestRunner) -> void:
 	_test_the_bob_is_driven_by_ground_covered(t)
 	await _test_the_halo_rides_the_bob(t)
 	_test_the_redraw_gate_follows_the_bob(t)
+	_test_the_shadow_never_reaches_above_the_roof(t)
 	_rig.release_atlas()
 
 ## A car the game placed on a lane running along `heading` (`CrowdAgent.setup()`), at the pace that
@@ -738,3 +739,29 @@ func _test_the_redraw_gate_follows_the_bob(t: TestRunner) -> void:
 	t.check(look.picture(agent.velocity()) == parked and parked.z == 0 and not asked_while_parked,
 			"a stopped car's key rests at zero and stays there")
 	agent.free()
+
+## **A car's shadow lies where its wheels meet the ground, never above its roof** (minty-hedgehog 1).
+## At every sector, cardinal and diagonal, every point of the shadow the car's look casts
+## (`CarLook.shadow_outlines()`, what `CrowdAgent.draw_shadow()` fills) lies below the top of the
+## picture it is drawn under, stood where `CarLook.body_anchor()` stands it; the capsule the shadow
+## used to be reached past the roof of the end-on views.
+func _test_the_shadow_never_reaches_above_the_roof(t: TestRunner) -> void:
+	for sector in range(8):
+		var agent := _car(t, Vector2.from_angle(deg_to_rad(sector * 45.0)).round()) \
+				if sector % 2 == 0 else _car(t)
+		if agent == null:
+			continue
+		if sector % 2 == 1:
+			agent.take_the_turn(_turn_facing(sector), 0.0)
+		var look := ViewRig.car_look(agent)
+		var view: String = CarLook.VIEW_BY_SECTOR[_drawn_sector(look, agent)]
+		var picture := AtlasTable.baked().native_size(
+				AgentLook.region_of(CarLook.BODY_BY_VIEW[view]))
+		var roof := CarLook.body_anchor(view, agent.heading()).y - float(picture.y)
+		var highest := INF
+		for outline in look.shadow_outlines(Vector2.ZERO):
+			for point in outline:
+				highest = minf(highest, point.y)
+		t.check(highest > roof, "sector %d's shadow stays below its %s picture's roof (%.1f > %.1f)"
+				% [sector, view, highest, roof])
+		agent.free()

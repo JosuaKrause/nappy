@@ -211,10 +211,10 @@ front of the station's two-tile door short of their two far outer corners (57.7p
 "the acceptance radius centered at the door should have a large enough radius for half the
 sidewalk to be covered"; the player, on the station's corners: "for now let's just use my word on
 the radii"), the
-ellipse at the swing frame's base, the extent of the shadow it casts there
-(`ResistanceDirector._swing_base()`, 28 by 17px), her body has to
-touch, and day 9's crossing, which is done by going through the door and never by standing near
-it. *(2026-10-03, [quiet-yak](playtests/2026-10-03-quiet-yak.md), inbox #484, #487, #489 and #492: "the red arrows should point to the actual item -- however, the radius of
+ellipse at the swing frame's base, whose semi-axes are half the frame's picture's width and half
+its height, so it spans the picture (`Prop.swing_frame_base()`, 28 by 17px, 56 by 34px across),
+with the oval of shadow under each of its A-frames inside it, her body has to touch, and day 9's
+crossing, which is done by going through the door and never by standing near it. *(2026-10-03, [quiet-yak](playtests/2026-10-03-quiet-yak.md), inbox #484, #487, #489 and #492: "the red arrows should point to the actual item -- however, the radius of
 acceptance should be big enough to be possible to do" · "No! Never besides the item!" · "Should
 trigger on the action not on a proximity test" · "Place an ellipse at its base. That's the area to
 touch".)*
@@ -231,7 +231,7 @@ touch".)*
   two-thirds of the way through the mark's own alley, counted from the mark's end and one tile
   further for the tile the mark stands in, so he is as far from it as ever: inside
   the alley rather than at its edge, where he would be easier to see and to avoid. Where the alley
-  is long enough for that spot to be 216px or more from the mark (his 180px trigger range and the
+  is long enough for that spot to be 261px or more from the mark (his 225px trigger range and the
   36px touch reach), walking in from the mark's own end, reading it and walking back out never
   wakes him; in a shorter alley, which every alley one block long is, he still stands two-thirds
   in, and reading the mark may wake him. He never stands within 62px of the mark (his catch and the
@@ -248,7 +248,7 @@ touch".)*
   the day's events otherwise leave alone (`CalmAreas.unused_ground()`): the courtyard
   behind a guarded passage mark is no place to settle the baby that day until she has lured him
   out. The player approved exactly this spot (2026-09-27, crisp-moose, statement 3). The roadblock,
-  the one task guarded where it waits, keeps a robber somewhere between 62px and 216px of it
+  the one task guarded where it waits, keeps a robber somewhere between 62px and 261px of it
   instead, measured from the ground it is touched from — touched from any side of its band, so he
   stands that far beyond the band's own reach: inside that band touching it is death, always;
   above it he never notices them on their way to it; between them, which side the player

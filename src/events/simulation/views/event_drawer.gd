@@ -5,7 +5,8 @@ extends RefCounted
 ## figure, a vehicle, a segment or an end post of a spread, a café table, a flame);
 ## `paint()` lays one into a rectangle (a wide scene's contact shadow, a checkpoint's gate and hut);
 ## `paint_band()` lays the part of a wide scene that falls in one slice's band; and `scenery()`
-## builds the scenery that stands behind one slice of a crash or a burst main. The events'
+## builds the retained layers of a partly animated picture: the scenery that stands behind one slice
+## of a crash or a burst main, or a figure whose idle frame moves part of it. The events'
 ## surroundings make one over their atlas (`EventSurroundings.drawer()`) and every instance the
 ## manager makes is handed it (`EventSpawner.create()`; a suite's recording drawer comes through
 ## `EventSurroundings.drawing_through()`); an instance nobody handed one (a suite's, a
@@ -47,14 +48,16 @@ func paint_band(canvas: CanvasItem, picture: String, whole: Rect2, band: Rect2) 
 	canvas.draw_texture_rect_region(texture, band,
 			Rect2((band.position - whole.position) * texels, band.size * texels))
 
-## The scenery of one slice of a crash or a burst main (`EventScenery`): the part of every span of
-## `picture` inside `band` when the whole picture is `extent` standing on `anchor`, and `shadow`, the
-## contact shadow, whole (`""` for none). Not yet in the tree; the look puts it behind its slice.
+## The retained layers of a partly animated `picture` (`EventScenery`): the part of every span of
+## it inside `band` (no area for all of it) when the whole picture is `extent` standing on
+## `anchor`, mirrored about `anchor` when `mirrored`, and `shadow`, the contact shadow, whole (`""`
+## for none). One slice of a crash or a burst main, or a figure on its feet. Not yet in the tree;
+## the look puts it where it stands.
 func scenery(picture: String, extent: Vector2, anchor: Vector2, shadow: String,
-		band: Rect2) -> EventScenery:
+		band: Rect2, mirrored := false) -> EventScenery:
 	var built := EventScenery.new()
 	built.draw_through(_atlas, _scenery_drawer())
-	built.configure(picture, extent, anchor, shadow, band)
+	built.configure(picture, extent, anchor, shadow, band, mirrored)
 	return built
 
 ## What the scenery `scenery()` builds is handed to lay its pictures through: this drawer's own, or

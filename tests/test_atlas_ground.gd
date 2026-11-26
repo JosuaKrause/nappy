@@ -246,8 +246,6 @@ func _test_the_ground_is_one_composed_sheet(t: TestRunner) -> void:
 	var reshaped: Array[String] = []
 	for index in AUTHORED_GROUND.get_source_count():
 		var id := AUTHORED_GROUND.get_source_id(index)
-		if id == GroundTiles.WATER:
-			continue
 		if not composed.has_source(id):
 			lost.append(str(id))
 			continue
@@ -271,10 +269,8 @@ func _test_the_ground_is_one_composed_sheet(t: TestRunner) -> void:
 	t.check(twins == GroundTiles.ROUTE_KERB_SOURCES.size(),
 			"every route-kerb source has its tinted twin registered (%d of %d)"
 			% [twins, GroundTiles.ROUTE_KERB_SOURCES.size()])
-	t.check(not composed.has_source(GroundTiles.WATER) and AtlasTable.baked().has_region(&"tiles/water"),
-			"water stays available in its atlas without a static composed source")
-	t.check(composed.get_source_count() == AUTHORED_GROUND.get_source_count() - 1 + twins,
-			"the composed TileSet excludes water and adds route twins (%d against %d - 1 + %d)"
+	t.check(composed.get_source_count() == AUTHORED_GROUND.get_source_count() + twins,
+			"the composed TileSet keeps every authored source and adds route twins (%d against %d + %d)"
 			% [composed.get_source_count(), AUTHORED_GROUND.get_source_count(), twins])
 
 # -------------------------------------------------------------- the pixels ---

@@ -359,6 +359,14 @@ var _walk_phase := 0.0
 ## it runs out through the ordinary friction the same as letting go of every key would, which is
 ## what makes a capture look like stopping rather than like being frozen. See `chatting_mother`.
 var _detained_for := 0.0
+## The heading and speed the game walks her by (`lead()`); a zero heading while her own input steers.
+var _led_heading := Vector2.ZERO
+## Whether the game has her by the hand, kept apart from the heading so that no heading can read as
+## *not led* while her collision mask is away.
+var _led := false
+var _led_speed := 0.0
+## The collision mask she had before `lead()` took it away.
+var _mask_before_the_lead := 0
 ## Deflection from being walked into, decaying like any other velocity. Kept apart from
 ## `velocity` so an input frame cannot quietly erase it.
 var _shove := Vector2.ZERO
@@ -377,6 +385,10 @@ var _alert_source := &""
 ## cleared by `release_camera_focus()`. Read by `_update_camera()`, the only place any of this
 ## group is used.
 var _camera_focused := false
+## The shake of her view an explosion close by gives (`shake_the_view()`), and how much of the
+## camera's offset is that shake this tick, taken off before the next tick's follow.
+var _shake := ViewShake.new()
+var _shaken_by := Vector2.ZERO
 var _camera_focus_point := Vector2.ZERO
 ## Where the current ease started and how long it has been running — smooth-stepped over
 ## `CAMERA_EASE_SECONDS` rather than snapped, whether easing onto a focus or back to her.
@@ -475,8 +487,11 @@ func _physics_process(delta: float) -> void:
 		# for free, since `top_speed` below is only ever reached through a nonzero `input_dir`.
 		input_dir = Vector2.ZERO
 	input_dir = _redirect_along_a_flight(input_dir)
-	_steering = input_dir
 	var top_speed := Tuning.RUN_SPEED if Input.is_action_pressed("run") else Tuning.WALK_SPEED
+	if _is_led():
+		input_dir = _led_heading
+		top_speed = _led_speed
+	_steering = input_dir
 
 	if input_dir != Vector2.ZERO:
 		velocity = velocity.move_toward(input_dir * top_speed, Tuning.ACCELERATION * delta)
@@ -549,6 +564,33 @@ func detain(seconds: float) -> void:
 ## able to tell a capture apart from a player who is simply not moving.
 func is_detained() -> bool:
 	return _detained_for > 0.0
+
+## Whether the game has her by the hand (`lead()`).
+func _is_led() -> bool:
+	return _led
+
+## **The game walks her on by herself**: she goes `heading` at `speed` whatever is held, through
+## anything that would stop her, the map's boundary walls included, since the escape's end walks her
+## past the map's edge into the tunnel or across the bridge (`EscapeWalkIn`). Her body, her gait,
+## her view and her camera are the ordinary ones; only the steering and the ground are not hers.
+## Asked every tick the walk goes on; `release()` gives her back. Her collision mask is put away
+## for it and restored there, whatever the heading (a zero one stands her still, led).
+func lead(heading: Vector2, speed: float) -> void:
+	if not _is_led():
+		_led = true
+		_mask_before_the_lead = collision_mask
+		collision_mask = 0
+	_led_heading = heading.normalized()
+	_led_speed = speed
+
+## Hands her back to her own input and her own ground after `lead()`, standing still.
+func release() -> void:
+	if not _is_led():
+		return
+	collision_mask = _mask_before_the_lead
+	_led = false
+	_led_heading = Vector2.ZERO
+	velocity = Vector2.ZERO
 
 ## A checkpoint's own *"gone inside"* — called by a `detains_again()` event instance the frame its hold
 ## starts, on the same `visible` switch `stand_aside()` uses for the same reason: hiding a
@@ -672,6 +714,7 @@ func focus_camera_on(point: Vector2) -> void:
 	_camera.position_smoothing_enabled = false
 	_camera.top_level = true
 	_camera.offset = Vector2.ZERO
+	_shaken_by = Vector2.ZERO
 	_camera.global_position = drawn_from
 	# Stops a one-tick slide from the old place: `top_level` just changed how this position is
 	# computed, and without this the first interpolated frame draws from wherever the camera's
@@ -918,7 +961,18 @@ func _update_camera(delta: float) -> void:
 			_camera.reset_smoothing()
 		return
 	var lead := Vector2(_facing.x, _facing.y * OBLIQUE_Y) * CAMERA_LOOK_AHEAD
-	_camera.offset = _camera.offset.lerp(lead, clampf(delta * 3.0, 0.0, 1.0))
+	# The shake rides on the look-ahead and is taken off again before the next lerp, so it never
+	# drags the follow.
+	var shake := _shake.step(delta)
+	var follow := (_camera.offset - _shaken_by).lerp(lead, clampf(delta * 3.0, 0.0, 1.0))
+	_camera.offset = follow + shake
+	_shaken_by = shake
+
+## **Shakes her view a little for an explosion landing `share` of its full strength on her** (0
+## to 1; `ViewShake`): eased, small, and on the walking follow only, so a focus on a hut is never
+## shaken. Told by the light of the bombs (`BlastLight`).
+func shake_the_view(share: float) -> void:
+	_shake.start(share)
 
 ## Puts the rig back on the doorstep at the start of a day, stopped and facing the street.
 func reset_at(where: Vector2, look: Vector2 = Vector2.DOWN) -> void:
@@ -941,6 +995,8 @@ func reset_at(where: Vector2, look: Vector2 = Vector2.DOWN) -> void:
 	_reset_interpolation_if_shown()
 	_camera_focused = false
 	_camera_easing_back = false
+	_shake = ViewShake.new()
+	_shaken_by = Vector2.ZERO
 	if _camera:
 		_camera.top_level = false
 		_camera.position = Vector2.ZERO

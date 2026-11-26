@@ -1,0 +1,15 @@
+<!-- Use the crosswalk: a street from above with a crosswalk over it, its broad beige bars
+     running with the traffic as the game's own crosswalk tile draws them (crossing_v.svg), each
+     about as wide as the asphalt between two. hint_arrow.svg beside it points at the nearest one.
+     A thought-bubble icon: 24x20, centre anchor (12,10), drawn into the bubble's icon box
+     (thought_bubble.svg). -->
+<svg xmlns="http://www.w3.org/2000/svg" width="24" height="20" viewBox="0 0 24 20" shape-rendering="geometricPrecision" stroke="#221f28" stroke-width="0.9" stroke-linejoin="round" stroke-linecap="round">
+  <rect x="0.5" y="0.5" width="3" height="19" fill="#a59d8e"/>
+  <rect x="3.5" y="0.5" width="17" height="19" fill="#46464f"/>
+  <rect x="20.5" y="0.5" width="3" height="19" fill="#a59d8e"/>
+  <g fill="#cfc7ae" stroke="none">
+    <rect x="5.2" y="5" width="2.6" height="10"/>
+    <rect x="10.7" y="5" width="2.6" height="10"/>
+    <rect x="16.2" y="5" width="2.6" height="10"/>
+  </g>
+</svg>

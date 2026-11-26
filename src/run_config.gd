@@ -91,10 +91,14 @@ var _web_preview := false
 
 var _spawn_target := ""
 var _meters_override := Vector2(-1.0, -1.0)
+## `--chargers`' warning and radius factor, or `(-1, -1)`; see `charger_timing()`.
+var _charger_timing_override := Vector2(-1.0, -1.0)
 var _forced_row := ""
 var _forced_interval := 0.0
 var _pelican := false
 var _blackout_requested := false
+## `--escape-bag`: the bag the escape's city is drawn from (`DaySpec.ESCAPE_BAGS`).
+var _escape_bag := DaySpec.DEFAULT_ESCAPE_BAG
 
 # ------------------------------------------------------------ how it is drawn ---
 
@@ -192,10 +196,12 @@ static func parse(args: PackedStringArray, query: String, debug_build: bool,
 
 	config._spawn_target = flags.spawn_target()
 	config._meters_override = flags.meters_override()
+	config._charger_timing_override = flags.charger_timing_override()
 	config._forced_row = flags.forced_row()
 	config._forced_interval = flags.forced_interval()
 	config._pelican = flags.pelican()
 	config._blackout_requested = flags.blackout_requested()
+	config._escape_bag = flags.escape_bag()
 
 	var skip := flags.skip_words()
 	config._skip_words = skip
@@ -344,6 +350,14 @@ func spawn_target() -> String:
 func meters_override() -> Vector2:
 	return _meters_override
 
+## **How this run plays every charger's warning and notice**: `--chargers`' (or `?chargers=`'s), or
+## the shipped timing (`EventCatalogue.shipped_charger_timing()`). `main` hands it to the catalogue
+## at boot (`EventCatalogue.use_charger_timing()`).
+func charger_timing() -> ChargerTiming:
+	if _charger_timing_override.x < 0.0:
+		return EventCatalogue.shipped_charger_timing()
+	return ChargerTiming.of(_charger_timing_override.x, _charger_timing_override.y)
+
 ## The row `--force` sends, or `""`.
 func forced_row() -> String:
 	return _forced_row
@@ -381,6 +395,11 @@ func leaves_out_the_shadows() -> bool:
 ## Whether `--skip motion` leaves the crowd standing still.
 func leaves_out_the_motion() -> bool:
 	return _skip_motion
+
+## The bag `--escape-bag` names for the escape's city, `DaySpec.DEFAULT_ESCAPE_BAG` when none is
+## given: a name `DaySpec.for_section()` takes.
+func escape_bag() -> String:
+	return _escape_bag
 
 ## The city's ground mode `--ground-mode` names (`DevFlags.GROUND_MODE_DEFAULT` when none is given),
 ## as the number `SceneryGround.Mode` takes.

@@ -27,25 +27,22 @@ func _draw_figure(canvas: CanvasItem) -> void:
 ##
 ## **On the screen each table and its sitter are a slice of their own** (`_slice_plan()`), standing
 ## at their share of the run's feet, so each table sorts against her and against the next table and
-## its sitter (inbox #827 in curly-moose); slice `only` draws its
-## own sitter and table from `origin`, the first also the shadow. On any other canvas, or with
-## `only` below zero, the whole frontage is drawn, every sitter before every table.
-func _draw_cafe(canvas: CanvasItem, only := -1, origin := Vector2.ZERO) -> void:
-	if only < 0 and _drawn_by_its_slices(canvas):
+## its sitter (inbox #827 in curly-moose). The first slice draws the shadow on itself; its sitter
+## stands in it as retained layers of their own (`EventScenery`, `_build_the_scenery_of()`), so the
+## lean redraws the moving upper body and nothing else, and its table is drawn over the sitter on
+## the slice's front (`draw_the_slice_front()`). On any other canvas the whole frontage is drawn,
+## every sitter before every table.
+func _draw_cafe(canvas: CanvasItem) -> void:
+	if _drawn_by_its_slices(canvas):
 		return
 	var half := _half_run()
-	if only <= 0:
-		_draw_body_shadow(canvas, origin)
+	_draw_body_shadow(canvas)
 	var segments := _cafe_table_count()
 	var width := half * 2.0 / segments
 	for i in segments:
-		if only < 0 or i == only:
-			_draw_cafe_sitter(canvas, origin, half, width, i)
-			if only >= 0:
-				_draw_cafe_table(canvas, origin, half, width, i)
-	if only < 0:
-		for i in segments:
-			_draw_cafe_table(canvas, origin, half, width, i)
+		_draw_cafe_sitter(canvas, half, width, i)
+	for i in segments:
+		_draw_cafe_table(canvas, Vector2.ZERO, half, width, i)
 
 ## How many tables the café's frontage holds: as few as cover its run, none stretched past its own
 ## picture's length.
@@ -59,23 +56,31 @@ func _cafe_table_count() -> int:
 ## row's and the facing each seat's: `idle_is_stepping()` is a property of the event rather than
 ## of a chair, so every sitter leans together, while the view and the mirror are picked per seat,
 ## because a party at one table faces the table rather than sharing the frontage's own bearing.
-func _draw_cafe_sitter(canvas: CanvasItem, origin: Vector2, half: float, width: float,
-		i: int) -> void:
+func _draw_cafe_sitter(canvas: CanvasItem, half: float, width: float, i: int) -> void:
 	var by_view := EventPictures.CAFE_SITTER_BY_VIEW_B \
 			if idle_is_stepping(EventPictures.SITTER_IDLE_PERIOD) \
 					else EventPictures.CAFE_SITTER_BY_VIEW
+	var seat := _cafe_seat(half, width, i)
+	var view: String = seat[0]
+	var mirror: bool = seat[1]
+	var feet: Vector2 = seat[2]
+	_drawer.stand(canvas, by_view[view], feet, Vector2.ZERO, mirror)
+
+## How the sitter of table `i` sits: `[view, mirrored, feet]`, the eight-view name it faces its table
+## in, whether that view is drawn mirrored, and where its feet stand from the body's origin. What
+## the whole frontage (`_draw_cafe_sitter()`) and the sitter's own layers
+## (`_build_the_scenery_of()`) both stand it by, so the two cannot disagree.
+func _cafe_seat(half: float, width: float, i: int) -> Array:
 	var along := -half + width * (i + 0.5)
 	var alternate := i % 2 == 1
 	var chair_along := along + width * (0.26 if alternate else -0.26)
 	# Face the table from this chair. The +Vector2(0, -7) below is a screen-depth lift for the
 	# sitter's projected feet; it is deliberately not part of the table-facing bearing.
-	var sitter_heading := _cafe_seat_heading(event.runs_vertically(), alternate)
-	var sitter_sector := EightDirection.nearest(sitter_heading)
-	var view: String = EventPictures.EIGHT_VIEW_BY_SECTOR[sitter_sector]
-	var sitter: String = by_view[view]
-	var mirror := EightDirection.is_mirrored(sitter_sector)
-	_drawer.stand(canvas, sitter, origin + event.spread_at(chair_along) + Vector2(0.0, -7.0),
-			Vector2.ZERO, mirror)
+	var sitter_sector := EightDirection.nearest(_cafe_seat_heading(event.runs_vertically(),
+			alternate))
+	return [EventPictures.EIGHT_VIEW_BY_SECTOR[sitter_sector],
+			EightDirection.is_mirrored(sitter_sector),
+			event.spread_at(chair_along) + Vector2(0.0, -7.0)]
 
 ## Table `i` of the frontage, standing at the middle of its share of the run, alternate ones
 ## mirrored.
@@ -175,29 +180,42 @@ func _protest_feet(picture: String) -> PackedVector2Array:
 ## thing to time a run past, and `can_be_timed()` already says so.
 ##
 ## **On the screen each half is a slice of its own** (`_slice_plan()`), standing at the middle of
-## its share of the run, and slice `only` draws its own gunman and flash from `origin`, the first
-## also the shadow. On any other canvas, or with `only` below zero, both are drawn.
+## its share of the run, and slice `only` draws its own gunman from `origin`, the first also the
+## shadow. **The gunmen and the shadow stand still and the flashes do not**, so a slice is redrawn
+## only when the picture's key moves, and its flash is drawn on the slice's front
+## (`draw_the_slice_front()`), redrawn on every frame the event is drawn (`_update_scenery()`):
+## the player's guarantee that a sprite with only partial motion keeps its stationary pixels in a
+## static drawing (sunny-lynx). On any other canvas, or with `only` below zero, both gunmen are
+## drawn, each with its flash.
 func _draw_firefight(canvas: CanvasItem, only := -1, origin := Vector2.ZERO) -> void:
 	if only < 0 and _drawn_by_its_slices(canvas):
 		return
-	var half := _half_run()
 	if only <= 0:
 		_draw_body_shadow(canvas, origin)
-	var strength := _share_of_its_peak_now()
 	for index in 2:
 		if only >= 0 and index != only:
 			continue
-		var side := -1.0 if index == 0 else 1.0
-		var at := origin + Vector2(side * half * 0.62, 0.0)
-		_drawer.stand(canvas, EventPictures.GUNMAN, at, Vector2.ZERO,
-				side > 0.0)
-		# Sized off the current emission and jittered per side, so the two are never in step.
-		var flare := strength * (0.6 + 0.4 * sin(event.age() * 17.0 + side * 2.1))
-		if flare <= 0.25:
-			continue
-		var muzzle := at + Vector2(side * 15.0, -12.0)
-		canvas.draw_circle(muzzle, 3.0 + 4.0 * flare, MUZZLE_FLASH)
-		canvas.draw_circle(muzzle, 1.5 + 2.0 * flare, Color.WHITE)
+		_drawer.stand(canvas, EventPictures.GUNMAN, _gunman_feet(index, origin), Vector2.ZERO,
+				index == 1)
+		if only < 0:
+			_draw_muzzle_flash(canvas, index, origin)
+
+## Where gunman `index` stands from `origin`: the first at the west end of the cover, the second,
+## mirrored, at the east.
+func _gunman_feet(index: int, origin: Vector2) -> Vector2:
+	var side := -1.0 if index == 0 else 1.0
+	return origin + Vector2(side * _half_run() * 0.62, 0.0)
+
+## Gunman `index`'s muzzle flash, from `origin`, or nothing between its beats.
+func _draw_muzzle_flash(canvas: CanvasItem, index: int, origin: Vector2) -> void:
+	var side := -1.0 if index == 0 else 1.0
+	# Sized off the current emission and jittered per side, so the two are never in step.
+	var flare := _share_of_its_peak_now() * (0.6 + 0.4 * sin(event.age() * 17.0 + side * 2.1))
+	if flare <= 0.25:
+		return
+	var muzzle := _gunman_feet(index, origin) + Vector2(side * 15.0, -12.0)
+	canvas.draw_circle(muzzle, 3.0 + 4.0 * flare, MUZZLE_FLASH)
+	canvas.draw_circle(muzzle, 1.5 + 2.0 * flare, Color.WHITE)
 
 ## A muzzle flash is a *light*, and it must not borrow the amber the danger vocabulary uses for its
 ## marks. Two things that mean different things must not share a constant, or a rebalance of one
@@ -224,6 +242,65 @@ func draw_the_slice(canvas: CanvasItem, index: int) -> void:
 		EventDef.Look.PROTEST:
 			_draw_protest(canvas, index, origin)
 		EventDef.Look.CAFE:
-			_draw_cafe(canvas, index, origin)
+			if index == 0:
+				_draw_body_shadow(canvas, origin)
 		EventDef.Look.FIREFIGHT:
 			_draw_firefight(canvas, index, origin)
+
+## A café table, over the sitter its slice holds (`_draw_cafe()`), or a gunman's muzzle flash over
+## him (`_draw_firefight()`).
+##
+## Overrides SpreadLook.draw_the_slice_front.
+func draw_the_slice_front(canvas: CanvasItem, index: int) -> void:
+	if _look.picture() == EventDef.Look.FIREFIGHT:
+		_draw_muzzle_flash(canvas, index, -_slice_feet[index])
+		return
+	if _look.picture() != EventDef.Look.CAFE:
+		return
+	var half := _half_run()
+	_draw_cafe_table(canvas, -_slice_feet[index], half, half * 2.0 / _cafe_table_count(), index)
+
+## A café slice's sitter, standing in the slice as retained layers (`EventScenery`): its lap and
+## chair-side spans stay drawn while the lean swaps only the upper body's, on the sitter's own
+## mirror about its feet. Then the front, so the table goes over the sitter. A firefight's slice
+## holds only its front, which draws the gunman's flash. Nothing for any other rank.
+##
+## Overrides SpreadLook._build_the_scenery_of.
+func _build_the_scenery_of(slice: Slice, index: int) -> void:
+	if _look.picture() == EventDef.Look.FIREFIGHT:
+		slice.add_front()
+		return
+	if _look.picture() != EventDef.Look.CAFE:
+		return
+	var half := _half_run()
+	var seat := _cafe_seat(half, half * 2.0 / _cafe_table_count(), index)
+	var view: String = seat[0]
+	var feet: Vector2 = seat[2]
+	var sitter: String = EventPictures.CAFE_SITTER_BY_VIEW[view]
+	var mirrored: bool = seat[1]
+	var parts := _drawer.scenery(sitter, EventPictures.native_size(sitter),
+			feet - _slice_feet[index], "", Rect2(), mirrored)
+	parts.name = "Sitter"
+	slice.add_child(parts)
+	slice.add_front()
+	_sceneries.append(parts)
+
+## The sitters lean together on the frontage's own timer.
+##
+## Overrides SpreadLook._scenery_period.
+func _scenery_period() -> float:
+	if _look.picture() == EventDef.Look.CAFE:
+		return EventPictures.SITTER_IDLE_PERIOD
+	return super()
+
+## A firefight's muzzle flashes, on its slices' fronts, drawn again on every frame the event is in
+## the box: they are a continuous function of its clock (`_draw_muzzle_flash()`), while the gunmen
+## under them wait for the picture's key.
+##
+## Overrides SpreadLook._update_scenery.
+func _update_scenery() -> void:
+	super()
+	if _look.picture() != EventDef.Look.FIREFIGHT:
+		return
+	for slice in _slices:
+		slice.redraw_front()

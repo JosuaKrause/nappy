@@ -48,7 +48,7 @@ enum Start {
 	## lunges early and never backs off, and it charges when its notice has run its whole length.
 	SETS_OFF_BESIDE_HER,
 	## **It charges from its first frame, because its warning came before it was set on her** — the
-	## checkpoint guard, whose warning is the hut guard's raised hand for `CheckpointController.CROSSING_WARNING`
+	## checkpoint guard, whose warning is the hut guard's raised hand for `ChargerTiming.warning()`
 	## after she crossed the door's line. It owes no notice of its own (inbox #788 in minty-lemur).
 	CHARGES_AT_ONCE,
 	## **It is warned of by its badge alone and created already chasing her** — the robber and the

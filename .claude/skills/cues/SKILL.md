@@ -38,18 +38,24 @@ The vocabulary is in `docs/EVENTS.md`, "The visual vocabulary" — four cues, fo
 one language: **caret**, *stand here and this will cost you* (amber) or *end your day* (doubled
 red); **halo**, *this is costing you now, and this much*; **exclamation over the player**, *the
 clock on you has started*; **badge**, *something lethal or faster than a walk is coming, and this
-is what*. One number decides the caret and the halo — the points a source nets her. The red caret
-and the badge are measured with her held still, because *this ends your day* and *something is
-coming* are claims about the thing's own course.
+is what*, and the escape city's explosion, the player's explicit ask. One number decides the caret
+and the halo — the points a source nets her. The red caret is measured with her held still,
+because *this ends your day* is a claim about the thing's own course; the badge measures nothing,
+since it is a warning put up before its thing exists.
 
 - the **entity itself** carries most of it
 - a **caret above the entity** for anything projected to net her that much if both keep doing what
   they are doing — amber at `Tuning.EXPECTED_IMPACT_POINTS`; doubled deep red when the source's own
   course, her position held fixed, reaches its lethal reach; flashing while it has not started yet
-- a **badge at the screen edge** whenever something lethal or faster than a walk is out of sight
-  (`VisibleView`) and closing **under its own steam**, carrying its own silhouette so it says *what*
-  is coming rather than that something is, and, once raised, staying until the thing is in sight or
-  gone — **for the things that telegraph**: a thing telegraphs
+- a **badge at the screen edge** for something lethal or faster than a walk that is warned of
+  before it exists, and for the escape city's explosion, the player's explicit ask
+  (minty-lemur #785), as the loose dog is their explicit exception the other way: up for the
+  whole of its warning, pointing at where it will come from, then carried on to the thing until
+  any of it is in sight (`VisibleView`) or it is gone (minty-dolphin #852), carrying its own
+  silhouette so it says *what* is coming rather than that something is; a charger already in
+  the world whose charge begins out of her sight takes the same path, its start being its warning
+  (`EventInstance.was_warned_of()`); nothing in the world is measured for one — **for the things
+  that telegraph**: a thing telegraphs
   its coming only if it goes fast, comes toward her (PLAYTEST-145 18-23), and carries a heavy
   penalty (olive-hedgehog #598), ending the day or a heavy hit. One that does not
   (`EventDef.telegraphs_its_coming()`) — the loose dog and the cat, the player's own — is outside the badge and
@@ -140,10 +146,11 @@ hurts at random.
 `stand_down()` lowers only that source's own mark, so a hold that bridges a gap in the danger — the
 space between two cars in one lane — does not also bridge the danger being over.
 
-**And measure the thing, not the gap — except where the player asked for the gap on purpose.** The
-badge's closing speed is the event's own approach with the player held still, because a rate that
-includes her own walking is a cue for walking; `will_be_lethal()` keeps the same shape, because
-*this ends your day* has to stay true whatever she is doing right now.
+**And measure the thing, not the gap — except where the player asked for the gap on purpose.**
+`will_be_lethal()` is the source's own course with the player held still, because a rate that
+includes her own walking is a cue for walking and *this ends your day* has to stay true whatever she
+is doing right now. The badge measures nothing in the world: it is a warning put up before its
+thing exists, so her walking can neither raise one nor bring one down (minty-dolphin #852).
 
 **The amber caret is the one exception**: it is the net gain she very likely gets if she keeps doing
 what she is doing, so it moves her too, and the halo roughly matches it when she does
@@ -163,9 +170,9 @@ player's verdict on that (PLAYTEST-05 3) was that she can just keep doing what s
 Its `NOW` level is **two** conditions: within `WarningBoard.LETHAL_MARK_LEAD` of the radius that ends the day,
 **and closing**.
 
-Note that it uses the **relative** rate where the badge deliberately uses the thing's **own**: the
-badge says *a thing exists and is coming*, so her walking must not raise one, and this mark says
-*the contract is now about you*, which is a statement about the pair of them. **Two cues, two
+Note that it uses the **relative** rate where the badge measures no rate at all: the badge says *a
+thing is coming*, a warning put up before it exists, so her walking cannot raise one, and this mark
+says *the contract is now about you*, which is a statement about the pair of them. **Two cues, two
 sentences, two answers to the same-looking question — do not unify them.**
 
 ## A cue that belongs to the vocabulary does not belong to a class
@@ -228,6 +235,13 @@ picture and layout runs, and the engine's own data before any drawing — is
 `_draw()`.
 
 ## Proposed, not asked for
+
+- **The explosion's badge is asked as a kind of thing, not as one row**: the code gives a badge to
+  anything warned first that stands where it comes (`EventDef.comes_all_at_once()`), and the
+  explosion is the one row that does. The player asked for the explosion's warning sign
+  (minty-lemur #785) and named no class; a second row that came all at once would be badged by
+  this without being asked about. The plainer alternative is a setting the explosion's row
+  states.
 
 - **Whether the three symbols drawn in code stay drawn in code or become pictures is not decided**:
   the caret above an entity (`Sprites.draw_caret()`), the arrow that points home or to the day's

@@ -686,6 +686,19 @@ func _test_the_debug_mode_note_only_exists_when_requested(t: TestRunner) -> void
 			"the flag builds the note and parents it under the readout")
 	flagged.free_all()
 
+	# A released page's `?chargers=` the flag refuses (a radius factor under its least) plays the
+	# shipped timing, and the note names the numbers played, so nobody judges the refused ones by
+	# playing these.
+	var refused := ReadoutRig.new(t, _config([], false, "?debug=1&chargers=1.5,0.5"))
+	var shipped := EventCatalogue.shipped_charger_timing()
+	var played := "chargers %.2fs x%.2f" % [shipped.warning(), shipped.notice(1.0)]
+	var refused_note := refused.readout.get_node_or_null("DebugModeNote")
+	var label: Label = refused_note.get_node_or_null("Note") if refused_note else null
+	t.check(label != null and label.text.ends_with(played),
+			"the note names the charger timing played, '%s' (got '%s')"
+			% [played, label.text if label else "no note"])
+	refused.free_all()
+
 ## A release build carrying neither flag never builds the graph; one carrying `?debug=1` gets it
 ## parented under the readout's own layer, **off by default**, unlike the readout it sits under
 ## *(2026-09-15, the player: "spike view should be independent of debug layer 4 it should be its

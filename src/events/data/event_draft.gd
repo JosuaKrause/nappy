@@ -46,6 +46,7 @@ var _closes_its_street := false
 var _drawn_to_sack_piles := false
 var _role := EventDef.Role.NONE
 var _counts_charges_as := ""
+var _set_off_within := 0.0
 
 # ------------------------------------------------------------------------ the parts ---
 
@@ -99,6 +100,7 @@ func copy() -> EventDraft:
 	twin._drawn_to_sack_piles = _drawn_to_sack_piles
 	twin._role = _role
 	twin._counts_charges_as = _counts_charges_as
+	twin._set_off_within = _set_off_within
 	twin._look = _look
 	twin._body = _body
 	twin._field = _field
@@ -261,6 +263,12 @@ func sent_ahead(how: SentAhead) -> void:
 ## The part the row plays in a system beside the catalogue.
 func plays(part: EventDef.Role) -> void:
 	_role = part
+
+
+## A place sets the row off: it is not in the world until she comes within `radius` of where it
+## starts, and then comes under its warning (`EventDef.is_set_off_by_a_place()`).
+func set_off_within(radius: float) -> void:
+	_set_off_within = radius
 
 
 # -------------------------------------------------------------------- part writers ---
@@ -454,6 +462,10 @@ func drafted_role() -> EventDef.Role:
 
 func drafted_charges_counted_as() -> String:
 	return _counts_charges_as
+
+
+func drafted_set_off_within() -> float:
+	return _set_off_within
 
 
 func drafted_body() -> BodySpec:

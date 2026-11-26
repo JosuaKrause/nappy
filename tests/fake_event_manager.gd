@@ -20,8 +20,9 @@ extends EventManager
 ## streaming puts in only what lies within its radius, so the runtime's refusal of a plan that
 ## is not live at its initial position never fires here; the calm areas are an empty
 ## `FakeCalmAreas`, so no authored row is refused calm ground; and `spawn_warned()` is a plain
-## `spawn_extra()`, with neither the warning nor the warned age the real spawner gives. No case
-## reaches any of the three. The real manager's own logic is checked in its own suites
+## `spawn_extra()` told it came under a warning (`EventInstance.arrive_from_its_warning()`, which
+## the screen-edge badge reads), with neither the warning itself nor the warned age the real spawner
+## gives. No case reaches the first two, and no case reads the age. The real manager's own logic is checked in its own suites
 ## (`tests/test_event_manager.gd` and the rest). A helper, not a suite: the runner loads only
 ## `test_*.gd`.
 ##
@@ -64,11 +65,14 @@ func spawn_extra(def: EventDef, at: Vector2, path := PackedVector2Array()) -> Ev
 	return instance
 
 ## An instance of `def` on `path`, in no world, as the real manager creates a row whose warning ran
-## before it existed (the resistance's column trucks).
+## before it existed (the resistance's column trucks): told it came under that warning, so the
+## screen-edge badge carries on to it.
 ##
 ## Overrides EventManager.spawn_warned.
 func spawn_warned(def: EventDef, path: PackedVector2Array, _pelican := false) -> EventInstance:
-	return spawn_extra(def, path[0], path)
+	var instance := spawn_extra(def, path[0], path)
+	instance.arrive_from_its_warning()
+	return instance
 
 ## The instances `spawn_extra()` made, the ones still standing: what the street holds, as the real
 ## manager's street holds the ones it spawned. Not the ones freed since.

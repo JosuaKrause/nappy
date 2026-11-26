@@ -589,10 +589,14 @@ func _test_the_contact_draws_from_the_library_its_director_is_handed(t: TestRunn
 
 ## feathery-marmot, day 12 — *"Not the drawn swing. Place an ellipse at its base. That's the area to
 ## touch"*. The swing's contact is touched by her body overlapping an ellipse round the swing's base,
-## the extent of the shadow the frame casts there (the ground shape a swing frame `Prop` takes as it
-## enters the tree, `Prop.shape()`): the contact the director offers on day 12 carries that ellipse as
-## its `touch_ellipse`, and from eight bearings, standing with her edge a pixel inside the ellipse's
-## outline completes it, at each side and each corner, and standing two pixels clear of it does not.
+## whose semi-axes are half the frame's picture's width and half its height (so it spans the
+## picture), read off the region table and not off
+## the frame's shadow, so the shadow lying under the frame's feet leaves day 12 no harder: the
+## contact the director offers on day 12 carries that ellipse as its `touch_ellipse`, and from
+## eight bearings, standing with her edge a pixel inside the ellipse's outline completes it, at each
+## side and each corner, and standing two pixels clear of it does not. The frame's shadow, one oval
+## under each A-frame (`Prop.shadow_outlines()`), lies inside the ellipse, so stepping onto it
+## completes the task.
 func _test_the_swings_touch_is_the_ellipse_at_its_base(t: TestRunner) -> void:
 	_build_city_in_a_new_run(t)
 	var read := _read_the_mark_on(t, 12, SEED)
@@ -609,11 +613,11 @@ func _test_the_swings_touch_is_the_ellipse_at_its_base(t: TestRunner) -> void:
 	var frame := Prop.new()
 	frame.dress(null, Prop.Kind.PLAYGROUND_FRAME)
 	t.add_child(frame)
-	var shadow := frame.shape()
+	var shadow := frame.shadow_outlines(Vector2.ZERO)
 	frame.free()
-	# The places are derived from the shadow the frame casts at its base; the contact is asked about
-	# them below, which only answers right if it carries that ellipse.
-	var semi := Vector2(shadow.reach(), shadow.rounding_radius())
+	# The places are derived from the frame's picture, the ellipse spanning its base; the contact is
+	# asked about them below, which only answers right if it carries that ellipse.
+	var semi := Vector2(AtlasTable.baked().native_size(Prop.SWING_FRAME)) * 0.5
 	var places: Array[Vector2] = []
 	for i in 8:
 		var angle := TAU * float(i) / 8.0
@@ -632,5 +636,17 @@ func _test_the_swings_touch_is_the_ellipse_at_its_base(t: TestRunner) -> void:
 	t.check(touching == 8, "her body overlapping the swing's base ellipse completes it on every side and corner (%d of 8)" % touching)
 	t.check(clear == 8, "and two pixels clear of it, on every side and corner, does not (%d of 8)" % clear)
 	t.check(semi.x > semi.y and semi.y > 0.0, "the base is wider than it is deep, as the frame stands side-on")
+	var inside := 0
+	for outline in shadow:
+		var within := outline.size() > 0
+		for point in outline:
+			if (point.x * point.x) / (semi.x * semi.x) + (point.y * point.y) / (semi.y * semi.y) \
+					> 1.0 + 1e-4:
+				within = false
+		if within:
+			inside += 1
+	t.check(shadow.size() == 2 and inside == 2,
+			"the frame's shadow is an oval under each A-frame, both inside the spot (%d of %d)"
+			% [inside, shadow.size()])
 	player.free()
 	director.free()

@@ -2,13 +2,12 @@ extends RefCounted
 ## What she can see (`VisibleView`), the one answer every "is it visible" question in the game asks
 ## *(feathery-lynx, inbox #581, the player: "use that everywhere where visibility is concerned -- for
 ## the other mode those rectangles *do* count"; "yes, everything should follow this (and treat it
-## depending on the input mode)")*: the point test, its margin, where a thing is placed just out of
+## depending on the input mode)")*: the point test, where a thing is placed just out of
 ## sight, and that a portrait window presenting the game rotated changes none of it. What reads it —
 ## the badge, the placing, the sightings, a chalk mark's notice, the crews — is tested where each is.
 
 func run(t: TestRunner) -> void:
 	_test_a_point_under_a_covered_corner_is_out_of_sight_only_with_the_joystick(t)
-	_test_the_margin_counts_past_the_edge_and_into_a_corner(t)
 	_test_just_out_of_sight_is_the_edge_of_the_view_on_each_side(t)
 	_test_just_out_of_sight_may_be_a_covered_corner(t)
 	_test_just_out_of_sight_is_never_nearer_than_its_floor(t)
@@ -116,20 +115,6 @@ func _test_a_point_under_a_covered_corner_is_out_of_sight_only_with_the_joystick
 	t.check(not tap.sees(outside) and not joystick.sees(outside), "past the view is out of both")
 	t.check(not VisibleView.new().sees(Vector2.ZERO),
 			"and a view never looked through sees nothing")
-
-## `margin` world px count as in sight past the view's edge and into a covered corner, the badge's
-## hysteresis; with none, the edge is the edge.
-func _test_the_margin_counts_past_the_edge_and_into_a_corner(t: TestRunner) -> void:
-	var joystick := VisibleView.around(Vector2.ZERO, TouchCover.joystick())
-	var past := Vector2(0.0, -Tuning.VIEW_HALF_EXTENT.y - 10.0)
-	t.check(not joystick.sees(past) and joystick.sees(past, 20.0),
-			"10px past the top edge is out of sight, and in sight with a 20px margin")
-	var scale := joystick.camera_view().size / ScreenOrientation.DESIGN_SIZE
-	var corner_top := joystick.camera_view().position.y + TouchCover.joystick().left_corner().position.y * scale.y
-	var corner_x := joystick.camera_view().position.x + TouchCover.joystick().left_corner().get_center().x * scale.x
-	var just_in := Vector2(corner_x, corner_top + 10.0)
-	t.check(not joystick.sees(just_in) and joystick.sees(just_in, 20.0),
-			"10px into a covered corner is out of sight, and in sight with a 20px margin")
 
 ## On the tap scheme's whole view a thing is placed where its drawn box has just left the view:
 ## straight up, its feet at the top edge (the box stands above them); straight down, the box's top at

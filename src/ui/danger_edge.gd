@@ -8,12 +8,10 @@ extends Control
 ## their warning already spent. The fairness contract is met by the geometry and missed by the
 ## player.
 ##
-## `MARGIN`, `CHEVRON` and `ICON` (and `BadgeModel.SCREEN_MARGIN`, which decides where a badge is raised) are all screen px, and that is only fair because
+## `MARGIN`, `CHEVRON` and `ICON` are all screen px, and that is only fair because
 ## the window is letterboxed: `window/stretch/aspect="keep"` in `project.godot` holds the viewport
-## at a fixed 1280×720 for every monitor, camera included, so a badge measured in screen px warns
-## the same distance out on a 21:9 monitor as on a 4:3 one. Under `"expand"` the same margin would
-## buy a wide screen more world before the badge fires — more warning for a bigger monitor, on
-## nothing the player did.
+## at a fixed 1280×720 for every monitor, camera included, so a badge sits the same way on a 21:9
+## monitor as on a 4:3 one, and what is out of sight is the same world for both.
 ##
 ## Two rules it is built to, both from the danger vocabulary:
 ##
@@ -32,16 +30,18 @@ extends Control
 ## man coming up a stairwell is announced exactly the way a fire engine coming down a street is.
 ## See `setup()`.
 ##
-## **And a warning can be up before its thing exists.** The manager's `pending_warnings()` are
-## things on their way that are not in the world yet: a cyclist, the day-3 dog, the fire engine, day 13's
-## column, the resistance's own robber and guard. Each gets its badge from the moment its warning goes
-## up, pointing at the place it will come from, which moves only with her, for the at most one second
-## the warning runs (`PendingWarning`). *(PLAYTEST-145: "the warning appears by itself with a
+## **Every badge is a warning put up before its thing exists.** The manager's `pending_warnings()`
+## are things on their way that are not in the world yet: a cyclist, the day-3 dog, the fire engine,
+## a convoy, the resistance's own robber and guard, the masked man on the escape's stairs. Each gets
+## its badge from the moment its warning goes up, pointing at the place it will come from, which
+## moves only with her, for the at most one second the warning runs (`PendingWarning`). *(PLAYTEST-145: "the warning appears by itself with a
 ## reasonable position and when the time is right the object is spawned in at that location just
 ## offscreen"; calm-kestrel, inbox #559: "place the object immediately off screen so it will
 ## immediately start coming on the screen turning off the warning".)* Nothing about it is measured:
 ## the warning is the claim that it is coming. Then the thing exists just out of sight and keeps the
-## badge (`EventInstance.was_warned_of()`) until she can see it, which is as soon as it moves.
+## badge (`EventInstance.was_warned_of()`) until she can see it (`BadgeModel`). A charger already in
+## the world whose charge begins out of her sight takes the same path: its start is its warning, and
+## it carries the badge from then until she can see it.
 
 ## How far in from each screen edge the chevrons sit, as left/top/right/bottom. Asymmetric
 ## because the screen is: the clock and the run header are along the top, and the two meters and
@@ -97,7 +97,7 @@ func _init() -> void:
 ## day and in the escape's city, the building's in the escape's building. **Called
 ## again when the escape walks out of the service door**, with the city's source in place of the
 ## building's, so one badge serves both sections; an id the new source no longer carries simply
-## drops out of `_model._watch` on the next `_measure()`.
+## drops out of the model on the next `_measure()`.
 func setup(events: EventManager, player: Node2D) -> void:
 	_events = events
 	_player = player
@@ -107,10 +107,9 @@ func setup(events: EventManager, player: Node2D) -> void:
 func _view() -> VisibleView:
 	return _events.visible_view()
 
-## Whether something at `world_position` is in sight (`VisibleView.sees()`), counting `margin`
-## screen px past the edge as in sight as well — the one test the badge asks.
-func _sees(world_position: Vector2, margin := 0.0) -> bool:
-	return _view().sees(world_position, margin * world_per_screen_px())
+## Whether something at `world_position` is in sight (`VisibleView.sees()`).
+func _sees(world_position: Vector2) -> bool:
+	return _view().sees(world_position)
 
 ## Whether she can see any of `instance`: the point it stands at, or any of what it draws
 ## (`EventInstance.drawn_box()`). Coming into sight is the badge's job done by the thing itself, so the
@@ -120,11 +119,6 @@ func _shows(instance: EventInstance) -> bool:
 		return true
 	var box := instance.drawn_box()
 	return box.has_area() and _view().sees_any(Rect2(instance.global_position + box.position, box.size))
-
-## World px per design-space screen px at the camera's zoom: the world the view shows across the
-## design box's width.
-static func world_per_screen_px() -> float:
-	return Tuning.VIEW_HALF_EXTENT.x * 2.0 / ScreenOrientation.DESIGN_SIZE.x
 
 func _process(delta: float) -> void:
 	if _timing.is_on():
@@ -170,7 +164,7 @@ func _measure(delta: float) -> void:
 	for warning in _events.pending_warnings():
 		if warning.points_at() != Vector2.INF:
 			subjects.append(_subject_of_warning(warning))
-	_model.step(delta, _player.global_position, subjects, _sees)
+	_model.step(_player.global_position, subjects)
 
 ## The facts the model reads about a live instance.
 func _subject_of(instance: EventInstance) -> BadgeModel.Subject:
@@ -179,7 +173,6 @@ func _subject_of(instance: EventInstance) -> BadgeModel.Subject:
 	subject.position = instance.global_position
 	subject.finished = instance.is_gone()
 	subject.warned = instance.was_warned_of()
-	subject.charging = instance.has_charged()
 	subject.shown = _shows(instance)
 	subject.logged_name = instance.logged_name()
 	return subject

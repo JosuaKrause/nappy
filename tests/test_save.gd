@@ -44,6 +44,7 @@ func run(t: TestRunner) -> void:
 	_test_round_trip_field_list_matches_the_property_list(t)
 	_test_round_trip_preserves_every_field(t)
 	_test_play_time_is_saved_as_seconds_and_counted_in_ticks(t)
+	_test_the_last_days_seconds_are_saved_and_an_older_save_loads_as_none(t)
 	_test_a_won_days_regained_nerve_survives_a_round_trip(t)
 	_test_missing_file_is_dropped(t)
 	_test_garbled_text_is_dropped(t)
@@ -284,6 +285,23 @@ func _test_play_time_is_saved_as_seconds_and_counted_in_ticks(t: TestRunner) -> 
 			"and ticks are written back as seconds (%s)" % written["play_seconds"])
 	header.restore(written)
 	t.check(header.play_ticks() == 9645, "which load back to the same tick")
+
+## The last day's seconds, which the ending screen shows beside the run's total, ride beside the
+## state (`RunFacts`): they load back as written, and a save that never wrote them loads as none.
+func _test_the_last_days_seconds_are_saved_and_an_older_save_loads_as_none(t: TestRunner) -> void:
+	var facts := RunFacts.new()
+	t.check(facts.last_day_seconds() < 0.0 and facts.to_data()["last_day_seconds"] < 0.0,
+			"a run with no day ended holds none, and writes none")
+	facts.set_last_day_seconds(84.5)
+	var written := facts.to_data()
+	facts.reset()
+	t.check(facts.last_day_seconds() < 0.0, "a new run starts with none")
+	facts.restore(written)
+	t.check(is_equal_approx(facts.last_day_seconds(), 84.5), "the last day's seconds load back")
+	var older := written.duplicate()
+	older.erase("last_day_seconds")
+	facts.restore(older)
+	t.check(facts.last_day_seconds() < 0.0, "and a save without them (an older one) loads as none")
 
 ## Every field, mutated to a value its default could not be mistaken for, round-tripped through
 ## the actual file — `write()`/`try_resume()`, not the in-memory dictionaries, so a JSON
