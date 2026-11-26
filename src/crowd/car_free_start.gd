@@ -1,8 +1,8 @@
 class_name CarFreeStart
 extends RefCounted
 ## Day 1's car-free start: no new car comes into the crowd's box from the moment play begins until
-## she reaches the crossing with cars or is a full block from the tutorial route, whichever comes
-## first (`docs/MECHANICS.md`, "The car-free start"). Simulation layer, ticked once a tick with her
+## she is past the crossing taught with no cars (the fourth street of the tutorial route, a street
+## before the crossing with cars) or is a full block from the tutorial route, whichever comes first (`docs/MECHANICS.md`, "The car-free start"). Simulation layer, ticked once a tick with her
 ## position by the crowd it was handed to (`Crowd.use_car_free_start()`).
 ##
 ## **The first tick holds the cars**: the crowd is handed her, and so ticks this, only when play

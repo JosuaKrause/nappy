@@ -35,10 +35,11 @@ one full block away, so she can turn around; once started they keep spawning (ge
 
 - **The title and the opening shot.** The crowd is handed her, and so ticks the piece, only when
   play begins, so the first tick is play's and the title keeps its density with no `main.gd` edit.
-  The boot's first walk (`DayDirector`'s first-day flag) holds on that tick; every other day 1 (a
-  retry, a checkpoint, a resumed day) holds before its morning, so its cars are parked. A day 1 with
-  no title and no shot on the boot's first walk (a rig) keeps the cars in her view driving until
-  they leave the box. The opening shot's item moves the crowd's box with its camera (it owns
+  A walk with a title in front of it (the boot's first walk, a resumed day's included, which shows the
+  title) holds on that tick; every day 1 with none (a retry, a checkpoint carried on, a rig's
+  `--no-title`) holds before its morning, so its cars are parked. `main` hands the director which
+  it is (`DayDirector.use_a_title_in_front()`), not the boot's first-day flag, which a checkpoint's
+  carry-on shares with a title's boot. The opening shot's item moves the crowd's box with its camera (it owns
   `main.gd`); nothing here needs it.
 - **"Past lesson (4)'s zebra"** is the fourth street's ground (`TutorialRoute.lesson_streets()`
   index 2 and on), because the lessons' own zebra is not laid yet (the lessons on the route);
@@ -48,5 +49,10 @@ one full block away, so she can turn around; once started they keep spawning (ge
 
 - **A retry of day 1 keeps the car-free start** (the design's pick, on lesson (4) being a crossing
   with no cars, gentle-owl #1253).
+- **The cars come in on the fourth street**, a street before the player's "second crossing tutorial"
+  (gentle-owl #1253), the design's pick: a recycled car takes seconds to reach a zebra, so letting
+  them in at the second crossing's own street risks an empty crossing. The plainer alternative,
+  the release at the second crossing's street (lesson (5)'s zebra), costs the same to build and
+  risks that empty crossing.
 - **One full block** is her straight-line distance from the nearest street of the route reaching one
   street's length, the same whichever way she left; the stagger over six seconds is the builder's.

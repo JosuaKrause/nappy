@@ -408,7 +408,7 @@ func _test_day_one_starts_car_free_on_the_tutorial_route(t: TestRunner) -> void:
 	var spec := DaySpec.for_day(1, 210.0)
 	var rig := _start_rig(t, spec, false, null, route)
 	var director: DayDirector = rig["director"]
-	director.use_first_day(false)
+	director.use_a_title_in_front(false)
 	_start(director, spec)
 	t.check(_asked_in_order(["crowd let_cars_in", "crowd use_car_free_start set",
 			"crowd hold_new_cars", "crowd start_day"]),
@@ -422,9 +422,20 @@ func _test_day_one_starts_car_free_on_the_tutorial_route(t: TestRunner) -> void:
 	rig = _start_rig(t, spec, false, null, route)
 	director = rig["director"]
 	director.use_first_day(true)
+	director.use_a_title_in_front(true)
 	_start(director, spec)
 	t.check(_asked.has("crowd use_car_free_start set") and not _asked.has("crowd hold_new_cars"),
-			"the boot's first walk holds on its first tick, behind the title, not at the morning")
+			"a walk with a title in front holds on its first tick, behind the title, not at the morning")
+	_put_the_start_away(rig)
+
+	# A day 1 carried on from the checkpoint is the boot's first walk with no title in front of it.
+	rig = _start_rig(t, spec, false, null, route)
+	director = rig["director"]
+	director.use_first_day(true)
+	director.use_a_title_in_front(false)
+	_start(director, spec)
+	t.check(_asked_in_order(["crowd use_car_free_start set", "crowd hold_new_cars", "crowd start_day"]),
+			"the boot's first walk with no title in front (a checkpoint's carry-on) holds before the morning")
 	_put_the_start_away(rig)
 
 	var day_two := DaySpec.for_day(2, 210.0)

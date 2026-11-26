@@ -898,8 +898,8 @@ started with no title in front of it (a retry, a checkpoint) populates its morni
 parked.
 
 The cars are let in once, for good (`Crowd.let_cars_in()`), at whichever comes first: she stands
-past the crossing taught with no cars (the fourth street of the tutorial route, the first
-street after lesson (4)'s zebra) or she is one street's length (`CityMap.period()` tiles, a
+on the fourth street of the tutorial route (the first street past the crossing taught with no
+cars, which the lessons on the route lay) or she is one street's length (`CityMap.period()` tiles, a
 block and its road) from the tutorial route, wherever she left it. The parked cars re-enter through
 the ordinary recycle at the box's edge, one after another over `Crowd.LET_IN_OVER` seconds. Coming
 back to the route holds nothing again. Every other day lets the cars in before its morning is
