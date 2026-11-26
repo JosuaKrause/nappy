@@ -1268,7 +1268,7 @@ build has nothing in `project.godot` to reach:
   **`readout_requested()` also gates `DevFlags.live_debug_requested()`**, the second, smaller
   bundle M193 opens on a release page beside the readout — `?day=`, `?invincible=1`, `?layers=`,
   `?controls=`, `?escape=1`, `?meters=`, `?daylength=`, `?ending=`/`?blackout=1`,
-  `?groundmode=` and `?framerecord=1` — so the
+  `?escapebag=`, `?groundmode=` and `?framerecord=1` — so the
   snapshot key and everything that drives input, takes a picture or writes a file are the only
   things still unreachable from a visitor's address bar, except the frame record's own file, which
   reaches the visitor only through the browser's download when they tap the page's button for it

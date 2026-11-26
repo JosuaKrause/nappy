@@ -60,19 +60,22 @@ func _test_a_release_build_reads_no_command_line_flag(t: TestRunner) -> void:
 	t.check(release.day_override() == 1 and release.seed_override() == 0
 			and not release.is_invincible()
 			and release.layers_override().is_empty() and release.route_targets().is_empty()
-			and release.dev_flag_words().is_empty() and not release.runs_as_a_rig(),
+			and release.dev_flag_words().is_empty() and not release.runs_as_a_rig()
+			and release.escape_bag() == DaySpec.DEFAULT_ESCAPE_BAG,
 			"a release build reads none of the developer flags")
 	t.check(release.refuses_telemetry(), "but does read the player's own --no-telemetry")
 
 func _test_a_debug_build_reads_them(t: TestRunner) -> void:
 	var debug := RunConfig.parse(_words(["--day", "99", "--seed", "7", "--invincible",
-			"--layers", "1,3", "--ground-mode", "3", "--day-length", "40"]), "", true)
+			"--layers", "1,3", "--ground-mode", "3", "--day-length", "40", "--escape-bag", "B"]),
+			"", true)
 	t.check(debug.day_override() == Tuning.RUN_LENGTH_DAYS, "--day is clamped into the run")
 	t.check(debug.seed_override() == 7 and debug.is_invincible()
 			and debug.layers_override() == [1, 3]
-			and debug.ground_mode() == 3 and is_equal_approx(debug.day_length_for(3), 40.0),
+			and debug.ground_mode() == 3 and is_equal_approx(debug.day_length_for(3), 40.0)
+			and debug.escape_bag() == "B",
 			"and every other flag given is read")
-	t.check(debug.dev_flag_words().size() == 11, "the words themselves are kept, all of them")
+	t.check(debug.dev_flag_words().size() == 13, "the words themselves are kept, all of them")
 
 ## The release-safe bundle answers to a release page only once it asked `?debug=1`; using one of its
 ## parameters is what keeps that page off the save.

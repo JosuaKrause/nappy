@@ -401,13 +401,27 @@ func _test_both_exits_are_reachable_past_every_standing_lethal_reach(t: TestRunn
 const VAN_STREET_SEEDS := [1, 8, 39]
 
 func _test_a_street_of_vans_leaves_a_walk_past_every_reach(t: TestRunner) -> void:
+	_vans_leave_a_walk_past_every_reach(t, "D", {"abduction": 1}, "a van a street")
+	# The bag drawn twice a street (`C`) stands a van, a roadblock or both on a street: the two
+	# marbles of a unit leave trial layouts standing in the walk's ground, which only ever gains
+	# bodies.
+	_vans_leave_a_walk_past_every_reach(t, "C", {"abduction": 1, "roadblock": 1},
+			"a van and a roadblock a street")
+
+func _vans_leave_a_walk_past_every_reach(t: TestRunner, bag_name: String, counts: Dictionary,
+		label: String) -> void:
 	var vans := 0
+	var roadblocks := 0
 	for seed_value: int in VAN_STREET_SEEDS:
 		var map := MapCache.of(seed_value)
 		_paint_day_one(map)
 		var bare := _bare_plan(map, seed_value)
-		var placed := _escape_rows_from(map, bare, {"abduction": 1})
-		vans += placed.size()
+		var placed := _escape_rows_from(map, bare, counts, bag_name)
+		for row: EventPlan in placed:
+			if row.row_id() == "roadblock":
+				roadblocks += 1
+			else:
+				vans += 1
 		var whole: Array[EventPlan] = []
 		whole.assign((bare["seals"] as Array[EventPlan]).duplicate())
 		whole.append_array(placed)
@@ -424,9 +438,16 @@ func _test_a_street_of_vans_leaves_a_walk_past_every_reach(t: TestRunner) -> voi
 				for dx in range(-2, 3):
 					if reached.has(at + Vector2i(dx, dy)):
 						found = true
-			t.check(found, "seed %d, a van a street: the %s is reached past every van's reach"
-					% [seed_value, "tunnel" if kind == CityExit.Kind.TUNNEL else "bridge"])
+			t.check(found, "seed %d, %s: the %s is reached past every van's reach"
+					% [seed_value, label, "tunnel" if kind == CityExit.Kind.TUNNEL else "bridge"])
 	t.check(vans > 80, "there were streets full of vans to walk past (%d)" % vans)
+	if counts.has("roadblock"):
+		# A van stands on about every street, so a roadblock on more than a third as many says the
+		# roadblock marbles were placed beside the vans, not refused (the case would otherwise be
+		# the vans' alone).
+		t.check(roadblocks * 3 > vans,
+				"and roadblocks stood on more than a third of those streets (%d beside %d vans)"
+				% [roadblocks, vans])
 
 ## Marks every grid point within the catch of a row the plan stands that is not mobile and ends the
 ## day, a pursuer waiting at its post included, measured from where its `EventInstance` stands, and
@@ -1413,13 +1434,15 @@ func _test_a_restart_plans_the_same_escape(t: TestRunner) -> void:
 ## **The escape's bag holds its four rows in the player's order of how many.** *(Inbox #785 in
 ## minty-lemur: "a marble bag is absolutely needed with empty events (nothing happening) as well";
 ## "frequency order is trucks > explosions > vans > barriers > empty".)* The empty marbles are counted
-## to keep the share of streets that stand nothing (`DaySpec.FINALE_BAG_EMPTY`), so they stand outside
-## the order.
+## to set the share of streets that stand nothing (`DaySpec.ESCAPE_BAGS`), so they stand outside the
+## order of the four rows.
 func _test_the_escape_bag_keeps_the_players_order(t: TestRunner) -> void:
-	t.check(DaySpec.FINALE_BAG_TRUCKS > DaySpec.FINALE_BAG_EXPLOSIONS
-			and DaySpec.FINALE_BAG_EXPLOSIONS > DaySpec.FINALE_BAG_VANS
-			and DaySpec.FINALE_BAG_VANS > DaySpec.FINALE_BAG_ROADBLOCKS,
-			"the bag holds more trucks than explosions, than vans, than roadblocks")
+	for bag_name: String in DaySpec.ESCAPE_BAGS:
+		var bag: Dictionary = DaySpec.ESCAPE_BAGS[bag_name]
+		t.check(int(bag["military_convoy"]) > int(bag["finale_explosion"])
+				and int(bag["finale_explosion"]) > int(bag["abduction"])
+				and int(bag["abduction"]) > int(bag["roadblock"]),
+				"bag %s holds more trucks than explosions, than vans, than roadblocks" % bag_name)
 
 ## How many more streets a bag that mixes roadblocks into explosions may leave with nothing than a
 ## bag of explosions alone: a street whose roadblock marble is refused draws on among the marbles
@@ -1524,11 +1547,12 @@ static func _bare_plan(map: CityMap, seed_value: int) -> Dictionary:
 ## `counts`) stands on the bare plan, the rng put back where `DayPlanner.plan_the_escape_city()`
 ## would hand it over each time.
 static func _escape_rows_from(map: CityMap, bare: Dictionary,
-		counts: Dictionary) -> Array[EventPlan]:
+		counts: Dictionary, bag_name := DaySpec.DEFAULT_ESCAPE_BAG) -> Array[EventPlan]:
 	var rng: RandomNumberGenerator = bare["rng"]
 	rng.state = bare["state"]
 	var seals: Array[EventPlan] = bare["seals"]
-	var spec := _city_spec()
+	var spec := DaySpec.for_section(DaySpec.Section.CITY, RunConfig.FINALE_LENGTH_SECONDS, "",
+			bag_name)
 	spec.bag = counts
 	return GameDawn.of(spec, rng, map).masts(_NO_MASTS).on(bare["plan"]).standing(seals).plan().placements()
 

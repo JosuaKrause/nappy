@@ -44,6 +44,7 @@ extends RefCounted
 ##   --zoom          1
 ##   --start-escape  0w?
 ##   --blackout      0
+##   --escape-bag    1
 ##   --ground-mode   1
 ##   --ending        1
 ##   --controls      1
@@ -185,7 +186,8 @@ static func _readout_from_query(query: String) -> bool:
 ## The gate for the release-safe bundle: the flags that choose where a run starts or how it is drawn
 ## (`day_override()`, `invincible()`, `layers_override()`, `controls_word()`, `start_escape()`,
 ## `meters_override()`, `charger_timing_override()`, `day_length_override()`, `ending_override()`,
-## `blackout_requested()`, `ground_mode()`, `frame_record_requested()`, and `WebDisplay`'s `?dpr=`)
+## `blackout_requested()`, `escape_bag()`, `ground_mode()`, `frame_record_requested()`, and
+## `WebDisplay`'s `?dpr=`)
 ## — never the input-driving or picture-taking half, and no file but the frame record's, which
 ## leaves only through the browser's download when the player taps its page button. Open on a debug
 ## build whatever the page says, and on a release page once `readout_requested()` holds, so a
@@ -204,7 +206,7 @@ static func _live_debug_requested(is_debug: bool, readout: bool) -> bool:
 ## opens the bundle without using any of it.
 const _LIVE_DEBUG_QUERY_KEYS := [
 	"day", "invincible", "layers", "controls", "escape", "meters", "chargers", "daylength",
-	"ending", "blackout", "groundmode", "framerecord",
+	"ending", "blackout", "escapebag", "groundmode", "framerecord",
 ]
 
 ## Whether the page's query named one of `live_debug_requested()`'s parameters while the bundle is
@@ -474,6 +476,36 @@ static func _blackout_from_query(query: String) -> bool:
 		if pair.size() == 2 and pair[0] == "blackout" and pair[1] == "1":
 			return true
 	return false
+
+## `--escape-bag A|B|C|D` (or `?escapebag=` in the open bundle): which of `DaySpec.ESCAPE_BAGS` the
+## escape's city is drawn from, `DaySpec.DEFAULT_ESCAPE_BAG` when none is given. It chooses what
+## stands on the escape's streets, to play the measured bags against each other.
+func escape_bag() -> String:
+	return _escape_bag_for(active_args(), _query, live_debug_requested())
+
+## `escape_bag()`'s own decision, pure in its three inputs: the command line wins, the page is read
+## only while the bundle is open, and the default answers everything else.
+static func _escape_bag_for(args: PackedStringArray, query: String, flags_open: bool) -> String:
+	var index := args.find("--escape-bag")
+	if index != -1 and index + 1 < args.size():
+		return _parse_escape_bag(args[index + 1])
+	if not flags_open:
+		return DaySpec.DEFAULT_ESCAPE_BAG
+	for parameter in query.trim_prefix("?").split("&"):
+		var pair := parameter.split("=", true, 1)
+		if pair.size() == 2 and pair[0] == "escapebag":
+			return _parse_escape_bag(pair[1])
+	return DaySpec.DEFAULT_ESCAPE_BAG
+
+## The bare parsing of an `--escape-bag`/`?escapebag=` value, a bag's letter in either case.
+## Anything else refuses the whole flag with `push_warning` and answers the default: a measurement
+## of a bag nobody asked for that said nothing about it would compare the wrong thing.
+static func _parse_escape_bag(raw: String) -> String:
+	if DaySpec.ESCAPE_BAGS.has(raw.to_upper()):
+		return raw.to_upper()
+	push_warning("--escape-bag: '%s' is not one of %s, ignoring the flag"
+			% [raw, ", ".join(DaySpec.ESCAPE_BAGS.keys())])
+	return DaySpec.DEFAULT_ESCAPE_BAG
 
 ## `--ground-mode 1|2|3` (or `?groundmode=` in the open bundle): how a needed nearby ground region
 ## is scheduled, as `SceneryGround.Mode` numbers it — `1` every needed region whole in its frame

@@ -70,8 +70,8 @@ begin_section 16 Escape the city 4242 180.0
 0.0 arc block (2,9) commercial -> boarded_up (scheduled)
 0.0 arc block (1,4) courtyard -> requisitioned (scheduled)
 0.0 arc block (9,9) courtyard -> requisitioned (scheduled)
-0.0 plan every unit drawn before she sets off: 34 units, 24 rows
-0.0 plan finale: tunnel via 3 calm, 133 cells | bridge via 3 calm, 136 cells | 34 open streets, 606 placements
+0.0 plan every unit drawn before she sets off: 34 units, 33 rows
+0.0 plan finale: tunnel via 3 calm, 133 cells | bridge via 3 calm, 136 cells | 34 open streets, 615 placements
 0.0 start entered the city at (75,80), facing 180°
 0.0 home escaped by the tunnel, 180.0s to spare | exc 0, in 0.0/s (crowd 0.0, events 0.0), sleep 100
 0.0 ending neutral on day 14 — resistance 0/5, sabotage not done, played 0:00.000

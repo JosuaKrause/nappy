@@ -1805,8 +1805,8 @@ so the line on the screen and the line in the HUD are one instruction rather tha
 unmarked vans and roadblocks at full resistance progress stand on the streets either chain walks,
 drawn from one marble bag for the whole escape: each street draws one marble and holds one row at
 most, and the bag holds the most trucks, then explosions, then vans, then roadblocks
-(`DaySpec.FINALE_BAG_TRUCKS` and the three after it), beside the empty marbles that leave a street
-with nothing (`FINALE_BAG_EMPTY`). A danger a street has no room for stays in the bag for a later
+(`DaySpec.ESCAPE_BAGS`, the default bag's counts), beside the one empty marble that leaves a street
+with nothing. A danger a street has no room for stays in the bag for a later
 street, so most streets stand one danger and the rest stand none. *(Inbox #785 in minty-lemur: "a marble bag is absolutely needed with empty events (nothing
 happening) as well. we need a fair mix"; "frequency order is trucks > explosions > vans >
 barriers > empty".)* See `docs/EVENTS.md`, "The escape — the walk filled before she sets off". A roadblock

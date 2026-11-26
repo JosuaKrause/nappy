@@ -694,7 +694,7 @@ func _the_first_day() -> DaySpec:
 		var start_at_the_city := _escape_start_part() == "city" \
 				or (_flow.escape_from_a_run() and _facts.escape_section() == DaySpec.Section.CITY)
 		return _escape_section_spec(DaySpec.Section.CITY if start_at_the_city
-				else DaySpec.Section.BUILDING, config.escape_section_length())
+				else DaySpec.Section.BUILDING, config.escape_section_length(), config.escape_bag())
 	return _day_spec(config, _run.header().day())
 
 ## One of the fourteen days as this boot walks it: `day`, its clock `config`'s length for it
@@ -707,9 +707,9 @@ static func _day_spec(run_config: RunConfig, day: int) -> DaySpec:
 ## building"* and *"Escape the city"*, the player's names for the two screens — handed to the spec
 ## here, since the spec is data and names nothing of the UI's. `section` is a `DaySpec.Section` as
 ## an `int`.
-static func _escape_section_spec(section: int, length: float) -> DaySpec:
+static func _escape_section_spec(section: int, length: float, escape_bag: String) -> DaySpec:
 	return DaySpec.for_section(section, length, Texts.ESCAPE_BUILDING
-			if section == DaySpec.Section.BUILDING else Texts.ESCAPE_CITY)
+			if section == DaySpec.Section.BUILDING else Texts.ESCAPE_CITY, escape_bag)
 
 ## The screens every boot stands around the walk, built the same way whichever day it opens on:
 ## the HUD; the screen-edge badge, the halo and the debug view when a world already stands (the
@@ -2069,7 +2069,8 @@ func _finish_the_section(end: DayEnd) -> void:
 			_reload_the_scene()
 		return
 	if won and spec.a_win_leads_into() != DaySpec.Section.NONE:
-		_start(_escape_section_spec(spec.a_win_leads_into(), config.escape_section_length()))
+		_start(_escape_section_spec(spec.a_win_leads_into(), config.escape_section_length(),
+				config.escape_bag()))
 		_show_the_section_brief()
 		return
 	if won:

@@ -275,9 +275,11 @@ func rules() -> StreetInvalidation:
 	if _rules == null:
 		var walk_ground: WalkGround = null
 		if _spec.keeps_her_walk_open():
-			# The walk's ground keeps every plan it is shown (`WalkGround.catch_up()`), so it may be
-			# shown final plans only, and with one marble a unit a trial layout shows it none.
-			assert(_spec.stands_one_event_a_street(), "a walk kept open stands one event a street")
+			# The walk's ground keeps every plan it is shown (`WalkGround.catch_up()`), so a trial
+			# layout of a unit with more than one marble leaves plans standing that are not final.
+			# The ground only ever gains bodies, so every plan it accepts is accepted against a
+			# superset of what finally stands and the walk it keeps open is kept open past the
+			# final plans too; the price is room the unused trials hold.
 			walk_ground = WalkGround.new(_map, events().standing(), _walk)
 		_rules = StreetInvalidation.new(_map, corridor(), _leave_alone(), _doors,
 				_builder if _spec.notices_one_at_a_time() else null, walk_ground)
