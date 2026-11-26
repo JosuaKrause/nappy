@@ -889,7 +889,8 @@ wedging against it.
 ### The car-free start
 
 Day 1 starts with no new cars (`CarFreeStart`, `src/crowd/car_free_start.gd`): the title keeps the
-traffic it drives today, and from the first tick of play a car that would re-enter the crowd's box
+traffic it drives today, and from the first frame of the opening shot (below), or from the first tick
+of play where no shot plays, a car that would re-enter the crowd's box
 is **parked** instead (`Crowd.hold_new_cars()`: out of the simulation and the tree, drawn nowhere,
 holding no slot, since the traffic index, the junction boxes and the gates are rebuilt each tick
 from the cars in the crowd). Every car nobody can see is parked at once; one in her view keeps
@@ -904,6 +905,35 @@ block and its road) from the tutorial route, wherever she left it. The parked ca
 the ordinary recycle at the box's edge, one after another over `Crowd.LET_IN_OVER` seconds. Coming
 back to the route holds nothing again. Every other day lets the cars in before its morning is
 populated.
+
+### The opening shot
+
+A day 1's first attempt does not start on her. When the title is dismissed the view cuts to the
+tutorial park, rests there, follows the tutorial route back at one pace to her door and hands the
+view to her own camera, and play begins (`OpeningShot`, `src/day/opening_shot.gd`; the route's line,
+the park's centre, the junctions the route passes back to the one it leaves the doorstep's street
+at, and the doorstep, is `OpeningShot.line_for()`). A tap or a key skips it. It is an **experiment**:
+the player plays a few runs with it before it is kept, and it is built to be taken out whole (one
+class, `CameraFocus` and `Main._play_the_opening_shot()`, with no flag).
+
+- **It plays on a day that walks the tutorial, from a title's start with nothing resumed**: day 1's
+  first attempt. A retry, a checkpoint carried on and a resumed run start on her as before; so does
+  a city with no tutorial route.
+- **The length** is `REST_SECONDS` (1 s on the park) and `TRAVEL_SECONDS` (5 s along the whole route,
+  whatever its length), constants on the class. The camera is a plain `Camera2D` of its own, at her
+  zoom, turn and limits, freed at the end, which hands the view back to hers.
+- **No cars are near her door when the view comes back.** `Crowd.hold_new_cars()` runs on the shot's
+  first frame, once the crowd's box follows the shot's camera (`CameraFocus`, a `CrowdFocus` answering
+  where the camera looks; the hold parks the cars out of sight of the box's own centre, so the box
+  moves first), so the cars left at the door are outside the box and park at once, and none enters
+  behind the camera. A car that happens to drive inside the box all the way back is still there:
+  nothing vanishes in view. `StrollerFocus` replaces the shot's focus when she is handed to the crowd
+  at play's start (`WorldSimulation.meet_her()`).
+- **The day does not run during it.** She is handed to the day when the shot ends, so the clock, the
+  save and the walking line wait for it: the HUD holds day 1's walking line from the title's choice
+  (`HUD.hold_the_walking_line()`) and says it when the shot ends (`HUD.say_the_walking_line()`).
+- **The boot's first frame and the title stay on the doorstep**: only the cut after the title's press
+  moves the view.
 
 ## The world near you
 
@@ -1323,7 +1353,8 @@ because a moving wall on a two-tile pavement pins her against a building. What s
 through a man shouting is the meter: intensity 14 over 210px.
 
 **Nothing pursues before `RUN_TAUGHT_DAY` (day 3).** Day 1 says *Tap to walk, double tap to run* (in the joystick scheme, *Tap to walk, hold* + the run
-button's symbol *or double tap to run*, said when the title's choice is made) and
+button's symbol *or double tap to run*, said when the title's choice is made, or when the opening
+shot ends on a first attempt) and
 nothing more; day 3 is when something comes after the pram, and the HUD says *Double tap to run* (in the joystick scheme,
 *Hold* + the run button's symbol *or double tap to run*) —
 naming no key on any device, since the keyboard's own **Shift** works silently like every other key

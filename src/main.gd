@@ -1422,16 +1422,16 @@ func _the_opening_shot_route() -> TutorialRoute:
 
 ## **Day 1's opening shot**, an experiment the player tries before it is kept (`OpeningShot`): the
 ## view cuts to the tutorial park and comes back along `route` to her door before she is handed to
-## the day. The cars are held from its first frame and the crowd's box follows its camera, so none
-## is near her door when the view comes back (`Crowd.hold_new_cars()`; the car-free start's own
-## hold then finds them parked). The walking line is said when it ends (`HUD.hold_the_walking_line()`).
+## the day. The crowd's box follows its camera and the cars are held from its first frame, in that
+## order (the box measures what is out of sight from where it stands, so held before it moves the
+## cars at her door would still be in sight), so none is near her door when the view comes back
+## (`Crowd.hold_new_cars()`; the car-free start's own hold then finds them parked). The walking
+## line is said when it ends (`HUD.hold_the_walking_line()`).
 ## **To take it out**, delete this function, its call in `_on_title_start()`, the two functions
 ## after it, the focus-loss guard and the HUD's hold; nothing else leans on it.
 func _play_the_opening_shot(route: TutorialRoute) -> void:
 	var line := OpeningShot.line_for(route, _city.map().doorstep_world_position())
 	var crowd := _crowd_now()
-	if crowd:
-		crowd.hold_new_cars()
 	# The park's ground and buildings are prepared before the cut, so its first frame draws a whole
 	# street, as the day's start does round her.
 	var view := get_viewport_rect().size / _player.camera().zoom
@@ -1443,7 +1443,10 @@ func _play_the_opening_shot(route: TutorialRoute) -> void:
 	shot.finished.connect(_on_opening_shot_finished.bind(shot))
 	shot.begin(_player.camera(), line)
 	if crowd:
+		# Held once the box is on the park: the cars left at her door are then out of sight, and
+		# park at once rather than driving on, unseen, in a box that has left them.
 		crowd.use_focus(shot.focus())
+		crowd.hold_new_cars()
 
 ## The shot ran out or was skipped: her own camera has the view back, and play begins, which hands
 ## her to the crowd (`StrollerFocus` replaces the shot's focus).
