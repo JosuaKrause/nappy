@@ -599,14 +599,14 @@ func _warn_down_her_line(def: EventDef, her: Vector2, direction: Vector2) -> voi
 ## created its route is worked out as it goes (`EventInstance.go_on_by()`).
 func _warn_in_its_lane(def: EventDef, her: Vector2, sited: PackedVector2Array) -> void:
 	var lane := sited[0]
-	var going := (sited[sited.size() - 1] - lane).normalized()
+	var going := (sited[1] - lane).normalized()
 	if going == Vector2.ZERO:
 		return
 	var ends := PendingWarning.lane_ends(world.city_map(), going)
 	var where := func(at: Vector2) -> Vector2:
 		return PendingWarning.in_its_lane(def, at, lane, going, ends.x, ends.y, world.visible_view())
 	var arrive := func(place: Vector2, at: Vector2) -> bool:
-		var path := _director.leg_in_the_lane(def, place, at, going)
+		var path := _director.leg_in_the_lane(def, place, at, going, her)
 		if path.is_empty() or not _director.clear_to_send(path, def):
 			return false
 		_spawner.spawn_warned(def, path).go_on_by(_director.way_on())

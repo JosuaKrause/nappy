@@ -403,7 +403,7 @@ func _run_to_its_end(instance: EventInstance) -> bool:
 ## the same LENGTH, so a size comparison concluded nothing had changed — and left a freed
 ## node in the array while never tracking the successor at all.
 ##
-## `finale_explosion`/`impact_crater`, the one row `aftermath.leaves_behind()` governs: a burst
+## `finale_explosion`/`lane_crater`, the one row `aftermath.leaves_behind()` governs: a burst
 ## stepped past its bang and its end before a tick has looked leaves its crater on the tick it is
 ## taken out, one for one. Spawned directly, since the escape's rows are not a day's.
 func _test_successor_replaces_its_parent(t: TestRunner) -> void:
@@ -425,7 +425,7 @@ func _test_successor_replaces_its_parent(t: TestRunner) -> void:
 	var crater: EventInstance = null
 	for instance in _stage.events().instances():
 		t.check(is_instance_valid(instance), "no freed node survives a successor swap")
-		if instance.row_id() == "impact_crater":
+		if instance.row_id() == "lane_crater":
 			crater = instance
 	t.check(crater != null, "the burst leaves a crater behind it")
 	if crater:
@@ -455,7 +455,7 @@ func _test_a_burst_leaves_its_crater_as_it_goes_off(t: TestRunner) -> void:
 func _craters() -> int:
 	var found := 0
 	for instance in _stage.events().instances():
-		if is_instance_valid(instance) and instance.row_id() == "impact_crater":
+		if is_instance_valid(instance) and instance.row_id() == "lane_crater":
 			found += 1
 	return found
 

@@ -337,6 +337,8 @@ src/
 	  way_on.gd             the next leg of a sent row's route, worked out as it goes: a car from
 	                        junction box to junction box by the walk's through roads, a walker
 	                        straight on; made once a walk and handed to the director
+	  junction_boxes.gd     where the junction boxes lie along a street: the lattice's arithmetic,
+	                        asked by the director's convoy and by the way a sent car goes on
 	  event_footprints.gd   where a row's pictures and body stand, off the pictures themselves: the
 	                        box it draws, all it can put on the screen, its solid footprint and its
 	                        spine, the roadblock guard's post, a warning's picture, its hold's hiding
