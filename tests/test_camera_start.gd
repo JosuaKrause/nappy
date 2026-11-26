@@ -106,6 +106,9 @@ func _test_a_boot_camera_stands_on_the_doorstep_before_she_exists(t: TestRunner)
 			t.check(city.scenery_ground.chunks().has(key),
 					"real day reset prepares the home viewport before its first frame")
 	EventBus.hard_fail_triggered.emit("car_strike")
+	# A lost day holds on its cause before the summary; a player's press skips that beat, so the
+	# continue below reaches the summary rather than the beat.
+	Boot.skip_the_loss_beat(main)
 	EventBus.day_time_changed.connect(at_dawn)
 	await Boot.press_continue(t, main)
 	EventBus.day_time_changed.disconnect(at_dawn)
