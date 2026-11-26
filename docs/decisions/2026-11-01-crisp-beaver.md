@@ -46,6 +46,13 @@ branch: no soft seal body stands on a precinct on any day of the suite's six cit
 67's days 2 to 8 and 10 to 13 every seal on a precinct leaves no walker lane (body footprints and
 soft-sealed tiles) and no line for her (`WalkGround`'s solid pieces) open past it.
 
+**The run log baseline moved** (`tests/fixtures/observed_run_log.txt`, which
+`tests/test_observers.gd` compares line for line, seed 4242): the day's plan counts change with the
+pictures, and on day 1 two of the tutorial's lesson rows, the delivery van that shuts her sidewalk
+for the crossing with no cars and the yeller whose beat she times, now find a tile of their slot
+where the baseline had none for either. Why the seals reach those slots was not traced; the
+baseline is re-recorded from this branch.
+
 ## Choices left open to the player's overturn
 
 - **The car accident seals no pedestrian street.** It is a hard seal, but solid only at its two

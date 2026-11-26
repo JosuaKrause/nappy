@@ -1,12 +1,12 @@
 begin_day 1 1 4242 4242 210.0
 0.0 plan regions: 0 boundary, 0 wall, 0 door, calm by region: [1, 1, 1, 1]
 0.0 plan day 1's tutorial: market_stall at (94,85)
-0.0 plan day 1's tutorial: delivery_van has no tile of its slot the day's rules allow
-0.0 plan day 1's tutorial: homeless_yeller has no tile of its slot the day's rules allow
+0.0 plan day 1's tutorial: delivery_van at (97,99)
+0.0 plan day 1's tutorial: homeless_yeller at (84,104)
 0.0 contact the neighbor leaves for work, east along her street
 0.0 plan closed: roadworks h(8,6)
 0.0 plan calm: 2 forest, 2 park, 2 quiet_square, 3 courtyard
-0.0 plan events: alley_mouse, burst_water_main x22, cafe_tables x83, cat_dash x5, chatting_mother, delivery_van x52, dog_walker x15, fallen_tree x2, homeless_yeller x3, leaf_blower x12, loose_dog x6, market_stall x69, moving_van x41, pigeon_flock x2, playground x2, scaffolding x29, skip x23
+0.0 plan events: alley_mouse, burst_water_main x23, cafe_tables x82, cat_dash x5, chatting_mother, delivery_van x54, dog_walker x15, homeless_yeller x4, leaf_blower x11, loose_dog x6, market_stall x73, moving_van x42, pigeon_flock x2, playground x2, scaffolding x29, skip x21
 0.0 start doorstep (80,84), facing 180°
 0.0 nerve normal mode: the last nerve goes back to the latest checkpoint
 0.0 nerve normal mode: the last nerve goes back to the latest checkpoint
@@ -16,12 +16,12 @@ begin_day 1 1 4242 4242 210.0
 begin_day 1 1 4242 4242 210.0
 0.0 plan regions: 0 boundary, 0 wall, 0 door, calm by region: [1, 1, 1, 1]
 0.0 plan day 1's tutorial: market_stall at (94,85)
-0.0 plan day 1's tutorial: delivery_van has no tile of its slot the day's rules allow
-0.0 plan day 1's tutorial: homeless_yeller has no tile of its slot the day's rules allow
+0.0 plan day 1's tutorial: delivery_van at (97,99)
+0.0 plan day 1's tutorial: homeless_yeller at (84,104)
 0.0 contact the neighbor leaves for work, east along her street
 0.0 plan closed: roadworks h(8,6)
 0.0 plan calm: 2 forest, 2 park, 2 quiet_square, 3 courtyard
-0.0 plan events: alley_mouse, burst_water_main x22, cafe_tables x83, cat_dash x5, chatting_mother, delivery_van x52, dog_walker x15, fallen_tree x2, homeless_yeller x3, leaf_blower x12, loose_dog x6, market_stall x69, moving_van x41, pigeon_flock x2, playground x2, scaffolding x29, skip x23
+0.0 plan events: alley_mouse, burst_water_main x23, cafe_tables x82, cat_dash x5, chatting_mother, delivery_van x54, dog_walker x15, homeless_yeller x4, leaf_blower x11, loose_dog x6, market_stall x73, moving_van x42, pigeon_flock x2, playground x2, scaffolding x29, skip x21
 0.0 start doorstep (80,84), facing 180°
 0.0 path 0% of her street time on the corridor (0.0s on, 0.0s off, 0.0s off the streets)
 0.0 lost lost_crying after 0.0s to self — She started crying. There is no settling her now. | exc 0, in 0.0/s (crowd 0.0, events 0.0), sleep 0 | near: neighbor 48px (out of range)
@@ -29,12 +29,12 @@ begin_day 1 1 4242 4242 210.0
 begin_day 1 1 4242 4242 210.0
 0.0 plan regions: 0 boundary, 0 wall, 0 door, calm by region: [1, 1, 1, 1]
 0.0 plan day 1's tutorial: market_stall at (94,85)
-0.0 plan day 1's tutorial: delivery_van has no tile of its slot the day's rules allow
-0.0 plan day 1's tutorial: homeless_yeller has no tile of its slot the day's rules allow
+0.0 plan day 1's tutorial: delivery_van at (97,99)
+0.0 plan day 1's tutorial: homeless_yeller at (84,104)
 0.0 contact the neighbor leaves for work, east along her street
 0.0 plan closed: roadworks h(8,6)
 0.0 plan calm: 2 forest, 2 park, 2 quiet_square, 3 courtyard
-0.0 plan events: alley_mouse, burst_water_main x22, cafe_tables x83, cat_dash x5, chatting_mother, delivery_van x52, dog_walker x15, fallen_tree x2, homeless_yeller x3, leaf_blower x12, loose_dog x6, market_stall x69, moving_van x41, pigeon_flock x2, playground x2, scaffolding x29, skip x23
+0.0 plan events: alley_mouse, burst_water_main x23, cafe_tables x82, cat_dash x5, chatting_mother, delivery_van x54, dog_walker x15, homeless_yeller x4, leaf_blower x11, loose_dog x6, market_stall x73, moving_van x42, pigeon_flock x2, playground x2, scaffolding x29, skip x21
 0.0 start doorstep (80,84), facing 180°
 0.0 path 0% of her street time on the corridor (0.0s on, 0.0s off, 0.0s off the streets)
 0.0 lost lost_hard_fail after 0.0s to homeless-yeller — It went wrong. | exc 0, in 0.0/s (crowd 0.0, events 0.0), sleep 0 | near: neighbor 48px (out of range)
@@ -42,12 +42,12 @@ begin_day 1 1 4242 4242 210.0
 begin_day 1 1 4242 4242 210.0
 0.0 plan regions: 0 boundary, 0 wall, 0 door, calm by region: [1, 1, 1, 1]
 0.0 plan day 1's tutorial: market_stall at (94,85)
-0.0 plan day 1's tutorial: delivery_van has no tile of its slot the day's rules allow
-0.0 plan day 1's tutorial: homeless_yeller has no tile of its slot the day's rules allow
+0.0 plan day 1's tutorial: delivery_van at (97,99)
+0.0 plan day 1's tutorial: homeless_yeller at (84,104)
 0.0 contact the neighbor leaves for work, east along her street
 0.0 plan closed: roadworks h(8,6)
 0.0 plan calm: 2 forest, 2 park, 2 quiet_square, 3 courtyard
-0.0 plan events: alley_mouse, burst_water_main x22, cafe_tables x83, cat_dash x5, chatting_mother, delivery_van x52, dog_walker x15, fallen_tree x2, homeless_yeller x3, leaf_blower x12, loose_dog x6, market_stall x69, moving_van x41, pigeon_flock x2, playground x2, scaffolding x29, skip x23
+0.0 plan events: alley_mouse, burst_water_main x23, cafe_tables x82, cat_dash x5, chatting_mother, delivery_van x54, dog_walker x15, homeless_yeller x4, leaf_blower x11, loose_dog x6, market_stall x73, moving_van x42, pigeon_flock x2, playground x2, scaffolding x29, skip x21
 0.0 start doorstep (80,84), facing 180°
 0.0 path 0% of her street time on the corridor (0.0s on, 0.0s off, 0.0s off the streets)
 0.0 lost lost_timeout after 210.0s — Dusk. You are still out. | exc 0, in 0.0/s (crowd 0.0, events 0.0), sleep 0 | near: neighbor 48px (out of range)
@@ -55,12 +55,12 @@ begin_day 1 1 4242 4242 210.0
 begin_day 1 1 4242 4242 210.0
 0.0 plan regions: 0 boundary, 0 wall, 0 door, calm by region: [1, 1, 1, 1]
 0.0 plan day 1's tutorial: market_stall at (94,85)
-0.0 plan day 1's tutorial: delivery_van has no tile of its slot the day's rules allow
-0.0 plan day 1's tutorial: homeless_yeller has no tile of its slot the day's rules allow
+0.0 plan day 1's tutorial: delivery_van at (97,99)
+0.0 plan day 1's tutorial: homeless_yeller at (84,104)
 0.0 contact the neighbor leaves for work, east along her street
 0.0 plan closed: roadworks h(8,6)
 0.0 plan calm: 2 forest, 2 park, 2 quiet_square, 3 courtyard
-0.0 plan events: alley_mouse, burst_water_main x22, cafe_tables x83, cat_dash x5, chatting_mother, delivery_van x52, dog_walker x15, fallen_tree x2, homeless_yeller x3, leaf_blower x12, loose_dog x6, market_stall x69, moving_van x41, pigeon_flock x2, playground x2, scaffolding x29, skip x23
+0.0 plan events: alley_mouse, burst_water_main x23, cafe_tables x82, cat_dash x5, chatting_mother, delivery_van x54, dog_walker x15, homeless_yeller x4, leaf_blower x11, loose_dog x6, market_stall x73, moving_van x42, pigeon_flock x2, playground x2, scaffolding x29, skip x21
 0.0 start doorstep (80,84), facing 180°
 0.0 path 0% of her street time on the corridor (0.0s on, 0.0s off, 0.0s off the streets)
 0.0 home WON, 210.0s to spare
@@ -69,7 +69,7 @@ begin_day 2 1 4242 4242 210.0
 0.0 contact the neighbor leaves for work, east along her street
 0.0 plan closed: roadworks v(8,6)
 0.0 plan calm: 2 forest, 2 park, 2 quiet_square, 3 courtyard
-0.0 plan events: alley_mouse x2, burst_water_main x21, busker, cafe_tables x58, car_accident x20, cat_dash x2, chatting_mother, construction x42, cyclist x7, delivery_van x37, dog_walker x10, fallen_tree, homeless_yeller x2, ice_cream_van, leaf_blower x8, loose_dog x7, market_stall x46, moving_van x43, pigeon_flock x2, playground x2, scaffolding x21, skip x22
+0.0 plan events: alley_mouse x2, burst_water_main x24, busker, cafe_tables x56, car_accident x20, cat_dash x2, chatting_mother, construction x37, cyclist x7, delivery_van x32, dog_walker x10, fallen_tree, homeless_yeller, leaf_blower x6, loose_dog x7, market_stall x44, moving_van x43, pigeon_flock x2, playground x2, scaffolding x21, skip x23
 0.0 start doorstep (80,84), facing 180°
 === the escape
 begin_section 15 Escape the building 4242 180.0
