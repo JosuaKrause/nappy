@@ -35,6 +35,7 @@ func run(t: TestRunner) -> void:
 	_test_every_look_a_row_can_carry_has_pictures_on_the_page(t)
 	_test_every_badge_silhouette_is_on_the_page(t)
 	_test_both_dog_families_draw_their_accepted_transfers(t)
+	_test_the_pelican_is_drawn_from_its_svgs_alone(t)
 	_test_the_manager_holds_its_page_for_its_own_life(t)
 	_test_a_manager_freed_mid_day_still_gives_its_page_back(t)
 
@@ -157,6 +158,42 @@ func _test_both_dog_families_draw_their_accepted_transfers(t: TestRunner) -> voi
 	for picture: String in pictures.keys():
 		var transfer := AtlasLibrary.illustrated_path_for("art/%s.svg" % picture)
 		t.check(FileAccess.file_exists(transfer), "%s is drawn from %s" % [picture, transfer])
+
+## The pelican cyclist is drawn from its SVGs and from nothing else *(inbox #437 in
+## minty-hedgehog: "Needs to be svg only")*. The default bake takes a transfer PNG wherever one
+## stands beside a picture's SVG (`AtlasLibrary.illustrated_path_for()`), so one placed for a
+## pelican picture would replace its SVG in every release without a line of code changing: no
+## picture the pelican can draw has one. A PNG-first family is a folder of its own under
+## `art/illustrated/` with no SVG beside it, so no PNG anywhere there carries the pelican's name
+## either. The case above is what shows the transfer path is one a file is found at.
+func _test_the_pelican_is_drawn_from_its_svgs_alone(t: TestRunner) -> void:
+	var pictures: Dictionary = {}
+	for table: Dictionary in [EventPictures.PELICAN_BY_VIEW, EventPictures.PELICAN_BY_VIEW_B]:
+		for view: String in table.keys():
+			pictures[str(table[view])] = true
+	t.check(not pictures.is_empty(), "the pelican had pictures to check (%d)" % pictures.size())
+	for picture: String in pictures.keys():
+		var transfer := AtlasLibrary.illustrated_path_for("art/%s.svg" % picture)
+		t.check(not FileAccess.file_exists(transfer),
+				"%s is drawn from its SVG, with no PNG at %s" % [picture, transfer])
+	var pngs := _pngs_under(AtlasLibrary.ART_ROOT + "illustrated/")
+	t.check(not pngs.is_empty(), "there were illustrated PNGs to look through (%d)" % pngs.size())
+	var of_the_pelican := PackedStringArray()
+	for png in pngs:
+		if png.get_file().to_lower().contains("pelican"):
+			of_the_pelican.append(png)
+	t.check(of_the_pelican.is_empty(),
+			"no illustrated PNG is the pelican's (%s)" % ", ".join(of_the_pelican))
+
+## Every PNG under `directory`, at any depth.
+func _pngs_under(directory: String) -> PackedStringArray:
+	var found := PackedStringArray()
+	for file in DirAccess.get_files_at(directory):
+		if file.to_lower().ends_with(".png"):
+			found.append(directory.path_join(file))
+	for child in DirAccess.get_directories_at(directory):
+		found.append_array(_pngs_under(directory.path_join(child)))
+	return found
 
 # ------------------------------------------------------------- the lifetime ---
 

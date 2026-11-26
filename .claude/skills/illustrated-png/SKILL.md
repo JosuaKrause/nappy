@@ -43,8 +43,9 @@ Raw generator outputs belong with generation evidence, not in the runtime asset 
 
 **The pelican cyclist is never converted.** `art/events/pelican_cyclist*.svg` stays SVG by the
 player's word (minty-hedgehog #437): the bake rasterizes it like any SVG, and no illustrated PNG of
-it is generated or placed under `art/illustrated/`. **The rule is unenforced**: no suite or check
-fails if one appears there.
+it is generated or placed under `art/illustrated/`. `tests/test_atlas_events.gd` holds it: no
+picture the pelican can draw has a transfer PNG beside its SVG, and no PNG under
+`art/illustrated/` carries the pelican's name.
 
 The player may authorize a bounded PNG-first family when photographs or a reviewed generated
 concept define the subject more faithfully than an existing SVG. The player permits three: the M109
