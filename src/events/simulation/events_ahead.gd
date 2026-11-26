@@ -84,6 +84,8 @@ func start_day(day: int, tree: RouteTree) -> void:
 	for plan in _walk.plans():
 		if plan.is_sited_from_her_walk() and not plan.is_placed():
 			_siting_for(day, plan)
+	# Day 1's tutorial route on the day whose spec walks it, which the director holds its bag on.
+	_director.use_tutorial_route(world.streets().tutorial_route() if world.streets() else null)
 	_director.start_day(day, _walk.plans(), world.run().calendar().day_rng(day, "ahead"),
 			_spec.director_sends(), _siting, world.run().resistance().progress(),
 			_spec.handout_wait_share())
@@ -129,6 +131,7 @@ func start_a_given_walk(day: int, tree: RouteTree = null) -> void:
 	_siting = null
 	_day_tree = tree
 	if _director:
+		_director.use_tutorial_route(null)
 		_director.start_day(day, _walk.plans(),
 				world.run().calendar().day_rng(day, "finale-ahead"),
 				_spec.director_sends(), null, 0, _spec.handout_wait_share())

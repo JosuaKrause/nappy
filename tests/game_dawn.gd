@@ -30,6 +30,8 @@ var _standing: Array[EventPlan] = []
 var _trace: RunTrace = null
 var _roadblock: EventDef = null
 var _walk_left_open: TutorialRoute = null
+## Day 1's tutorial route (`tutorial()`), or null.
+var _tutorial: TutorialRoute = null
 ## Whether `undrawn()` was said: the dawn left as the game leaves it, no unit drawn.
 var _undrawn := false
 var _rows: Array[EventDef] = []
@@ -130,13 +132,19 @@ func walk_left_open(route: TutorialRoute) -> GameDawn:
 	_walk_left_open = route
 	return self
 
+## Day 1's tutorial route, on the day whose spec walks it (`DayStreets.tutorial_route()`): the
+## lessons stand on it (`DawnTutorial`), and a dawn handed no walk grows the tree with it.
+func tutorial(route: TutorialRoute) -> GameDawn:
+	_tutorial = route
+	return self
+
 ## The dawn's context as the game's planner makes it, not yet planned: for a probe that runs
 ## one pass of the dawn.
 func context() -> DawnContext:
 	var dawn := _Dawn.new(_spec, _rng.seed, _map,
-			# A dawn handed no walk is not about the tutorial route: day 1 here grows the
-			# ordinary tree, deliberately (test_seals holds the tutorial's).
-			_walk if _walk else RouteTree.for_day(_map, _spec.day_number(), null),
+			# A dawn handed no walk and no tutorial route grows the ordinary tree, deliberately
+			# (test_seals holds the tutorial's); one handed a route grows day 1's with it.
+			_walk if _walk else RouteTree.for_day(_map, _spec.day_number(), _tutorial),
 			_calm if _calm else CalmAreas.of(_map), GamePlanBuilder.over(_map),
 			EventScheduler.row_ground, _rows)
 	dawn.use_the_run(_spent, _scars, _heat)
@@ -146,6 +154,7 @@ func context() -> DawnContext:
 	dawn.use_trace(_trace)
 	dawn.use_the_roadblock_row(_roadblock)
 	dawn.use_the_walk_left_open(_walk_left_open)
+	dawn.use_the_tutorial_route(_tutorial)
 	return dawn
 
 ## **The dawn left as the game leaves it**: no unit drawn (`DawnDraw` prepares the units' draw and

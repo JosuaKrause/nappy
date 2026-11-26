@@ -226,6 +226,8 @@ func start_day(day: int, plans: Array[EventPlan],
 	_owed.clear()
 	_wait_share = wait_share
 	_lesson = null
+	_tutorial_park_reached = false
+	_lessons_dog_walker_sent = false
 	_rng = rng
 	_day = day
 	_met_today.clear()
@@ -315,6 +317,23 @@ const DAY_ONE_DOG_WALKERS_WITHIN := 3
 ## The row day one's rigged bag holds (`_rig_day_one()`).
 const DAY_ONE_DOG_WALKER := "dog_walker"
 
+## Day 1's tutorial route on the day whose spec walks it (`use_tutorial_route()`), else null.
+var _tutorial: TutorialRoute = null
+## Whether she has stood in the tutorial park today, which ends the hold on the route for the day.
+var _tutorial_park_reached := false
+## Whether lesson (3)'s dog walker has been sent today.
+var _lessons_dog_walker_sent := false
+
+## **Hands the director day 1's tutorial route** for the day it starts next (`start_day()`), null
+## on a day that does not walk one (`DayStreets.tutorial_route()`). On the day it is handed, the
+## director holds its route bag while she is on the route and has not yet stood in the tutorial
+## park, but for lesson (3)'s dog walker (`_send_the_lessons_dog_walker()`): the cat, the loose
+## dog and the rest would land between the lessons and blur them. *Proposed, not asked for:* the
+## player's words name dawn placement only (gentle-owl #1253); the hold is the design's pick,
+## open to the player's correction.
+func use_tutorial_route(route: TutorialRoute) -> void:
+	_tutorial = route
+
 ## **Day one's dog walkers come by construction**: two of the first three marbles drawn on her
 ## route are dog walkers. *(PLAYTEST-05 6: the dog-walker decision has to be made at least twice on
 ## day one; inbox #561 in coral-bunny, the player's own tool for a guarantee about her route, a
@@ -324,13 +343,19 @@ const DAY_ONE_DOG_WALKER := "dog_walker"
 ## waits for room (`_sent_waiting`) and is met after an event behind it, or never: the pace holds
 ## over the guarantee, the orchestrator's reading of board question sent-ahead-pace. Nothing on any
 ## other day, and nothing on a day whose bag holds no dog walker.
+##
+## **On a day that walks the tutorial route both come first**: the first is lesson (3)'s, sent
+## toward her on its street while every other handout is held on the route, and the second is then
+## the head of the bag, so it is the first handout once she has stood in the tutorial park, on her
+## walk home. Off the route the bag runs at its ordinary pace with what is left of the rig at its
+## head.
 func _rig_day_one(day: int, heat: int) -> void:
 	if day != 1 or not _route_rows.has(DAY_ONE_DOG_WALKER):
 		return
 	var ids: Array[String] = []
 	for _i in DAY_ONE_DOG_WALKERS:
 		ids.append(DAY_ONE_DOG_WALKER)
-	rig_her_route(ids, DAY_ONE_DOG_WALKERS_WITHIN, heat)
+	rig_her_route(ids, DAY_ONE_DOG_WALKERS if _tutorial else DAY_ONE_DOG_WALKERS_WITHIN, heat)
 
 ## The row `--force <id>` names, or `null` when the flag is absent — see `DevFlags.forced_row()`
 ## for what the flag is for.
@@ -981,6 +1006,9 @@ func _handed_from_the_route() -> void:
 ## view (`VisibleView`), which a row sent down a lane of the road is sited out of; null for a camera
 ## on her.
 func due(delta: float, at: Vector2, velocity: Vector2, view: VisibleView = null) -> Array:
+	if _tutorial and not _tutorial_park_reached \
+			and _tutorial.has_in_its_park(_map.world_to_tile(at)):
+		_tutorial_park_reached = true
 	if _owed.is_empty() and _sent_waiting.is_empty():
 		return []
 	var speed := velocity.length()
@@ -991,6 +1019,8 @@ func due(delta: float, at: Vector2, velocity: Vector2, view: VisibleView = null)
 	if speed < Tuning.AHEAD_MIN_SPEED:
 		return []
 	var heading := velocity / speed
+	if _tutorial and not _tutorial_park_reached and _tutorial.runs_over(_map.world_to_tile(at)):
+		return _send_the_lessons_dog_walker(delta, at, heading, view)
 	_next_in -= delta
 	if _next_in > 0.0:
 		return []
@@ -1043,6 +1073,30 @@ func due(delta: float, at: Vector2, velocity: Vector2, view: VisibleView = null)
 	if _forced and _owed.is_empty():
 		_owed.append(_forced)
 	return [handed, path, sited[1], sited[2]]
+
+## **Lesson (3)'s dog walker, the one handout on the tutorial route before the park**: the rig's
+## first dog walker (`_rig_day_one()`), sent down her line toward her as any is
+## (`_sited()`) once she is on lesson (3)'s street, at once rather than on the clock's turn, and
+## asked again every `SENT_RETRY` while it has no room; answered as `due()` answers. Nothing else
+## is handed out on the route before she has stood in the park, and nothing is spent while held.
+func _send_the_lessons_dog_walker(delta: float, at: Vector2, heading: Vector2,
+		view: VisibleView) -> Array:
+	var street := _tutorial.lesson_street(TutorialRoute.Lesson.NOISE_WITH_LESS_ROOM)
+	if _lessons_dog_walker_sent or not street \
+			or not street.tile_rect().has_point(_map.world_to_tile(at)):
+		return []
+	_next_in = minf(_next_in, SENT_RETRY) - delta
+	if _next_in > 0.0 or _owed.is_empty() or _owed[0] != null:
+		return []
+	var next := _next_on_the_route()
+	if not next or next.id() != DAY_ONE_DOG_WALKER:
+		return []
+	var sited := _sited(next, at, heading, view)
+	if (sited[0] as PackedVector2Array).is_empty():
+		_next_in = SENT_RETRY
+		return []
+	_lessons_dog_walker_sent = true
+	return [_hand_out(next, true), sited[0], sited[1], sited[2]]
 
 ## **How soon a turn of the clock that sent nothing is asked again**: a second of her walking, the
 ## cadence every siting that waits for ground is asked again on. A turn sends nothing where only rows
