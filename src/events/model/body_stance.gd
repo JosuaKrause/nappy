@@ -78,8 +78,9 @@ static func of_plan(map: WorldMap, plan: EventPlan) -> BodyStance:
 ## where its body stands (`EventPlan.body_at()`) asks it. **A plan's own reading stays without
 ## the move onto a sidewalk band's middle**: the move needs the pavement, which a plan holds no
 ## map to read, keeps a body on its own sidewalk, at most half a tile across it, and the day's
-## rules have always read a sidewalk body where it was placed; the kerb changes what a band
-## covers, the street's far sidewalk, and so is read here.
+## disc readings of a plan read a sidewalk body where it was placed; the kerb changes what a band
+## covers, the street's far sidewalk, and so is read here. Where the half tile decides whether a
+## sidewalk stays walkable, a reader that holds the map asks `of_plan()` (`OneSidewalkOpenRule`).
 static func stands_without_a_map(row: EventDef, at: Vector2) -> Vector2:
 	if row.stands_mid_street():
 		return CityMap.street_middle_beside(at)

@@ -12,7 +12,8 @@ extends RefCounted
 ## **It is handed everything it asks**, by whoever makes it: the day's planner (`DayPlanner`), or
 ## `tests/game_dawn.gd` for a suite. What every dawn has comes with the constructor. What a walk
 ## may be without is handed in after it (`use_the_run()`, `use_the_doors()`, `use_what_stands()`,
-## `use_mast_sites()`, `use_trace()`, `use_the_roadblock_row()`), all before the dawn is planned:
+## `use_mast_sites()`, `use_trace()`, `use_the_roadblock_row()`, `use_the_walk_left_open()`), all
+## before the dawn is planned:
 ## no phase calls one.
 ##
 ## **The constructor derives nothing.** Each built thing is made the first time it is asked for
@@ -38,6 +39,8 @@ var _standing: Array[EventPlan] = []
 var _mast_sites: Array[MastSites.Site] = []
 var _trace: RunTrace = null
 var _roadblock_row: EventDef = null
+## The lesson streets of day 1's walk on the day that leaves it open, else none.
+var _walk_left_open: Array[StreetNetwork.Segment] = []
 
 var _corridor: Corridor = null
 ## Whether `_corridor` was asked of the walk yet: a walk that is not a tree answers null.
@@ -95,6 +98,12 @@ func use_trace(trace: RunTrace) -> void:
 ## Hands the dawn the row its roadblock phase stands beside the day's routes (`roadblock_row()`).
 func use_the_roadblock_row(row: EventDef) -> void:
 	_roadblock_row = row
+
+## Hands the dawn day 1's walk on the day that leaves it open
+## (`DayStreets.tutorial_walk_left_open()`), null on every other day: the day's rules keep one
+## sidewalk of each of its lesson streets open, as on a route's street (`OneSidewalkOpenRule`).
+func use_the_walk_left_open(route: TutorialRoute) -> void:
+	_walk_left_open = route.lesson_streets() if route else ([] as Array[StreetNetwork.Segment])
 
 # ------------------------------------------------------------ what it was handed ---
 
@@ -269,8 +278,9 @@ func kept_clean() -> Vector2i:
 ## **The day's placement rules** (`StreetInvalidation`), built once on the first ask and asked by
 ## every judge of the dawn: the calm ground to leave alone, the doors' clear ground and the route
 ## rules of the walk's corridor; one waiting guard's notice at a time where the spec keeps it
-## (`DaySpec.notices_one_at_a_time()`), and the walk kept open past what stands on it where the spec
-## keeps that (`DaySpec.keeps_her_walk_open()`, `WalkGround`).
+## (`DaySpec.notices_one_at_a_time()`), the walk kept open past what stands on it where the spec
+## keeps that (`DaySpec.keeps_her_walk_open()`, `WalkGround`), and one sidewalk of day 1's walk
+## kept open where the day leaves it open (`use_the_walk_left_open()`).
 func rules() -> StreetInvalidation:
 	if _rules == null:
 		var walk_ground: WalkGround = null
@@ -282,7 +292,7 @@ func rules() -> StreetInvalidation:
 			# final plans too; the price is room the unused trials hold.
 			walk_ground = WalkGround.new(_map, events().standing(), _walk)
 		_rules = StreetInvalidation.new(_map, corridor(), _leave_alone(), _doors,
-				_builder if _spec.notices_one_at_a_time() else null, walk_ground)
+				_builder if _spec.notices_one_at_a_time() else null, walk_ground, _walk_left_open)
 	return _rules
 
 ## **Holds the day's unit draw** (`UnitDraw`), which the dawn draw's phase prepares

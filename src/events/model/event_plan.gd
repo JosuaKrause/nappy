@@ -136,9 +136,10 @@ func placed_at() -> Vector2:
 
 ## **Where its body stands, as far as the lattice says**: `BodyStance.stands_without_a_map()` of
 ## where it was placed. Every reading of its geometry here asks it, and so do the day's disc
-## readings of a body (`OneSidewalkOpenRule`, `RouteSidewalkRule`, `RouteGroundRule`,
-## `DoorClearanceRule`, `EventScheduler.blocked_by()`, the roadblock phase, the day-13 swap), so
-## a roadblock's band is read where it is drawn and solid, leaving the far sidewalk whole.
+## readings of a body (`RouteSidewalkRule`, `RouteGroundRule`, `DoorClearanceRule`,
+## `EventScheduler.blocked_by()`, the roadblock phase, the day-13 swap), so a roadblock's band is
+## read where it is drawn and solid, leaving the far sidewalk whole. `OneSidewalkOpenRule` holds
+## the map and reads a body where it stands (`BodyStance.of_plan()`), its band's middle included.
 func body_at() -> Vector2:
 	return BodyStance.stands_without_a_map(_def, _position)
 

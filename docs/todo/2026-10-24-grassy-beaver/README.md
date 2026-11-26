@@ -22,10 +22,10 @@ objects that cause noise, (c) turn around at a dead end, (d) cross the street wh
 blocked, (e) time the approach for moving obstacles, (f) not the same way every day (curly-moose
 #819). Agreed after the research (the orchestrator's proposal; the player: "the rest sounds good",
 curly-moose #819): **day 1 teaches (a), (b) and (d)**, as one sequence; (c) is day 2's ("dead end in day 2
-sounds good as well", curly-moose #819, in `day-two.md`); where (e) goes is open there; (f) is
-learned on day 2 by construction. On day 1's car losses the player: "traffic crossings are already
+sounds good as well", curly-moose #819, built in the record grassy-beaver-rosy-trout, which says
+where (e) went: the yeller on day 1); (f) is learned on day 2 by construction. On day 1's car losses the player: "traffic crossings are already
 only where cars are stopped -- the issue comes from players who just run across the street"
-(curly-moose #832), which `day-two.md` takes up.
+(curly-moose #832), whose reading the record grassy-beaver-rosy-trout keeps.
 
 **The research behind it** (an agent's survey of onboarding studies on 2026-10-24; the sources are
 in the conversation's report, summarised here): in simple games tutorial text made a negligible
@@ -51,7 +51,7 @@ make the intro a slog. we want to start right into the action" (curly-moose #819
 bubbles (`thought-bubbles.md`) "might even make the text obsolete".
 
 **Items:** `hand-crafted-day-one.md`, `car-free-start.md`, `thought-bubbles.md`,
-`the-loss-shown.md`, `opening-shot.md` (an experiment), `day-two.md`. The
+`the-loss-shown.md`, `opening-shot.md` (an experiment). The
 GoatCounter events measuring day one are their own entry, filed ahead of this one so a window
 before the change exists ([tiny-lark](../../playtests/2026-11-01-tiny-lark.md), #927: "yes, split").
 

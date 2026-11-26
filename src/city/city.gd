@@ -1151,7 +1151,7 @@ func start_recipe_day(state: CityState, day: int, _rng: RandomNumberGenerator,
 	var plan := RegionPlanner.plan_day(_map, spec, tree)
 	_map.restore_edges(edges)
 	var closures: Array[RoadClosure] = _map.recipe_road_closures().duplicate()
-	_streets.begin_day(tree, plan, closures, walk)
+	_streets.begin_day(tree, plan, closures, walk, _walk_left_open_for(spec))
 	_map.close_streets(closures)
 	for closure in closures:
 		_spawn_closure(closure)
@@ -1162,6 +1162,17 @@ func start_recipe_day(state: CityState, day: int, _rng: RandomNumberGenerator,
 ## The run's tutorial route on a day whose spec walks it, null on every other day.
 func _tutorial_for(spec: DaySpec) -> TutorialRoute:
 	return _tutorial if spec.walks_the_tutorial() else null
+
+## The run's tutorial route on a day whose spec leaves day 1's walk open
+## (`DaySpec.leaves_the_tutorial_walk_open()`), when she settled in its park this act; null on
+## every other day, and where she settled somewhere else: the walk the day's closures and seals
+## leave alone (`DayStreets.tutorial_walk_left_open()`).
+func _walk_left_open_for(spec: DaySpec) -> TutorialRoute:
+	if _tutorial == null or _run == null or not spec.leaves_the_tutorial_walk_open():
+		return null
+	if not _tutorial.has_its_park_among(_run.calendar().settled_this_act()):
+		return null
+	return _tutorial
 
 ## The closed streets of the day `spec` describes. The whole street comes out of the network; the
 ## barriers stand at its two mouths, where they can be seen from the junction rather than found half
@@ -1183,8 +1194,9 @@ func _close_streets(spec: DaySpec, rng: RandomNumberGenerator) -> void:
 	_trace.note("plan", "regions: %d boundary, %d wall, %d door, calm by region: %s"
 			% [plan.wall_segments().size() + plan.door_segments().size(), plan.wall_segments().size(),
 			plan.door_segments().size(), RegionPlanner.regions_with_calm(_map)])
-	var closures := ClosurePlanner.plan_day(_map, spec, rng, tree, plan, _trace)
-	_streets.begin_day(tree, plan, closures, walk)
+	var left_open := _walk_left_open_for(spec)
+	var closures := ClosurePlanner.plan_day(_map, spec, rng, tree, plan, _trace, left_open)
+	_streets.begin_day(tree, plan, closures, walk, left_open)
 	_map.close_streets(closures)
 	for closure in closures:
 		_spawn_closure(closure)

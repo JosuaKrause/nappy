@@ -33,14 +33,19 @@ var _sited_from: RegionPlan = null
 var _closures: Array[RoadClosure] = []
 ## Today's tutorial route, on a day whose spec walks it, or null.
 var _tutorial: TutorialRoute = null
+## Day 1's tutorial route on a day that leaves its walk open, or null (`tutorial_walk_left_open()`).
+var _walk_left_open: TutorialRoute = null
 
 # ------------------------------------------------------------------- writes ---
 
 ## Today's streets, as dawn grew them: the tree, the region plan grown from it and the closures
-## placed off both. The plan is not edited once handed over (`siting_region()`).
+## placed off both, with today's tutorial route and day 1's walk left open where the day has
+## either. The plan is not edited once handed over (`siting_region()`).
 func begin_day(tree: RouteTree, plan: RegionPlan,
-		closures: Array[RoadClosure], tutorial: TutorialRoute = null) -> void:
+		closures: Array[RoadClosure], tutorial: TutorialRoute = null,
+		walk_left_open: TutorialRoute = null) -> void:
 	_tutorial = tutorial
+	_walk_left_open = walk_left_open
 	_tree = tree
 	_region_plan = plan
 	_closures = closures
@@ -62,6 +67,13 @@ func route_tree() -> RouteTree:
 ## `DayPlanner` hands the seals.
 func tutorial_route() -> TutorialRoute:
 	return _tutorial
+
+## **Day 1's tutorial route, on a day that leaves its walk open**
+## (`DaySpec.leaves_the_tutorial_walk_open()`) after she settled in its park on day 1, and null on
+## every other day: the walk whose streets the day's closures and seals leave alone, so the same
+## walk leads her to the park she used, spoiled. `DayPlanner` hands it to the seals.
+func tutorial_walk_left_open() -> TutorialRoute:
+	return _walk_left_open
 
 ## Today's region wall and doors. Grown at dawn from `route_tree()`, so it is null until then —
 ## the same contract as `route_tree()`.

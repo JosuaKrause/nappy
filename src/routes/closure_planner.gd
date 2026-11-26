@@ -110,10 +110,15 @@ static func _note(trace: RunTrace, kind: String, text: String) -> void:
 ## shut_calm()` gets no fence at all — it is off the route tree but not off the ground, so nothing
 ## here draws anything for it. The fenced ground itself was decided at the repaint and is already
 ## closed on the map, so every candidate below is judged with it closed.
+##
+## `left_open` is day 1's tutorial route on a day that leaves its walk open
+## (`DayStreets.tutorial_walk_left_open()`, handed by `City`), null on every other day: its lesson
+## streets are refused as candidates, so the same walk still leads to the park she used. Refusing a
+## candidate only leaves a street open, so every guarantee the invariant keeps stays kept.
 static func plan_day(map: CityMap, spec: DaySpec, rng: RandomNumberGenerator,
 		tree: RouteTree, region_plan: RegionPlan = null,
-		trace: RunTrace = null) -> Array[RoadClosure]:
-	var chosen := _close_streets(map, spec, rng, tree, region_plan, trace)
+		trace: RunTrace = null, left_open: TutorialRoute = null) -> Array[RoadClosure]:
+	var chosen := _close_streets(map, spec, rng, tree, region_plan, trace, left_open)
 	var fenced := map.fenced_park_block()
 	if fenced.x >= 0:
 		for fence in ParkClosure.fence(map, fenced):
@@ -122,7 +127,7 @@ static func plan_day(map: CityMap, spec: DaySpec, rng: RandomNumberGenerator,
 
 static func _close_streets(map: CityMap, spec: DaySpec, rng: RandomNumberGenerator,
 		tree: RouteTree, region_plan: RegionPlan,
-		trace: RunTrace = null) -> Array[RoadClosure]:
+		trace: RunTrace = null, left_open: TutorialRoute = null) -> Array[RoadClosure]:
 	var chosen: Array[RoadClosure] = []
 	var day := spec.day_number()
 	# Whatever this day does or does not close, it owns the answer to which pits are empty — so a
@@ -153,9 +158,15 @@ static func _close_streets(map: CityMap, spec: DaySpec, rng: RandomNumberGenerat
 	var emptied: Array[Vector2i] = []
 	var today_closed := {}
 	var places := places_to_reach_today(map, day, regions)
+	var spared := {}
+	if left_open != null:
+		for segment in left_open.lesson_streets():
+			spared[segment.key()] = true
 	for segment in _shuffled_candidates(map, home, areas, corridor, regions, rng):
 		if chosen.size() >= wanted:
 			break
+		if spared.has(segment.key()):
+			continue
 		today_closed[segment.key()] = true
 		if _invariant_holds(map, grid, areas, today_closed, places):
 			var kind := _pick_kind(kinds, rng, tree_segments.has(segment.key())) as RoadClosure.Kind
