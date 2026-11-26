@@ -951,7 +951,8 @@ func _authored_seals(errors: Array[String]) -> Array[EventPlan]:
 		var candidate := SealPlanner.candidate_named(str(entry.candidate))
 		if not candidate:
 			continue
-		if not SealPlanner.offers(candidate, _run.header().day(), lined.has(key)):
+		if not SealPlanner.offers(candidate, _run.header().day(), lined.has(key),
+				TutorialRoute.is_a_precinct(map, segment)):
 			errors.append("setup.seals: candidate is unavailable on this day or street")
 			continue
 		var sited := SealPlanner.seal_street(map, segment, candidate, route, trees, emptied)
