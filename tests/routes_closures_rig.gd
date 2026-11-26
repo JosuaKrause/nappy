@@ -9,11 +9,10 @@ extends RefCounted
 ## one park -- or no way at all -- looks exactly like a normal morning until they have walked across
 ## the city and found the barrier.
 ##
-## Split from `tests/test_routes.gd` under M125, "the test suite is slow again"; `test_routes_lattice.gd`
-## keeps the open lattice's own shape, `test_routes_fallen_trees.gd` keeps the fallen-tree rule that
-## rides on top of a plan (split out separately since it re-plans a seed's whole fourteen days
-## uncached, which this half's own eleven tests never need to), and `test_routes_kerb_tint.gd` keeps
-## the one test that needs a real scene tree.
+## `test_routes_lattice.gd` keeps the open lattice's own shape, `test_routes_fallen_trees.gd` the
+## fallen-tree rule that rides on top of a plan (a suite of its own, since it re-plans a seed's
+## whole fourteen days uncached, which no case here needs), and `test_routes_kerb_tint.gd` the one
+## test that needs a real scene tree.
 
 ## Enough seeds to catch a layout that only goes wrong in one arrangement.
 ##
@@ -360,7 +359,7 @@ func _enough_calm_is_reachable(map: CityMap, grid: ReachabilityGrid,
 ## independent mechanisms is what M50 kept deliberately rather than trusting the placement alone —
 ## but a skip means the wall and the tree disagree about where she is going, and that is a bug
 ## rather than a near miss. This is the assertion the planner's telemetry note stands in for at
-## runtime: over a run's worth of days on every seed, every candidate the planner reaches is legal.
+## runtime: on two maps and three days, every candidate the planner reaches is legal.
 ##
 ## Every off-corridor street is tried rather than only the handful a day happens to reach, which
 ## is what makes the planner's `else` branch provably dead rather than merely unvisited. Two seeds

@@ -11,7 +11,7 @@ description: Rules for the city — the lattice and what may change about it, ti
   it, and no purpose change moves a walkable tile.
 - **Every day stays winnable**: at least two distinct calm areas stay reachable from home.
 - **Closures and events are checked before they are accepted, never repaired afterwards.**
-- **Anything new that closes a street goes through `ClosurePlanner`.** Nothing enforces it.
+- **Anything new that closes a street goes through `ClosurePlanner`.** `tools/check_closure_writers.py` holds it.
 - **Every route search takes `CityMap.blocked_segments()`**, the absent streets with the closures.
 - **Anything that travels the lattice asks `CityMap.is_street()`**, not `is_walkable()`.
 - **The street outside the home is never closed**: a doorway is not a route.
@@ -66,7 +66,10 @@ that, `ClosurePlanner` keeps **at least two distinct calm areas reachable**
 (`ClosurePlanner.MIN_CALM_AREAS_REACHABLE`), checked **before accepting each closure**. Anything new that
 closes a street must go through it. `tests/routes_closures_rig.gd`, which
 `tests/test_routes_closures_a.gd`, `_b` and `_c` run, holds every day the planner plans to the
-count; **a closure made outside the planner is unenforced**, since no suite sees one.
+count. **A closure made outside the planner is one no suite sees**, so
+`tools/check_closure_writers.py`, which `tools/lint.sh` runs, fails a street closed, a closure
+built or the closed ground written anywhere under `src/` but the sites its table allows, each with
+its reason.
 
 **Two areas is the count; reachability is the strength.** Two *areas* is what stops a day arriving
 where the only calm left is the one this morning spoiled; dropping to one reachable area is an

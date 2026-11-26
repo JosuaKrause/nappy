@@ -5,9 +5,7 @@ extends RefCounted
 ## The crowd against a closed or shaped street: hard and soft seals, sealed junctions (pockets),
 ## region walls and their carved doors, bridges, tunnels and the map's own outer edges.
 ##
-## Split from a single `test_crowd.gd` under M125 -- "the test suite is slow again" -- by
-## subject rather than trimmed: this half is simulation-bound the same way the other half is, so
-## nothing here shrinks for speed. It keeps everything about what a placed obstruction does to
+## It is simulation-bound the same way `tests/crowd_rig.gd` is, so nothing here shrinks for speed. It keeps everything about what a placed obstruction does to
 ## the crowd once the lattice underneath it stops being plain open street. `test_crowd_traffic.gd`, `_field.gd` and `_streets.gd` keep
 ## the crowd as ordinary traffic -- population, contact, and the street hierarchy.
 ##

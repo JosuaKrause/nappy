@@ -138,9 +138,9 @@ func _instance_at(def: EventDef, at: Vector2) -> EventInstance:
 ## A catalogue row's instance, live in the tree so `_ready()` actually runs — which is what
 ## builds a flock row's birds, and what a rim needs to be a child in the tree of, neither of
 ## which `_instance_at()` above gets, since it never calls `setup()` through a parent. Mirrors
-## `tests/test_events.gd`'s own `_instance()` helper, kept local here rather than shared, because
-## the two suites hold different halves of this class and neither should have to know the other's
-## rig.
+## `tests/test_events_scenery.gd`'s own `_instance()` helper, kept local here rather than
+## shared, because the two suites hold different halves of this class and neither should have to
+## know the other's rig.
 func _rig_instance(t: TestRunner, def: EventDef, at: Vector2,
 		where: WhereSheIs = null) -> EventInstance:
 	var instance := EventInstance.new()

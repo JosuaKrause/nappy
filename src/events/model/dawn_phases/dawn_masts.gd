@@ -11,7 +11,7 @@ extends DawnPhase
 ## **Except a day whose own closures, region wall or checkpoints need that exact tile.** `map`
 ## already carries today's holds and closures by the time `build_day()` runs — `EventManager.
 ## start_day()` populates both before calling this — so a site is skipped for the day rather
-## than planted on top of a barricade or a hut: `tests/test_events.gd`,
+## than planted on top of a barricade or a hut: `tests/test_events_placement.gd`,
 ## `_test_nothing_the_catalogue_places_stands_on_held_ground`, holds this for every row the
 ## catalogue places and a mast is no longer an exception to it. `MastSites` already keeps every
 ## site a full block off the home street and its own field off a calm interior, so this is rare

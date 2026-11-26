@@ -66,6 +66,8 @@ ENTRY_POINTS = (
     "ci_pr_questions.py",
     "check_layers.py",
     "check_overrides.py",
+    "check_closure_writers.py",
+    "check_test_paths.py",
     "check_test_only_members.py",
     "merge-test-only-members.py",
     "check_field_reads.py",

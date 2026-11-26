@@ -207,8 +207,7 @@ func peak_through(age: float, into_its_burst: float, lasts: float, beat := -1.0)
 ## instance's `current_intensity()`, after the telegraph damping and the pulse envelope). **The core
 ## is scaled by the same fraction**, so a two-part field damps as one thing. A field with no core is
 ## `Field.falloff` on its own curve, bit for bit: the fraction is applied to the peak handed in
-## rather than divided back out of it. `tests/test_events.gd` walks the whole catalogue at 16px
-## steps and holds that.
+## rather than divided back out of it. No suite walks the catalogue to hold that.
 func emission_at_distance(at_distance: float, at_intensity: float = -1.0) -> float:
 	var peak := _peak if at_intensity < 0.0 else at_intensity
 	var field := Field.falloff(at_distance, peak, _inner, _outer)

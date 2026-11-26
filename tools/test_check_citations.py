@@ -252,7 +252,7 @@ class LintRunsTheCheckTests(unittest.TestCase):
         self.addCleanup(self.tmp.cleanup)
         self.root = Path(self.tmp.name)
         (self.root / "tools").mkdir()
-        for name in ("lint.sh", "check_citations.py", "queue.sh"):
+        for name in ("lint.sh", "check_citations.py", "check_test_paths.py", "queue.sh"):
             shutil.copy2(TOOLS / name, self.root / "tools" / name)
         shutil.copytree(TOOLS / "names", self.root / "tools/names")
         for name, text in {

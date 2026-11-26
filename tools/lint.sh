@@ -19,8 +19,12 @@
 # which are history and primary sources and are allowed to say what was true then, and
 # docs/evidence/README.md, whose job is filenames that embed hashes.
 #
-# One check reads the code rather than a doc: every override of a project class carries its
-# `## Overrides Class.method.` line (tools/check_overrides.py).
+# Three checks read the code rather than a doc: every override of a project class carries its
+# `## Overrides Class.method.` line (tools/check_overrides.py); no street is closed, nor the closed
+# ground written, anywhere under src/ the closure planner does not reach
+# (tools/check_closure_writers.py); and no doc or code comment names a file under tests/ that does
+# not exist (tools/check_test_paths.py), which reads the governed docs but DECISIONS.md and the
+# queue's and review list's files, and the comments of every .gd file under src/, tests/ and tools/.
 #
 # Four checks are about the queue's layout rather than a sentence, and run on the history too:
 # a name (<date>-<word>-<word>) used for two different things across docs/todo, docs/decisions,
@@ -63,7 +67,11 @@ docs/TODO.md to an entry folder that does not exist, and every entry's band line
 tools/queue.sh --check), and the citations of the player's words in CLAUDE.md and every
 .claude/skills/**/*.md (tools/check_citations.py), and that every method of src/ and tests/ overriding a
 method of a project class carries its `## Overrides Class.method.` doc line and every such line is true
-(tools/check_overrides.py; run on a full lint and when a .gd file is named). Given file arguments, scans only those --
+(tools/check_overrides.py; run on a full lint and when a .gd file is named), that nothing under src/
+closes a street or writes the closed ground where the closure planner does not reach
+(tools/check_closure_writers.py; run on a full lint and when a .gd file under src/ is named), and
+that no doc or .gd comment names a tests/ file that does not exist (tools/check_test_paths.py; on a
+full lint over everything it covers, else over the named files it covers). Given file arguments, scans only those --
 how the PostToolUse hook calls it after an edit -- and runs the layout check each one belongs to.
 A named file that does not exist is an error, not a silent skip.
 
@@ -448,8 +456,83 @@ lint_overrides() {
     fi
 }
 
+# No street is closed, nor the closed ground written, anywhere under src/ that the closure planner
+# does not reach (tools/check_closure_writers.py, under the host's python3, reading src/ as text).
+# It reads the whole of src/, so it runs on a full lint and when a `.gd` file under src/ is named.
+lint_closure_writers() {
+    local f run=0 out status
+    [[ $# -eq 0 ]] && run=1
+    for f in "$@"; do
+        [[ "$f" == src/*.gd ]] && run=1
+    done
+    [[ "$run" -eq 0 ]] && return
+    if ! command -v python3 >/dev/null 2>&1; then
+        echo "tools/lint.sh: python3 is needed to check the closure writers and was not found" >&2
+        hits=$((hits + 1))
+        return
+    fi
+    out="$(python3 tools/check_closure_writers.py 2>&1)"
+    status=$?
+    if [[ "$status" -ne 0 ]]; then
+        while IFS= read -r line; do
+            [[ -z "$line" ]] && continue
+            printf '%s\n' "$line"
+            # The script's own summary line is not a hit; each `path:line:` line is.
+            [[ "$line" == tools/check_closure_writers.py:* ]] || hits=$((hits + 1))
+        done <<< "$out"
+    fi
+}
+
+# No doc or code comment names a tests/ file that does not exist (tools/check_test_paths.py, under
+# the host's python3). On a full lint it reads everything it covers; given files, the ones of them
+# it covers (a governed doc, or a .gd file under src/, tests/ or tools/).
+lint_test_paths() {
+    local targets=() f out status
+    if [[ $# -gt 0 ]]; then
+        for f in "$@"; do
+            [[ -f "$f" ]] || continue
+            # The script's own scope, so a lint of a file it does not read never starts it.
+            case "$f" in
+                docs/DECISIONS.md|docs/*/*) ;;
+                AGENTS.md|CLAUDE.md|README.md|.claude/skills/*.md|docs/*.md) targets+=("$f") ;;
+                src/*.gd|tests/*.gd|tools/*.gd) targets+=("$f") ;;
+            esac
+        done
+        [[ ${#targets[@]} -eq 0 ]] && return
+    fi
+    if ! command -v python3 >/dev/null 2>&1; then
+        echo "tools/lint.sh: python3 is needed to check the named test files and was not found" >&2
+        hits=$((hits + 1))
+        return
+    fi
+    if [[ ${#targets[@]} -eq 0 ]]; then
+        out="$(python3 tools/check_test_paths.py 2>&1)"
+    else
+        out="$(python3 tools/check_test_paths.py "${targets[@]}" 2>&1)"
+    fi
+    status=$?
+    if [[ "$status" -ne 0 ]]; then
+        while IFS= read -r line; do
+            [[ -z "$line" ]] && continue
+            printf '%s\n' "$line"
+            [[ "$line" == tools/check_test_paths.py:* ]] || hits=$((hits + 1))
+        done <<< "$out"
+        if [[ -z "$out" ]]; then
+            echo "tools/lint.sh: tools/check_test_paths.py failed without naming a line" >&2
+            hits=$((hits + 1))
+        fi
+    fi
+}
+
 lint_svgs "$@"
 lint_overrides "$@"
+if [[ $# -eq 0 ]]; then
+    lint_closure_writers
+    lint_test_paths
+else
+    lint_closure_writers "${files[@]}"
+    lint_test_paths "${files[@]}"
+fi
 if [[ $# -eq 0 ]]; then
     lint_citations
 else

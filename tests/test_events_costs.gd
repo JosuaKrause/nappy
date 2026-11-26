@@ -4,9 +4,7 @@ extends RefCounted
 ## the pavement can be blocked from day one, and a pursuer keeps no field clear. A row and a plan are
 ## built as they are and nothing else is: no city, no live event, no day planned.
 ##
-## Split from `tests/test_events.gd` under M125, "the test suite is slow again"; further split out
-## of a combined `test_events_scheduler.gd` once that file measured close to the two-minute budget
-## on its own -- `test_events_scheduler.gd` keeps the scheduler's determinism and safety rules and
+## `test_events_scheduler.gd` keeps the scheduler's determinism and safety rules and
 ## what a planned day holds (its density, its danger, the named decisions, the city's memory).
 
 const STEP := 1.0 / 60.0

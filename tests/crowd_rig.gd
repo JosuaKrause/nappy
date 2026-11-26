@@ -6,8 +6,7 @@ extends RefCounted
 ##
 ## The crowd as traffic: population, contact and the street hierarchy's own physics.
 ##
-## Split from a single `test_crowd.gd` under M125 -- "the test suite is slow again" -- by
-## subject rather than trimmed: this is simulation-bound (real `Crowd.step` seconds, not
+## It is simulation-bound (real `Crowd.step` seconds, not
 ## assertion volume), so no seed or day count here buys back time by shrinking. It keeps
 ## everything about the crowd as *traffic* -- how many are out, where they walk, what a contact
 ## or a strike costs, and the three-tier street hierarchy (ordinary / main / pedestrianised) that

@@ -711,7 +711,7 @@ func _resettle_the_tails() -> void:
 ## home-to-corridor is tree ground like any other."
 ##
 ## A no-op when nothing grew at all — there is no tree to join home to, and that day's
-## walkability is somebody else's question (`ClosurePlanner`'s `Tuning.MIN_CALM_AREAS_REACHABLE`),
+## walkability is somebody else's question (`ClosurePlanner.MIN_CALM_AREAS_REACHABLE`),
 ## not this one's.
 func _grow_the_trunk() -> void:
 	if _colours.is_empty():

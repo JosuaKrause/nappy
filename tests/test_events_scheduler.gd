@@ -10,10 +10,7 @@ extends "res://tests/events_shared_city.gd"
 ## tile rather than in front of her; and a day planned at full heat, which is the same day when
 ## planned twice and places more patrols than a cold one.
 ##
-## Split from `tests/test_events.gd` under M125, "the test suite is slow again"; further split from
-## a combined `test_events_scheduler.gd` (which also held "what a street costs", M19) once the
-## combined file measured close to the two-minute budget on its own -- `test_events_costs.gd` keeps
-## the cost side, which asks the rows alone.
+## `test_events_costs.gd` keeps the cost side, which asks the rows alone.
 ##
 ## **Why these checks build a city.** The cases that plan a day or a run ask what the dawn plans on
 ## a real street network, so they plan on the shared city or on a generated city of a seed of their

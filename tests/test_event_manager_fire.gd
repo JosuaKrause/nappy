@@ -118,9 +118,9 @@ func _start(day: int) -> void:
 # `EventDirector.site_what_is_on_her_way()` puts it on a building face ahead of her once her
 # heading for the day is clear.
 #
-# **These have to be here rather than in `tests/test_events.gd`.** Everything about the siting is a
-# function of where she actually walked, so it needs a real city, a real manager and something in
-# the `player` group that moves — the same reason this suite exists at all.
+# **These have to be here rather than in `tests/test_events_fire.gd`.** Everything about the
+# siting is a function of where she actually walked, so it needs a real city, a real manager and
+# something in the `player` group that moves — the same reason this suite exists at all.
 
 ## Long enough for a whole route out to a calm area and back again at walking pace, which is what
 ## the outbound and return legs of a 210s day are.
@@ -402,8 +402,9 @@ func _test_the_fire_is_sited_on_the_way_she_is_walking(t: TestRunner) -> void:
 ##
 ## The rule that keeps it true is that a plan stops being movable the moment it is *real*, which is
 ## the first time it streams in — `EventStreaming.stream_in` records the scar there. The rule itself
-## is checked in `tests/test_events.gd`, against a director with the geometry written rather than
-## walked; what is checked here is the wiring, against a real streaming manager and a real walk.
+## is checked in `tests/test_events_fire.gd`, against a director with the geometry written
+## rather than walked; what is checked here is the wiring, against a real streaming manager and
+## a real walk.
 func _test_the_fire_burns_where_her_walk_put_it(t: TestRunner) -> void:
 	_stage.events().stream_within(Tuning.EVENT_STREAM_RADIUS)
 	_start(Tuning.RUN_TAUGHT_DAY)

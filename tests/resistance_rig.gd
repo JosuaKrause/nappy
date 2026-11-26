@@ -33,9 +33,10 @@ const SEED := 4242
 const STEP := 1.0 / 60.0
 
 ## Maps for a sweep that asks about a *rule* rather than a *layout* — the same distinction and the
-## same name `tests/test_routes.gd` and `tests/test_regions.gd` use: "no scheduled placement ever
-## lands near the doorstep" is enforced by construction the same way on every city, so a second
-## city tests the same guarantee against different noise rather than a different shape of it.
+## same name `tests/routes_closures_rig.gd` and `tests/test_regions.gd` use: "no scheduled
+## placement ever lands near the doorstep" is enforced by construction the same way on every city,
+## so a second city tests the same guarantee against different noise rather than a different shape
+## of it.
 const RULE_SEEDS := 3
 
 ## The seed of a run a test builds its own city in (`_build_city_in_a_new_run()`): fixed, so the

@@ -5,8 +5,7 @@ extends RefCounted
 ## inside the street it closes, and that no two rows share a picture or a silhouette a badge could
 ## draw.
 ##
-## Split from `tests/test_events.gd` under M125, "the test suite is slow again" -- this half is the
-## catalogue's own static contract, checked on the rows as they are: no node, no live event, no
+## This is the catalogue's own static contract, checked on the rows as they are: no node, no live event, no
 ## generated city and no planned day is built. The one map built is a bare `CityMap` with a street
 ## drawn on it (the roadblock's width). A case that needs a live event is
 ## `tests/test_event_phase.gd`'s or `tests/test_event_views.gd`'s, how a body stands and lies on its

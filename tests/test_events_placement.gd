@@ -9,8 +9,7 @@ extends "res://tests/events_shared_city.gd"
 ## wall to back into, nothing on the doorstep street, nothing on ground a route holds, no body
 ## closing a walked sidewalk, and no spread on a corner.
 ##
-## Split from `tests/test_events.gd` under M125, "the test suite is slow again". Extends
-## `events_shared_city.gd` for the cases that read the shared city's day plans (the parked van, the
+## Extends `events_shared_city.gd` for the cases that read the shared city's day plans (the parked van, the
 ## lorry, the doorstep street); every other case rolls its own seed on its own generated map.
 ##
 ## **Where each case gets its city.** The held-ground and walked-sidewalk cases generate their own

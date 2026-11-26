@@ -419,7 +419,7 @@ func _drawn_boom_span(t: TestRunner, gate: EventPlan) -> Vector2:
 ## What makes that true — `SCRIPTED`, `scripted_day 0`, like the seal pictures — is not
 ## restated: reading those two fields back off the row could only ever say somebody edited the
 ## catalogue, while the sweep below says whether a checkpoint can reach the map by the wrong door.
-## Their fairness is `EventCatalogue.all()`'s own sweep in `tests/test_events.gd`.
+## Their fairness is `CatalogueRows.every()`'s own sweep in `tests/test_events_catalogue.gd`.
 ##
 ## **One map, every sampled day — M125.** `build_day()`'s refusal to roll a `SCRIPTED` row is a
 ## property of the scheduler and the catalogue flag, not of any one city's shape, so a second seed

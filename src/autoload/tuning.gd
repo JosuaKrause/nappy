@@ -80,8 +80,8 @@ const EXCITEMENT_WAKE_THRESHOLD := 60.0
 ## **Its ceiling is the catalogue, and it is close.** A row costs more to walk through than around
 ## exactly while its mean emission along the line beats this number, and the two quietest rows that
 ## still have to cost — `busker` and `alley_mouse` — mean 6.71 and 6.75. Above about 6.7 they turn
-## free and the catalogue loses two rows rather than gaining a rate; `tests/test_events.gd` is what
-## says so out loud.
+## free and the catalogue loses two rows rather than gaining a rate;
+## `tests/test_events_costs.gd` is what says so out loud.
 const EXCITEMENT_DECAY_WALKING := 6.0
 
 
@@ -498,8 +498,8 @@ const CAR_OUTER_RADIUS := 104.0
 # physics".
 
 ## The pram's own collision circle, in px. Authored in `scenes/player/stroller.tscn`; this is
-## the copy the rules that reason *about* it can read, and `tests/test_events.gd` asserts the two
-## agree, because a duplicated number that nothing checks is a lie waiting to happen.
+## the copy the rules that reason *about* it can read, and `tests/test_stroller.gd` asserts the
+## two agree, because a duplicated number that nothing checks is a lie waiting to happen.
 ##
 ## It is the same 14 as `Crowd.BUMP_RADIUS` and they are not the same quantity: that one is a tuning of
 ## when a *crowd contact* fires and is stated against the lane spacing, this one is how much room
@@ -683,7 +683,7 @@ const CAR_TURN_SPEED := 60.0
 ## 900 an event always appears off-camera and never pops into an empty pavement. The **fairness
 ## contract**: the widest field in the catalogue is 380px, so an event that streams in is
 ## already outside its own outer radius when it becomes visible — which is what makes streaming
-## an event legal at all. `tests/test_events.gd` checks the second against the catalogue.
+## an event legal at all. `tests/test_event_manager.gd` checks the second against the catalogue.
 const EVENT_STREAM_RADIUS := 900.0
 ## And how far past it an event has to get before it is taken away again, so an event on the
 ## boundary does not flicker in and out as the player paces.
@@ -945,7 +945,7 @@ const PURSUIT_SHAKEN_OFF := 0.35
 ## pursuer, and none is about *her*. She is usually walking into the thing when it lunges, and
 ## turning round costs ground before the run gains any — so a row can satisfy every line below and
 ## still leave a two-tenths-of-a-second window. See `PursuitSpec.standoff()`. The rig in
-## `tests/test_events.gd` that has to accelerate is what checks the half this cannot.
+## `tests/test_events_pursuit.gd` that has to accelerate is what checks the half this cannot.
 func validate_pursuit(id: String, speed: float, chase_time: float, inner: float,
 		telegraph: float, notice_within := 0.0, outer := 0.0, standoff_from := 0.0,
 		arrives_chasing := false, sets_off_beside_her := false) -> bool:
@@ -1183,7 +1183,7 @@ func required_telegraph_time(inner_radius: float, outer_radius: float,
 ## and simply not happen that day, however fair its telegraph is. The value was set by measuring
 ## exactly that on the longest-routed scheduled row of the day (`docs/DECISIONS.md`, M114); no
 ## scheduled row currently drives a route that long — the fire engine is summoned to a route
-## ending at the fire rather than planned — so `tests/test_events.gd`'s
+## ending at the fire rather than planned — so `tests/test_events_scheduler.gd`'s
 ## `_test_a_retried_day_is_the_same_day` is the guard for whichever row next does, and a value
 ## that makes a one-shot lose its only site fails there first.
 ##

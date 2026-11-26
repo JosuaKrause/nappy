@@ -177,7 +177,7 @@ const HER_LANE_CLEARANCE := 2.0 * Tuning.PLAYER_BODY_RADIUS
 
 ## **Whether a set of physical bodies, ignoring cost, leave no lane of `HER_LANE_CLEARANCE`
 ## anywhere along a walked-sidewalk band** — the shared question
-## `tests/probes/m129_walked_sidewalk_walls.gd` and `tests/test_events.gd`'s
+## `tests/probes/m129_walked_sidewalk_walls.gd` and `tests/test_events_placement.gd`'s
 ## `_test_no_body_closes_a_walked_sidewalk` both ask, moved here rather than kept as two copies, so
 ## the probe's printed number and the suite's asserted one can never quietly disagree about what
 ## *closed* means. `bodies` is `[position.x, position.y, radius]` per body rather than a `EventPlan`,

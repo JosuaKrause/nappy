@@ -169,7 +169,7 @@ const MASKED_PURSUER_CATCH := 23.5
 ## A sidewalk is one piece of walkable ground, `Tuning.SIDEWALK_WIDTH * Tuning.TILE_SIZE` (64px)
 ## across, not two lanes a body has to fit inside one of. `EventInstance.setup()` centres a
 ## stationary, unpinned (`pavement_side == ANY`) body on that whole band, so the ground a row may
-## fill is the full band and this is half of it. `tests/test_events.gd`,
+## fill is the full band and this is half of it. `tests/test_events_catalogue.gd`,
 ## `_test_a_spread_body_fits_the_ground_it_stands_on`, checks it over the whole catalogue.
 const SIDEWALK_SPREAD_MAX := Tuning.SIDEWALK_WIDTH * Tuning.TILE_SIZE * 0.5
 
@@ -550,9 +550,9 @@ static func neighbor_heading_home() -> EventDef:
 ## from spoiling a park (`EventPlan.spoils()` passes over every playground), so a park
 ## is still contested on the days the scheduler spoils it, just never by its own swings.
 ##
-## **The row stays rather than being deleted**: `tests/test_events.gd` looks it up by id and reads
-## its `kind`, `EventInstance._field_distance()` names it as the row with no shape to fall back to,
-## and the event and cost tables in `docs/EVENTS.md` carry a line for it.
+## **The row stays rather than being deleted**: `tests/test_events_catalogue.gd` looks it up by
+## id and reads its `kind`, `EventInstance._field_distance()` names it as the row with no shape
+## to fall back to, and the event and cost tables in `docs/EVENTS.md` carry a line for it.
 static func _playground() -> EventDef:
 	var row := EventDraft.new("playground")
 	row.ambient(EventDef.AmbientSource.PLAYGROUND)
@@ -732,10 +732,10 @@ static func _alley_mouse() -> EventDef:
 ## pass inside the cost ceiling also shrinks the ground his placement is weighed against, until
 ## every beat the scheduler draws for him lands somewhere its own junction or side route already
 ## reaches, and the geometry that makes a truncated beat a wall stops happening.
-## `tests/test_events.gd`'s `_test_a_pacing_row_on_the_routes_sidewalk_can_be_left` is the check
-## that would go quiet. So peak is **20**, outer radius **170**: `walk_through_cost()` is
-## **33.6**, a 1.4-point margin under `WALL_WORTH_OF_COST`, and the reach stays wide enough that a
-## beat still turns up with nowhere to leave from.
+## `tests/test_events_placement.gd`'s `_test_a_pacing_row_on_the_routes_sidewalk_can_be_left` is
+## the check that would go quiet. So peak is **20**, outer radius **170**: `walk_through_cost()`
+## is **33.6**, a 1.4-point margin under `WALL_WORTH_OF_COST`, and the reach stays wide enough that
+## a beat still turns up with nowhere to leave from.
 ##
 ## **Whether he is a wall is a fact about where his beat runs, not about his field.** He charges
 ## over a sidewalk from either lane, so the way past him is never a lane; it is somewhere his beat
@@ -1097,9 +1097,9 @@ static func _burnt_shell() -> EventDef:
 ## offset is this row's line in `docs/COSTS.md`. **`TOWARD_PLAYER` never earns a `WALL` role**
 ## (`EventScheduler.role_for` answers `NONE` for anything the director sites), so nothing here
 ## trades against `EventScheduler.WALL_WORTH_OF_COST`. **But running still has to lose to it**,
-## `tests/test_events.gd`'s catalogue-wide rule: at 42/s the shorter, faster crossing running buys
-## costs less than walking it, which nothing but `car_accident` may do. 39/s is the loudest this
-## field gets before that flips.
+## `tests/test_events_costs.gd`'s catalogue-wide rule: at 42/s the shorter, faster crossing
+## running buys costs less than walking it, which nothing but `car_accident` may do. 39/s is the
+## loudest this field gets before that flips.
 ##
 ## **It is loud while it passes her, because its warning is over before it exists.** A telegraph
 ## damps a row to `EventInstance.TELEGRAPH_INTENSITY_FRACTION` (0.15) because *this has not started
@@ -1261,8 +1261,8 @@ static func _leaf_blower() -> EventDef:
 ## columns for that reason). **The instance has to be in the tree**: a bare `EventInstance.new()`
 ## never gets `_ready()`, so `EventFlock.build()` never runs, its birds stay empty and
 ## `contribution_at()` falls back to the modelled ring on this def, which reads far higher than
-## eleven birds charge. `tests/test_events.gd` walks it in the tree, and that is the figure the
-## intensity was set against.
+## eleven birds charge. `tests/test_events_scenery.gd` walks it in the tree, and that is the
+## figure the intensity was set against.
 ##
 ## **The rim is where the cut lands.** A line 80px off the middle never comes inside the birds, so
 ## the flush never fires there and skirting a flock is net recovery. A narrower field or a shorter
@@ -1276,7 +1276,7 @@ static func _leaf_blower() -> EventDef:
 ##   things on an ordinary sidewalk, measured by what walking through one costs: the intensity is
 ##   shared between eleven birds, so the middle is several overlapping fields and the rim is one.
 ##   `docs/COSTS.md` carries the rate; the line through it is measured by walking, in
-##   `tests/test_events.gd`.
+##   `tests/test_events_scenery.gd`.
 ## - It must not be **deleted at the top of its climb**, which is what
 ##   `EventDef.departure_speed()` is for.
 ## - The **birds** have to move, not just the event. Copies of one sprite at fixed offsets sharing a
@@ -1528,8 +1528,9 @@ static func _chatting_mother() -> EventDef:
 ##
 ## Everything else in the catalogue is something you route **around**, and against all of it running
 ## is strictly worse than walking (`EXCITEMENT_FROM_RUNNING` outweighs the shorter exposure every
-## time, which `tests/test_events.gd` asserts row by row). This is the exception: a pursuer cannot
-## be routed around, because it goes where she goes, so the only question it asks is *how fast*.
+## time, which `tests/test_events_costs.gd` asserts row by row). This is the exception: a
+## pursuer cannot be routed around, because it goes where she goes, so the only question it asks
+## is *how fast*.
 ##
 ## Every number in it is doing one job:
 ##
@@ -1575,8 +1576,8 @@ static func _charging_dog() -> EventDef:
 	# ahead of her, because the lesson depends on it. Every day after, `spawn_mode_on()` answers
 	# `MAP`: placed on a tile as `alley_robbery` is and met by routing into it. One `EventDef`
 	# rather than a second row: a later dog needs its own `Look` and there is no spare silhouette
-	# (`tests/test_events.gd` refuses two rows sharing one), and `spawn_mode_on()` is the
-	# field that lets one row answer two days without ever mutating the shared resource.
+	# (`tests/test_events_catalogue.gd` refuses two rows sharing one), and `spawn_mode_on()` is
+	# the field that lets one row answer two days without ever mutating the shared resource.
 	row.sited(EventDef.SpawnMode.AHEAD_OF_PLAYER)
 	# From the day after the lesson it is a place on the map that waits for her inside its one
 	# radius, written 130px and drawn at the run's charger reach (`ChargerTiming.notice()`, 162.5px
@@ -1765,8 +1766,9 @@ static func _loudspeaker() -> EventDef:
 	row.warning(WarningSpec.lasting(3.0))
 	# `DawnMasts` places one at every site `MastSites.compute()` names, which is
 	# `Tuning.MAST_COUNT` of them: not a roll's own cap, but the count of the city's sites, which is
-	# what `tests/test_events.gd`'s `_test_scheduler_respects_placement_and_caps` reads it as. A day
-	# can carry one more: the mast day 11 queued for her task (`EventManager.queue_a_mast()`), which
+	# what `tests/test_events_scheduler.gd`'s
+	# `_test_masts_appear_from_day_5_at_the_same_sites_every_day` reads it as. A day can carry one
+	# more: the mast day 11 queued for her task (`EventManager.queue_a_mast()`), which
 	# once she silenced it `DawnMasts` plans again from its scar on every later day.
 	row.drawn(1.0, Tuning.MAST_COUNT)
 	return row.build()
@@ -2383,7 +2385,7 @@ static func _barricade() -> EventDef:
 ## reclassifies the row as a `WALL`, which would pull it off every route the day carries; a protest
 ## is where a resistance task sends her ("Stand where they're standing", `ResistanceSteps`), so a
 ## protest off the corridor is a task she cannot reach. `docs/COSTS.md` carries where it actually
-## sits; `tests/test_events.gd` holds the relationship rather than the number.
+## sits; `tests/test_events_catalogue.gd` holds the relationship rather than the number.
 static func _protest() -> EventDef:
 	var row := EventDraft.new("protest")
 	row.look(LookSpec.of(EventDef.Look.PROTEST))
@@ -2576,7 +2578,7 @@ static func _burst_water_main() -> EventDef:
 ## lorry-scale silhouette family ("reuses `Look.LORRY`, the biggest silhouette in act I",
 ## `docs/DECISIONS.md`, "Eight seal pictures") rather than the literal `Look.LORRY` value, since
 ## two rows may not share a look or a silhouette (`docs/EVENTS.md`, "the visual vocabulary";
-## `tests/test_events.gd`'s `_test_no_two_rows_draw_the_same_picture` and
+## `tests/test_events_catalogue.gd`'s `_test_no_two_rows_draw_the_same_picture` and
 ## `_test_every_look_carries_its_own_silhouette`). `moving_van.svg` is drawn at the scale of
 ## `lorry.svg` with its own picture: open doors and a ramp reaching the ground.
 static func _moving_van() -> EventDef:
@@ -2646,12 +2648,13 @@ static func _collapsed_frontage() -> EventDef:
 ## back (`EXCITEMENT_DECAY_IDLE`). **The field is not what makes this row expensive and must not
 ## be asked to be**: at 4.0 over an 84–98px band it means less along the line than the 6.0/s an
 ## ordinary street gives back, so `walk_through_cost()` reads it as free, and it is, because the
-## price is the detention. `tests/test_events.gd` exempts the detainers from its catalogue-wide
-## "nothing is cheaper to walk through than around" rule by name and holds them to charging their
-## capture instead. The band stays 14px wide, which is what the telegraph is priced on; the disc
-## moved out with the capture so the two keep the order `validate()` requires. `HoldSpec.detains_again()` tells
-## `EventManager` this instance is armed again once she is outside `detain_distance()`, in either
-## direction, rather than spent after one conversation like `chatting_mother`.
+## price is the detention. `tests/test_events_costs.gd` exempts the detainers from its
+## catalogue-wide "nothing is cheaper to walk through than around" rule by name and holds them
+## to charging their capture instead. The band stays 14px wide, which is what the telegraph is
+## priced on; the disc moved out with the capture so the two keep the order `validate()`
+## requires. `HoldSpec.detains_again()` tells `EventManager` this instance is armed again once
+## she is outside `detain_distance()`, in either direction, rather than spent after one
+## conversation like `chatting_mother`.
 ##
 ## **4.0 rather than 6.0, for the reason the `roadblock` is silent.** A door is a hut on each
 ## sidewalk, a gate over the road and often a wall's roadblocks at the corner, and a hold is spent

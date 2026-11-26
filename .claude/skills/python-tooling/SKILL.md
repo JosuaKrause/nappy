@@ -7,7 +7,7 @@ description: Run, check or add repository Python tooling with uv and the project
 
 - **Run a script as `uv run python tools/<script>.py`**: no activated environment, no bare `pip`.
 - **Run `tools/pycheck.sh` before committing a change to `tools/*.py`, `pyproject.toml` or `uv.lock`**; a hit is a stop.
-- **`tools/codex-hooks.py`, `tools/check_citations.py` and `tools/check_overrides.py` run on the host's own `python3`** and stay 3.9-compatible.
+- **`tools/codex-hooks.py` and the four checks `tools/lint.sh` runs (`tools/check_citations.py`, `tools/check_overrides.py`, `tools/check_closure_writers.py`, `tools/check_test_paths.py`) run on the host's own `python3`** and stay 3.9-compatible.
 - **A dependency goes in with `uv add --group dev`**, with `pyproject.toml` and `uv.lock` in one commit; one nothing imports is removed.
 
 Use `uv` and the repository's `pyproject.toml` for Python tooling dependencies. The lockfile is
@@ -43,15 +43,17 @@ on purpose: a typed `tools/` is the only place in this repository where a wrong 
 before it runs, since GDScript's checks are the engine's and shell has none. Where a library's own
 typing is the problem, say so beside the override rather than loosening the whole check.
 
-## Three scripts run on the host's own Python
+## Five scripts run on the host's own Python
 
-`tools/codex-hooks.py`, `tools/check_citations.py` and `tools/check_overrides.py` are checked like
-everything else, but none runs through `uv`: Codex runs the hook adapter with the host's own `python3`
-from `.codex/hooks.json`, and `tools/lint.sh` runs the citation and override checks with it, since CI
-lints before it installs uv. So all three stay **3.9-compatible**, the version of the oldest host
+`tools/codex-hooks.py`, `tools/check_citations.py`, `tools/check_overrides.py`,
+`tools/check_closure_writers.py` and `tools/check_test_paths.py` are checked like everything else,
+but none runs through `uv`: Codex runs the hook adapter with the host's own `python3` from
+`.codex/hooks.json`, and `tools/lint.sh` runs the citation, override, closure-writer and test-path
+checks with it, since CI lints before it installs uv. So all five stay **3.9-compatible**, the version of the oldest host
 `python3` they run on (macOS's own `/usr/bin/python3`). `X | None` is 3.10's, so it is `typing.Optional` instead, everywhere in a file
 without `from __future__ import annotations` (`tools/codex-hooks.py`); only a file with that import
-(`tools/check_citations.py`, `tools/check_overrides.py`) may write `X | None` in an annotation, which the import leaves
+(`tools/check_citations.py`, `tools/check_overrides.py`, `tools/check_closure_writers.py`,
+`tools/check_test_paths.py`) may write `X | None` in an annotation, which the import leaves
 unevaluated, and never outside one. Builtin generics such as `dict[str, Any]` are 3.9's and fine
 anywhere. And `pyproject.toml` pins ruff's per-file target for each so `UP` rules do not modernise
 them past that. Nothing in the gate proves the compatibility; run each once under an older

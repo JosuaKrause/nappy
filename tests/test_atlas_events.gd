@@ -1,11 +1,12 @@
 extends RefCounted
 ## The events draw from the one baked `events` page rather than from individually preloaded
 ## textures or a runtime-packed group per family. `tests/test_event_views.gd`,
-## `tests/test_event_strides.gd` and `tests/test_events.gd` pin the drawing selection itself —
-## which picture a look, a view, a stride frame or a checkpoint fixture reaches for; this suite
-## holds the two things the move onto the page adds, which none of those files has a natural home
-## for: **every picture any of them can reach is actually on that page**, and `EventManager` holds
-## it for its own life, read off the run log's lines for the page (`tests/atlas_page_log.gd`).
+## `tests/test_event_strides.gd` and `tests/test_events_catalogue.gd` pin the drawing selection
+## itself — which picture a look, a view, a stride frame or a checkpoint fixture reaches for;
+## this suite holds the two things the move onto the page adds, which none of those files has a
+## natural home for: **every picture any of them can reach is actually on that page**, and
+## `EventManager` holds it for its own life, read off the run log's lines for the page
+## (`tests/atlas_page_log.gd`).
 ##
 ## **Why the completeness sweep is over the script's constants rather than over
 ## `EventPictures.family_sources()`.** `family_sources()` is read off the looks' `_draw_figure()`
@@ -35,6 +36,7 @@ func run(t: TestRunner) -> void:
 	_test_every_look_a_row_can_carry_has_pictures_on_the_page(t)
 	_test_every_badge_silhouette_is_on_the_page(t)
 	_test_both_dog_families_draw_their_accepted_transfers(t)
+	_test_the_pelican_has_no_illustrated_png(t)
 	_test_the_manager_holds_its_page_for_its_own_life(t)
 	_test_a_manager_freed_mid_day_still_gives_its_page_back(t)
 
@@ -157,6 +159,37 @@ func _test_both_dog_families_draw_their_accepted_transfers(t: TestRunner) -> voi
 	for picture: String in pictures.keys():
 		var transfer := AtlasLibrary.illustrated_path_for("art/%s.svg" % picture)
 		t.check(FileAccess.file_exists(transfer), "%s is drawn from %s" % [picture, transfer])
+
+## The pelican cyclist stays SVG: the bake rasterizes it like any SVG, and it is never a converted
+## PNG *(inbox #437 in minty-hedgehog: "converted to PNG during atlas creation but otherwise it will
+## always stay SVG never become a converted PNG")*. A PNG reaches the game two ways, so both are
+## asked: no picture of the pelican's two view tables has a file at its transfer path, which the
+## default bake would take over the SVG, and no PNG anywhere under `art/illustrated/` has
+## "pelican" in its name, which is a converted pelican waiting for a membership line.
+func _test_the_pelican_has_no_illustrated_png(t: TestRunner) -> void:
+	var pictures: Array[String] = []
+	for table: Dictionary in [EventPictures.PELICAN_BY_VIEW, EventPictures.PELICAN_BY_VIEW_B]:
+		for view: String in table.keys():
+			pictures.append(str(table[view]))
+	t.check(not pictures.is_empty(), "the pelican had pictures to check (%d)" % pictures.size())
+	for picture: String in pictures:
+		var transfer := AtlasLibrary.illustrated_path_for("art/%s.svg" % picture)
+		t.check(not FileAccess.file_exists(transfer),
+				"%s has no transfer PNG (%s)" % [picture, transfer])
+	var pngs: Array[String] = []
+	_collect_pngs("res://art/illustrated", pngs)
+	t.check(not pngs.is_empty(), "there were illustrated PNGs to read (%d)" % pngs.size())
+	for png: String in pngs:
+		t.check(not png.get_file().to_lower().contains("pelican"),
+				"%s is no illustrated PNG of the pelican" % png)
+
+## Every `.png` under `folder`, its subfolders included, as a `res://` path.
+func _collect_pngs(folder: String, found: Array[String]) -> void:
+	for file: String in DirAccess.get_files_at(folder):
+		if file.get_extension().to_lower() == "png":
+			found.append(folder.path_join(file))
+	for sub: String in DirAccess.get_directories_at(folder):
+		_collect_pngs(folder.path_join(sub), found)
 
 # ------------------------------------------------------------- the lifetime ---
 
