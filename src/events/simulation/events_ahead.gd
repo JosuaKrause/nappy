@@ -251,9 +251,10 @@ func send_a_pursuer() -> void:
 ## vehicle (`EventCatalogue.out_of_the_car()`: a policeman through day 8, a guardsman from day 9;
 ## out of the patrol car on the `PRESSES` rung his catch is a stop, out of a `HUNTS` van it ends the
 ## day) put down at its door on her side (`EventInstance.door_for_its_officer()`), spread along its
-## flank `OFFICER_SPACING` apart when there are two, or on the other side where hers is not ground
+## flank `EventInstance.OFFICER_SPACING` apart when there are two, or on the other side where hers is not ground
 ## he may stand on (`SpawnSiting.Rule.OPEN_TO_IT`), or at the vehicle itself where neither is. They
-## appear in her view, so there is no badge: their notice is the sight of them, standing with a hand
+## appear in her view, since a vehicle stops for her only where its men would stand whole in it
+## (`EventInvestigation`), so there is no badge: their notice is the sight of them, standing with a hand
 ## raised (`PursuitSpec.Start.SETS_OFF_BESIDE_HER`, `PursuitSpec.stands_for_its_notice()`). Outside the day's plan,
 ## like everything put down after dawn by a director.
 func let_the_officers_out() -> void:
@@ -266,7 +267,7 @@ func let_the_officers_out() -> void:
 				not vehicle.hunts_for_her())
 		var stands := siting.ask_of_ground(Rect2(), EventInstance.mover_for(def))
 		for i in owed:
-			var along := (float(i) - float(owed - 1) * 0.5) * OFFICER_SPACING
+			var along := (float(i) - float(owed - 1) * 0.5) * EventInstance.OFFICER_SPACING
 			var at := vehicle.door_for_its_officer(def, 1.0, along)
 			if not siting.allows(SpawnSiting.Rule.OPEN_TO_IT, stands, at):
 				at = vehicle.door_for_its_officer(def, -1.0, along)
@@ -283,10 +284,6 @@ func let_the_officers_out() -> void:
 						else "%s, standing," % vehicle.row_id(),
 				RunTrace.tile(world.map().world_to_tile(vehicle.global_position)),
 				vehicle.global_position.distance_to(world.player().global_position), who])
-
-## How far apart along a vehicle's flank its men get out when it lets out more than one, in px:
-## a body and a half of a man apart, so neither stands in the other.
-const OFFICER_SPACING := 28.0
 
 ## Whether a torn poster's pursuer is on his way or after her: his warning is up, or he is in the
 ## world and neither finished nor leaving.

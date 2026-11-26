@@ -11,10 +11,9 @@ extends EdgeBadges
 ## the world yet is announced for the whole of its warning, pointing at where the thing will come
 ## from (`PendingWarning`); the thing it warns of is then created where it pointed
 ## (`EventInstance.was_warned_of()`), and **keeps the badge until she can see it** *("Anyway a badge
-## shouldn't disappear before the entity is visible")*, or until it is over or gone. A charger whose
-## charge begins out of her sight takes the same path, its start being its warning
-## (`EventInstance.was_warned_of()`). Nothing in the world is measured: a danger whose coming was
-## not warned of carries no badge, and one seen once carries none again.
+## shouldn't disappear before the entity is visible")*, or until it is over or gone. Nothing in the
+## world is measured: a danger whose coming was not warned of carries no badge, a charger already
+## in the world included wherever its charge begins, and one seen once carries none again.
 ##
 ## **The seam for the event manager's warning board.** Whatever collects the pending warnings and
 ## the live dangers (`EventManager`, through its `WarningBoard`) hands this model `Subject`s and reads
@@ -41,7 +40,7 @@ class Subject extends RefCounted:
 	## Over and done with: ignored.
 	var finished := false
 	## Its coming was put on the badge (`EventInstance.was_warned_of()`): it was created under a
-	## warning that already ran, or its charge began out of her sight.
+	## warning that already ran.
 	var warned := false
 	## Any of it is in sight (its point or what it draws).
 	var shown := false

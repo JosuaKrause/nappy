@@ -40,4 +40,4 @@ static func _was_put_down_at_a_door_of(man: EventInstance, vehicle: EventInstanc
 	if trail.is_empty() or vehicle.ground_shape() == null or man.ground_shape() == null:
 		return false
 	var out := vehicle.ground_shape().rounding_radius() + man.ground_shape().reach() + 1.0
-	return trail[0].distance_to(vehicle.global_position) <= out + EventsAhead.OFFICER_SPACING
+	return trail[0].distance_to(vehicle.global_position) <= out + EventInstance.OFFICER_SPACING

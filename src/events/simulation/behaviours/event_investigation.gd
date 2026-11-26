@@ -2,8 +2,8 @@ class_name EventInvestigation
 extends EventBehaviour
 ## **A vehicle that investigates** (`EventDef.investigates()`): while it waits, a car drives its route,
 ## and from the frame she is within its notice along a clear line it has seen her. It stops — where
-## it is, on its route — as soon as its body is clear of every junction box, and owes the men it
-## lets out; it stands while they are out, and once every one is back in it is done: a car drives on
+## it is, on its route — as soon as its body is clear of every junction box **and it and the men it
+## lets out would stand whole in her view** (`Figure.would_stand_in_her_view()`), and owes those men; it stands while they are out, and once every one is back in it is done: a car drives on
 ## along its route, standing first while she is in its way, and a van stands where it is. The
 ## vehicle itself never chases (merry-stork; inbox #669 in coral-lark).
 ##
@@ -83,7 +83,10 @@ func _investigate() -> void:
 				and _figure.place().distance_to(her) <= _row.notice_within() \
 				and _figure.clear_line_to(her):
 			_seen_her = true
-		if _seen_her and not _stands_in_a_junction():
+		# **In her view, or not yet** (velvet-marten #699, #705; bouncy-owl #1774): a man let out is a
+		# charger already in the world, who warns her in her view with his hand raised before any
+		# charge and carries no badge, so he never gets out where she cannot see him.
+		if _seen_her and not _stands_in_a_junction() and _figure.would_stand_in_her_view():
 			_figure.notice_her()
 			_officers_owed = _row.lets_out()
 		return

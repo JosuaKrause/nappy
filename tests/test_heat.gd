@@ -31,6 +31,7 @@ func run(t: TestRunner) -> void:
 	_test_it_patrols_while_it_waits(t)
 	_test_a_patrol_that_never_notices_drives_off_its_route(t)
 	_test_the_patrol_stops_once_it_notices(t)
+	_test_a_hunting_van_lets_its_men_out_only_in_her_view(t)
 	_test_a_streamed_patrol_resumes_where_it_left_off(t)
 	_test_a_streamed_patrol_mid_chase(t)
 	_test_every_waiting_row_resumes_the_notice(t)
@@ -405,6 +406,38 @@ func _test_the_patrol_stops_once_it_notices(t: TestRunner) -> void:
 	t.check(instance.facing_now().is_equal_approx(heading),
 			"the way it was going, never turned round (%s)" % instance.facing_now())
 	officer.free()
+	instance.free()
+
+## **A vehicle lets its men out only where they would stand whole in her view**
+## (`EventInstance._would_stand_in_her_view()`, which `EventInvestigation` asks before it stops;
+## velvet-marten #699, #705; bouncy-owl #1774): a man let out is a charger already in the world, who
+## warns her in her view with his hand raised and carries no badge, so he never gets out unseen. The
+## fully heated unmarked van, parked, with her straight below it inside its notice along a clear
+## line: with the camera's view about her, the van and its door are past the view's top edge and it
+## does not stop for her; with a view that holds the van, its door and her, it does, and owes its men.
+func _test_a_hunting_van_lets_its_men_out_only_in_her_view(t: TestRunner) -> void:
+	var hot := EventCatalogue.heated(EventCatalogue.by_id("abduction"), Tuning.RESISTANCE_GOAL)
+	t.check(hot.investigates() and hot.lets_out() == 2, "the fully heated van lets out two men")
+	var instance_where := WhereSheIs.nowhere()
+	var instance := EventInstance.new()
+	instance.setup(hot, Vector2.ZERO, PackedVector2Array(), Vector2.RIGHT,
+			EventSurroundings.new().hearing(instance_where))
+	t.add_child(instance)
+	instance.set_process(false)
+	var her := Vector2(0.0, hot.notice_within() - 10.0)
+	var about_her := Rect2(her - Tuning.VIEW_HALF_EXTENT, Tuning.VIEW_HALF_EXTENT * 2.0)
+	for i in int(round(1.0 / STEP)):
+		instance_where.tell(her, Vector2.INF, about_her)
+		instance.step(STEP)
+	t.check(instance.is_waiting() and instance.officers_owed() == 0,
+			"inside its notice %.0fpx below it, but out of her view, it does not stop for her"
+			% her.y)
+	var holding_it := Rect2(Vector2(-Tuning.VIEW_HALF_EXTENT.x, her.y - 300.0),
+			Tuning.VIEW_HALF_EXTENT * 2.0)
+	instance_where.tell(her, Vector2.INF, holding_it)
+	instance.step(STEP)
+	t.check(not instance.is_waiting() and instance.officers_owed() == 2,
+			"with it and its door in her view, it stops for her and owes its two men")
 	instance.free()
 
 ## `EventInstance.restore()` restores age and distance travelled so a streamed-out event picks up

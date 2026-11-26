@@ -52,10 +52,10 @@ since it is a warning put up before its thing exists.
   (minty-lemur #785), as the loose dog is their explicit exception the other way: up for the
   whole of its warning, pointing at where it will come from, then carried on to the thing until
   any of it is in sight (`VisibleView`) or it is gone (minty-dolphin #852), carrying its own
-  silhouette so it says *what* is coming rather than that something is; a charger already in
-  the world whose charge begins out of her sight takes the same path, its start being its warning
-  (`EventInstance.was_warned_of()`); nothing in the world is measured for one — **for the things
-  that telegraph**: a thing telegraphs
+  silhouette so it says *what* is coming rather than that something is; **a charger already in
+  the world never carries one, wherever its charge begins**: only an off-screen charger has a
+  badge, and an on-screen one warns in her view instead (velvet-marten #699, #705;
+  bouncy-owl #1774); nothing in the world is measured for one — **for the things that telegraph**: a thing telegraphs
   its coming only if it goes fast, comes toward her (PLAYTEST-145 18-23), and carries a heavy
   penalty (olive-hedgehog #598), ending the day or a heavy hit. One that does not
   (`EventDef.telegraphs_its_coming()`) — the loose dog and the cat, the player's own — is outside the badge and
