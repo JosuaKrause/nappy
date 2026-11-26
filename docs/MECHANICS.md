@@ -2033,6 +2033,13 @@ one `user://`, and none of those runs may land in or overwrite what may be the p
 A run carrying any dev flag already falls outside the gate by being one; `--no-save` is what a
 flagless `tools/run.sh` session asks for the same thing with.
 
+**A release candidate keeps a save of its own.** A candidate (the build of a `vX.Y.Z-rc.N` tag,
+served at the site's `/rc/` beside the release) shares the release's `user://`, which on the web
+is one IndexedDB for the whole site, so `GameSave.player_path()` gives it a file of its own:
+trying a new feature never overwrites the day a player reached on the release, and a save a newer
+build wrote never reaches the release's resume. A person who tries a candidate starts it from day
+1, and the next candidate resumes the last one's day.
+
 **Written `day_under_way: false` the instant a resumed run's own retry exists but has not yet been
 handed to the player, when opening the save charged a nerve** — `main._write_dawn_for_a_resumed_run()`,
 called right after `main._start()` (its `DayDirector`) builds the retry, before the title, or the title and then

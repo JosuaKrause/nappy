@@ -246,7 +246,9 @@ own go-ahead from the player in the current session**; the standing merge permis
 permission. A release is cut with `tools/release.sh <major|minor|patch>`, which prints its plan and
 acts only with a trailing `push`; an agent runs that form as `uv run python tools/agent-identity.py
 run claude-coder -- tools/release.sh <part> push`. `major` is reserved for a change that breaks or
-fundamentally alters the game. `references/releasing.md` holds what CI and the deploy check, how
+fundamentally alters the game. **A release candidate**, `tools/release.sh rc <part>`, puts a second
+build online at `/rc/` beside the release, counting nothing and keeping a save of its own (inbox
+#1777 in tiny-newt), and needs no go-ahead, since the root keeps serving the release. `references/releasing.md` holds what CI and the deploy check, how
 the notes are generated, what the script refuses and why a browser fetches a release whole: read it
 before cutting a release or answering whether a commit is live.
 
@@ -506,6 +508,9 @@ fix the sentence or commit nothing. And `./tools/pycheck.sh` if it touches `tool
 The rules in this file that are the filer's proposal or reading, not the player's words, each open
 to the player's correction:
 
+- **Cutting a release candidate needs no go-ahead from the player** ("Releasing"), the filer's
+  proposal (lilac-alpaca): a candidate changes nothing at the root and counts nothing. The
+  plainer alternative is the player's word for each candidate, as for a release.
 - **What is done when the classifier refuses a write the standing permission covers** ("Merging":
   report it naming the player's settings, never work around it). The player asked only for the
   standing permission in their own settings (curly-rabbit #1094).

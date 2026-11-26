@@ -206,7 +206,8 @@ if ! command -v uv >/dev/null 2>&1; then
     echo "FAILED: uv is not on PATH; it says whether $RELEASE_TAG is a release candidate" >&2
     exit 1
 fi
-TAG_KIND="$(uv run --quiet python "$PROJECT_DIR/tools/release-tags.py" kind "$RELEASE_TAG" 2>/dev/null)"
+TAG_KIND="$(uv run --quiet python "$PROJECT_DIR/tools/release-tags.py" kind "$RELEASE_TAG" \
+    2>/dev/null)"
 
 echo
 echo "== version index.js/.wasm/.pck under $RELEASE_TAG/ =="
@@ -256,10 +257,11 @@ html = replace_once(html, '<title>Nappy</title>', '', 'Godot shell <title>Nappy<
 # A release candidate counts nothing: html/head_include's GoatCounter script, the one element that
 # loads count.js, is taken off its page whole, and nothing naming GoatCounter may be left behind.
 if kind == "candidate":
-    counter = re.compile(r"<script>(?:(?!</script>).)*gc\.zgo\.at/count\.js(?:(?!</script>).)*</script>", re.S)
+    inside = r"(?:(?!</script>).)*"
+    counter = re.compile(rf"<script>{inside}gc\.zgo\.at/count\.js{inside}</script>", re.S)
     found = counter.findall(html)
     if len(found) != 1:
-        sys.exit(f"FAILED: expected exactly one count.js script on the candidate's page, found {len(found)}")
+        sys.exit(f"FAILED: expected one count.js script on the candidate's page, found {len(found)}")
     html = counter.sub("", html)
     if "goatcounter" in html:
         sys.exit("FAILED: the candidate's page still names goatcounter after its script was removed")
@@ -293,8 +295,7 @@ if ! "$PROJECT_DIR/tools/audit-pck.sh" --fatal "$VERSIONED_DIR/index.pck"; then
 fi
 
 echo
+echo "OK: wrote $OUT_DIR ($RELEASE_TAG/index.js, $RELEASE_TAG/index.wasm, $RELEASE_TAG/index.pck)"
 if [[ "$TAG_KIND" == candidate ]]; then
-    echo "OK: wrote $OUT_DIR ($RELEASE_TAG/index.js, $RELEASE_TAG/index.wasm, $RELEASE_TAG/index.pck), a release candidate with no count.js"
-else
-    echo "OK: wrote $OUT_DIR ($RELEASE_TAG/index.js, $RELEASE_TAG/index.wasm, $RELEASE_TAG/index.pck)"
+    echo "    a release candidate's page, with no count.js"
 fi

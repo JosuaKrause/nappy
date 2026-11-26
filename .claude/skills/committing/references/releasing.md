@@ -11,8 +11,8 @@ every push to `main` and every pull request but a docs-only one, which gets the 
 alone (**verify**)
 — a new push to a pull request cancels that pull request's older runs, and a run on `main` is never
 cancelled. A push to `main` is never docs-only, so the commit a tag points at has had every check.
-`.github/workflows/deploy.yml` fires on a `v*` tag and nothing else: verify, boot check, export,
-upload, publish, then the GitHub release, in that order. **The deploy does not run the suite
+`.github/workflows/deploy.yml` fires on a `v*` tag and nothing else: verify, plan, boot check and
+export and browser check of each build, assembly, publish, then the GitHub release, in that order. **The deploy does not run the suite
 again.** The `version tags` ruleset requires the `test` check on the commit a tag points at, so a
 tag on a red or untested commit cannot be pushed, and the deploy's first job asks the API for that
 check's outcome and refuses to build without it — the same read `tools/release.sh` waits on before
@@ -29,14 +29,38 @@ previous tag; a minor tag (`vX.Y.0`) covers everything since the previous `.0` t
 patch between them, and a major tag is treated the same way. `tools/release.sh`'s dry run previews
 the same notes before anything is tagged.
 
+**A release candidate is a second build online beside the release, at
+`https://nappy.josuakrause.com/rc/`** (inbox #1777 in tiny-newt, inbox #1781 in tiny-newt), so
+a new feature can be played online before it is a release. It is a tag `vX.Y.Z-rc.N`, the release
+it is a candidate for with a counter, cut by `tools/release.sh rc <major|minor|patch>` with the same
+refusals and the same wait for `test`, plus one: a commit already carrying a version tag is
+refused, since a candidate there publishes nothing new. **Pages keeps nothing between deploys, so
+every deploy publishes the whole site**: the newest release at the root and, when one is out, the
+newest candidate under `rc/`, each exported and played in Chrome from its own tag's commit with that
+commit's own recipe, and laid out by `tools/assemble-site.py`. Which two is
+`tools/release-tags.py site`'s answer: a candidate stays while its number is above the release's,
+so a patch release removes one only once it reaches that candidate's number, and **a minor or major
+release removes every candidate cut before it**, whatever its number (inbox #1783 in tiny-newt). The
+root page forwards `?rc=1` to `rc/`, and with no candidate out `rc/` forwards to the root. **A
+candidate counts nothing** (inbox #1777 in tiny-newt): its page carries no `count.js` and the game
+refuses to send its events (`docs/TELEMETRY.md`, "The page counts visits"); it keeps a save of its
+own (`docs/MECHANICS.md`, "Saving and resuming"); and the title screen's version line names it
+(`vX.Y.Z-rc.N`). Its GitHub Release is a prerelease whose notes run since the last release, never
+since the last candidate, so the release that follows its candidates has the notes it would have had
+without them. The `version tags` ruleset targets `refs/tags/v*`, so a candidate's tag needs the
+same green `test` and can be neither moved nor deleted, only superseded by the next one.
+
 **Publishing is a separate, deliberate act, and it needs its own go-ahead from the player in the
-current session**; the standing merge permission is not release permission. Completed work may be
+current session**; the standing merge permission is not release permission. **Cutting a candidate
+needs none** (the filer's proposal, lilac-alpaca): a candidate changes nothing at the root, which
+keeps serving the release, and counts nothing, so a wrong one is online only at an address linked
+from nowhere until the next candidate replaces it. Completed work may be
 pushed without asking, since pushing `main` publishes nothing.
 
-**Cut a release with `tools/release.sh <major|minor|patch>`**, which reads the latest version tag
-and prints what it would do. It acts only when given a second literal `push` argument, and it
+**Cut a release with `tools/release.sh <major|minor|patch>`**, which reads the latest release tag
+(`tools/release-tags.py latest`, never a candidate) and prints what it would do. It acts only when given a second literal `push` argument, and it
 refuses a dirty tree, any branch but `main`, a `main` that is not level with `origin/main`, a
-commit that already carries the newest `v*` tag, and a machine with no `gh` — every refusal fires
+commit that already carries the newest release tag, and a machine with no `gh` or `uv` — every refusal fires
 in the dry run too, so the dry run tells the truth about whether the real thing would work. **It
 tags nothing until it has read the `test` check on `main`'s commit as green.** That check is CI's
 last job (it needs every other job: classify, gates, hooks, `cost-table`, game, plan, shards, costs and browser), so it reads `none` for
@@ -54,12 +78,14 @@ terminal is unwrapped either way (`tools/lib_agent_role.sh`'s `agent_run` only w
 of who types the command.
 
 **A fix on `main` is not a fix on the site**, and that is the sentence to keep in mind before
-telling anybody the page is well. The site serves whatever the newest tag points at, so `git tag
---list 'v*'` and `tools/release.sh`'s own dry run are what say whether a given commit is out there.
+telling anybody the page is well. The site's root serves whatever the newest release tag points at, so
+`tools/release-tags.py site` and `tools/release.sh`'s own dry run are what say whether a given
+commit is out there, at the root or under `rc/`.
 The record of why is `tools/decisions.sh M73`.
 
 **A browser fetches a new release whole.** The export publishes `index.js`, `index.wasm` and
-`index.pck` under a directory named for the release tag, because GitHub Pages sends
+`index.pck` under a directory named for the release tag (a candidate's under `rc/` in a directory
+named for its own), because GitHub Pages sends
 `Cache-Control: max-age=600` on everything with no header surface to change it, and under fixed
 names each file's ten minutes would run independently, pairing a fresh `index.html` with the
 previous release's `index.pck` (`tools/decisions.sh M80`). So a report of a stale build is worth
