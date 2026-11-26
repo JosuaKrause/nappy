@@ -1094,7 +1094,7 @@ func _test_day_one_seals_each_side_street_at_its_mouth(t: TestRunner) -> void:
 						"seed %d: no side street of the route is sealed with the delivery van (%s)"
 						% [map.city_seed(), segment.key()])
 				if not TutorialRoute.is_a_precinct(map, segment):
-					t.check(plan.line_reach() <= float(Tuning.TILE_SIZE),
+					t.check(plan.line_reach() <= SealPlanner.TUTORIAL_MOUTH_MOST_REACH,
 							"seed %d: the %s at %s's mouth reaches %.0fpx across her line, no more "
 							% [map.city_seed(), plan.row_id(), segment.key(), plan.line_reach()]
 							+ "than a lane, so it cannot refuse a lesson's tiles")

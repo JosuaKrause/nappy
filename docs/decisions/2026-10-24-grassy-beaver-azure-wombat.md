@@ -9,7 +9,7 @@ from the review of #1807.
 
 **The left-out set is derived.** `SealPlanner._is_left_out_of_a_mouth()` leaves out a soft pair holding a lesson row
 (`DawnTutorial.NOISE_PASSED_WIDE`, `SHUTS_HER_SIDEWALK`) or any row whose line reach passes the distance between the two
-lanes of a sidewalk (32px, `_TUTORIAL_MOUTH_MOST_REACH`). The construction pair, at exactly 32px, is the widest that
+lanes of a sidewalk (32px, `TUTORIAL_MOUTH_MOST_REACH`; the 32px is the builder's proposal, open to overturn). The construction pair, at exactly 32px, is the widest that
 stays; the café tables (56px) and the market stall (58px) go, and a later row is judged by its own reach rather than
 by an id somebody remembers to list. `tests/test_seals.gd` asserts that no ordinary side street's mouth body reaches
 past a lane, which fails with the café pair back in.

@@ -381,24 +381,27 @@ static func plan_day(map: CityMap, spec: DaySpec, route: RouteSource,
 const TUTORIAL_PRECINCT_SEAL_ID := "burst_main_seal"
 
 ## The rows that teach one of day 1's lessons on the route (`DawnTutorial`): the market stall the
-## noise she passes wide and the delivery van the sidewalk that makes her cross.
+## noise she passes wide and the delivery van the sidewalk that makes her cross. Only the van's
+## entry does work here: the stall's reach already passes `TUTORIAL_MOUTH_MOST_REACH`, and the entry
+## stays so the lesson rows are left out by what they are, whatever their reach is set to.
 const _TUTORIAL_LESSON_ROWS := [DawnTutorial.NOISE_PASSED_WIDE, DawnTutorial.SHUTS_HER_SIDEWALK]
 
 ## How far across her line a soft pair at a side street's mouth may reach before it can refuse a
 ## lesson's tiles: the distance between the two lanes of a sidewalk (32px), which is the construction
 ## pair's reach and so the widest that stays. A row reaching past it (the café tables' 56px, the
 ## market stall's 58px) beside a lesson's crossing can take both lanes, and `RouteLineRule` then
-## refuses the lesson's row and removes it from the day.
-const _TUTORIAL_MOUTH_MOST_REACH := float((Tuning.SIDEWALK_WIDTH - 1) * Tuning.TILE_SIZE)
+## refuses the lesson's row and removes it from the day. *Proposed, not asked for*: the 32px is the
+## builder's reading of where a lesson starts to be refused, open to overturn.
+const TUTORIAL_MOUTH_MOST_REACH := float((Tuning.SIDEWALK_WIDTH - 1) * Tuning.TILE_SIZE)
 
 ## Whether a side street's mouth on the tutorial route is never sealed with `candidate`, a soft
 ## pair: it holds a row that teaches one of the lessons, so a side street sealed with it would blur
 ## that lesson, or one whose reach across her line (`EventDef.line_reach()`) passes
-## `_TUTORIAL_MOUTH_MOST_REACH`. Every other soft pair offered that day may seal a mouth.
+## `TUTORIAL_MOUTH_MOST_REACH`. Every other soft pair offered that day may seal a mouth.
 static func _is_left_out_of_a_mouth(candidate: Candidate) -> bool:
 	for id in candidate.def_ids:
 		if _TUTORIAL_LESSON_ROWS.has(id) \
-				or EventCatalogue.by_id(id).line_reach() > _TUTORIAL_MOUTH_MOST_REACH:
+				or EventCatalogue.by_id(id).line_reach() > TUTORIAL_MOUTH_MOST_REACH:
 			return true
 	return false
 
@@ -423,8 +426,8 @@ static func _mouths_of(tutorial: TutorialRoute) -> Dictionary:
 ## blocked -- no valid route goes off of the tutorial route past the first block")*:
 ##
 ## - **a soft pair**, drawn from the day's soft pictures less those left out
-##   (`_is_left_out_of_a_mouth()`), on an ordinary side street. It is **never thinned**: a thinned pair would open the one way off the
-##   route the seal is there to close;
+##   (`_is_left_out_of_a_mouth()`), on an ordinary side street. It is **never thinned**: a
+##   thinned pair would open the one way off the route the seal is there to close;
 ## - **the burst water main** (`TUTORIAL_PRECINCT_SEAL_ID`) across a precinct side street, whose
 ##   paved middle no sidewalk pair closes. A seal need not be a full hard seal, so where a soft
 ##   one cannot close the street a hard one does.
