@@ -218,7 +218,7 @@ committed with `git add --sparse <path>`.
 
 **A screenshot of a standing player is a screenshot of almost nothing**, since the crowd and the
 events are built around her while she is going somewhere: a capture walks (`--walk`), and from the
-doorstep only south moves at all. **Evidence about anything that moves is a burst, not a
+doorstep north only climbs her front step to the door. **Evidence about anything that moves is a burst, not a
 screenshot** (`--press snapshot_burst <seconds>`; PLAYTEST-56; woolly-finch 16), and **any capture
 whose timing is hard to hit adds `--invincible`** (woolly-finch 17), unless it is meant to show a
 cost or a loss. `references/dev-flags.md` has every flag with its trap; read it before planning a
