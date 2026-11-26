@@ -223,7 +223,13 @@ try {
   const transitionStart = logs.length;
   // A nearly settled baby makes the win and summary bounded. The game still handles movement,
   // sleep, the win and next-day construction through ordinary input. She walks north into her
-  // own front step and falls asleep on it, which wins the day on the spot.
+  // own front step and falls asleep on it, which wins the day on the spot. Day 1's first attempt
+  // opens with the opening shot, which a key starts and a fresh key press skips (the held key's
+  // repeats are echoes, which the shot ignores), so the walk begins once play has.
+  await key(' ', 'Space', 32);
+  await pause(500);
+  await key(' ', 'Space', 32);
+  await pause(500);
   await hold('ArrowUp', 'ArrowUp', 38, 2000);
   await snapshot('day-summary');
   await key(' ', 'Space', 32);

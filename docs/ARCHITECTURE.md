@@ -167,6 +167,8 @@ src/
 	crowd_focus.gd        where the crowd's simulated patch stands, asked once a tick (`StrollerFocus`
 	                      answers with her position)
 	stroller_focus.gd     the game's `CrowdFocus`: the patch stands where she does
+	camera_focus.gd       the `CrowdFocus` of the opening shot: the patch stands where the shot's
+	                      camera looks, until she is handed to the crowd
 	crowd_timing.gd       the sink the crowd charges its time and draws to; the null sink here,
 	                      `FrameRecordTiming` feeds the record
 	lane_strategy.gd      the questions the mover asks its kind, with the neutral answers
@@ -462,6 +464,8 @@ src/
 	loss_hold.gd          the beat a lost day holds before its summary: the world stops, a camera
 	                      of its own frames her and the one thing that caused the loss, and a
 	                      tap skips it; `main` runs it between the save and the outcome screen
+	opening_shot.gd       day 1's opening shot: a camera of its own on the park, then back along the
+	                      tutorial route to her door; a tap skips it; `main` runs it from the title
 	day_world_source.gd   where the day director gets the world a spec is walked in: stands it and
 	                      answers it standing; `main` implements it, a test hands a fake
 	day_world.gd          a world standing for one spec: the scene, its events, her and the baby,
@@ -566,6 +570,8 @@ src/
 	                      once a process frame, the one box every off-screen redraw gate asks,
 	                      made once by `main` and handed to the events' looks and the crowd's view
 	                      (`DrawnView`); the covered corners count, unlike `VisibleView`
+	camera_view.gd        the world rect a camera shows, turned and clamped as it is, worked out in one
+	                      place for whoever prepares the scenery a view is about to draw
 	screen_cover.gd       the corners the on-screen controls cover, as rectangles the UI hands in
 	spawn_siting.gd       where something sent at her may start (`SpawnSiting`): the rules a start
 	                      is held to, each by name (legal ground, open to the thing, out of sight,

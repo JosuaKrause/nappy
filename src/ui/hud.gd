@@ -285,12 +285,32 @@ func _say_the_walking_lesson(joystick: bool) -> void:
 
 ## The title opens after day 1 has started, so the lesson said at dawn was worded for whatever
 ## scheme was in force before the player chose one, and counted down hidden behind the title. Said
-## again when the choice is made, in the chosen scheme, for its full length. Uses the signal's own
+## again when the choice is made, in the chosen scheme, for its full length, unless the opening shot
+## plays next (`hold_the_walking_line()`), which says it when it ends. Uses the signal's own
 ## `joystick`: `main` emits this one line *before* it sets the scheme on `TouchControls`, so the
 ## tree still answers with the old one at this moment.
 func _on_controls_chosen(joystick: bool, _by_key: bool) -> void:
-	if _run.header().day() == 1:
+	_chosen_joystick = joystick
+	if _run.header().day() == 1 and not _walking_line_waits:
 		_say_the_walking_lesson(joystick)
+
+## Whether the walking line waits for the opening shot to end, and the scheme the player chose, which
+## the line is worded by when it is said then.
+var _walking_line_waits := false
+var _chosen_joystick := false
+
+## Holds day 1's walking line back until `say_the_walking_line()`: the opening shot is about to play
+## over the title's choice, and the line said behind it would run out unseen. Called by `main` before
+## it announces the choice.
+func hold_the_walking_line() -> void:
+	_walking_line_waits = true
+
+## Says the walking line held back, in the scheme chosen: the opening shot has ended or been skipped
+## and she is about to walk.
+func say_the_walking_line() -> void:
+	_walking_line_waits = false
+	if _run.header().day() == 1:
+		_say_the_walking_lesson(_chosen_joystick)
 
 ## How the run lessons put it. *(2026-10-04, the player, inbox #533: "joystick run should now say
 ## hold <run button> or double tap to run where it makes sense".)* The joystick scheme draws a run

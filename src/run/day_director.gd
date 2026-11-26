@@ -507,10 +507,4 @@ func _prepare_the_scenery_round_her() -> void:
 	if not _in_a_city or not _player or not _player.is_inside_tree():
 		return
 	var camera: Camera2D = _player.get_node("Camera2D")
-	camera.force_update_scroll()
-	var size := _player.get_viewport_rect().size / camera.zoom
-	var angle := camera.global_rotation
-	var world_size := Vector2(absf(cos(angle)) * size.x + absf(sin(angle)) * size.y,
-			absf(sin(angle)) * size.x + absf(cos(angle)) * size.y)
-	_dressing.prepare_scenery_in(Rect2(camera.get_screen_center_position() - world_size * 0.5,
-			world_size))
+	_dressing.prepare_scenery_in(CameraView.shown_by(camera, _player.get_viewport_rect().size))

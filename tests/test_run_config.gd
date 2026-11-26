@@ -576,6 +576,7 @@ func _the_screens_answer(t: TestRunner, flagged: bool) -> void:
 	await UI.frames(t, 4)
 	t.check(title.visible == flagged, "%s, a mouse click on the title's tap button %s" % [label,
 			"is not a press" if flagged else "starts the run"])
+	Boot.skip_the_opening_shot(main)
 	if flagged:
 		await Boot.press_title(t, main)
 		t.check(not title.visible, "%s, and a finger on it starts the run" % label)
