@@ -94,6 +94,9 @@ class CheckClosureWritersTests(unittest.TestCase):
             "\tmap.closed_tile_set().merge({})\n",
             "\tlayer.replace_closed_tiles({})\n",
             "\tlayer.todays_closed_tiles().clear()\n",
+            "\tlayer._closed[Vector2i.ZERO] = true\n",
+            "\t_closed = {}\n",
+            "\t_closed.erase(Vector2i.ZERO)\n",
         ):
             with self.subTest(body=body):
                 found = hits(event_scheduler=other(body))
@@ -104,6 +107,7 @@ class CheckClosureWritersTests(unittest.TestCase):
         body = (
             "\tvar shut := map.closed_tile_set().duplicate()\n"
             "\tif map.closed_tile_set()[Vector2i.ZERO] == true:\n\t\tpass\n"
+            "\tif _closed.has(Vector2i.ZERO) and _closed == {}:\n\t\tpass\n"
         )
         self.assertEqual(hits(event_scheduler=other(body)), [])
 

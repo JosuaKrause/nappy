@@ -2915,11 +2915,13 @@ and it is the one spacing rule with no fallback — an abduction that cannot fin
 not placed. `tests/test_masts.gd` holds one case of it (a queued mast is never generated inside a
 planned lethal field) and `tests/test_events_costs.gd` holds who is exempt. **No suite walks a
 planned day for the rule, because a walk would find no field to ask.** `EventScheduler.role_for()`
-gives a lethal row placed on a tile the `WALL` role unless the row is a one-shot, a wall is exempt
-(below), and the catalogue's one one-shot, the burning building, is not lethal; the one lethal row
-in a day's plan that keeps its field clear is the cyclist, which the director sends at her and no
-dawn or unit places. The row that adds a lethal one-shot adds the walk, in
-`tests/test_events_scheduler.gd`, which holds the planned days.
+gives a lethal row placed on a tile the `WALL` role unless the row is a one-shot, a scenery row or
+an ambient one (the last two keep the role `NONE`, as does a plan built without `give_role()`),
+a wall is exempt (below), and the catalogue's one one-shot, the burning building, is not lethal;
+the one lethal row in a day's plan outside a wall and pursuit is the cyclist, which the director
+sends at her and no dawn or unit places. A row a dawn phase or a unit places whose plan keeps its
+field clear (`EventPlan.keeps_its_field_clear()`: it ends the day, is not a wall and does not
+pursue) adds the walk, in `tests/test_events_scheduler.gd`, which holds the planned days.
 
 Two cases are exempt, and both are about the field having no fixed place to keep clear of
 anything. **Off the day's corridor**, where the whole point of the ground is that she should not

@@ -359,7 +359,7 @@ func _enough_calm_is_reachable(map: CityMap, grid: ReachabilityGrid,
 ## independent mechanisms is what M50 kept deliberately rather than trusting the placement alone —
 ## but a skip means the wall and the tree disagree about where she is going, and that is a bug
 ## rather than a near miss. This is the assertion the planner's telemetry note stands in for at
-## runtime: over a run's worth of days on every seed, every candidate the planner reaches is legal.
+## runtime: on two maps and three days, every candidate the planner reaches is legal.
 ##
 ## Every off-corridor street is tried rather than only the handful a day happens to reach, which
 ## is what makes the planner's `else` branch provably dead rather than merely unvisited. Two seeds

@@ -69,12 +69,12 @@ walk.
 ## Left open
 
 - **The lethal-field rule binds nothing a day places today**, and the director asks one direction
-  of it: a row sent ahead of her is kept out of the fields placed plans keep clear, and nothing
-  keeps placed rows out of a sent cyclist's field. Neither was investigated (the design's finding).
+  of it. Filed as the queue entry gray-bunny, nothing keeps a placed event out of a sent cyclist's
+  lethal field.
+- **The resistance package's meter multiplier** (0.5) was set beside a main road's old 0.6 and not
+  re-derived when M117 re-derived the streets'. Filed as the queue entry minty-elk, the package's
+  multiplier against the streets', which asks the player.
 - **The frozen Codex fixture** (`tools/test_codex_hooks.py`) copies `tools/lint.sh` without the
   two new scripts. It passes, since the lint starts the test-path check only for a file the check
   reads and the fixture lints a playtest; a Codex lint of a `.gd` file or a governed doc would need
   them when Codex is brought back.
-- **Sentences found stale and left**, outside this entry's reach: the closure rig's header of
-  `case_a_wall_off_the_corridor_never_fails_the_invariant` says it runs over a run's worth of days
-  on every seed where it samples two maps and three days.

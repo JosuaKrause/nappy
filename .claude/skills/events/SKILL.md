@@ -143,9 +143,13 @@ inherits this, not just the telegraph. **One case of it is held and the whole is
 planned lethal field it is not generated, and offered sidewalk clear of it, it is.
 `tests/test_events_costs.gd` holds who is exempt (below). **No suite walks a planned day** from
 `EventScheduler.build_day()` for the rule, because the walk would find no field to ask:
-`EventScheduler.role_for()` makes a lethal row placed on a tile a `WALL`, which is exempt, unless
-it is a one-shot, and the catalogue's one one-shot is not lethal. **A row that adds a lethal
-one-shot adds the walk**, in `tests/test_events_scheduler.gd`, which holds the planned days.
+`EventScheduler.role_for()` makes a lethal row placed on a tile a `WALL`, which is exempt, except
+a one-shot, a scenery row or an ambient one (it returns `NONE` for the last two before it reaches
+the `WALL` check), and the catalogue's one one-shot is not lethal. **A row a dawn phase or a unit
+places whose plan keeps its field clear (`EventPlan.keeps_its_field_clear()`: it ends the day, is
+not a `WALL` and does not pursue) adds the walk**, in `tests/test_events_scheduler.gd`, which holds
+the planned days. That covers a lethal one-shot, a lethal scenery or ambient row, and a lethal plan
+built without `give_role()`, whose role stays `NONE`.
 
 Two exemptions, both about a field with no fixed place to keep clear: a **wall** placement, which
 is off the day's routes by construction, and a **pursuer**, which follows her.

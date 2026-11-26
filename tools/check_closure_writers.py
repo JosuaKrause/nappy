@@ -13,8 +13,9 @@ each with its reason:
 - **recipe**: a closure listed for a recipe (`add_recipe_closure()`), which the city closes at
   the recipe's dawn;
 - **ground**: the closed ground written, `CityMap`'s `_closed_tiles` assigned or changed, the
-  blocked layer's `replace_closed_tiles()` called, or the dictionary `closed_tile_set()` or
-  `todays_closed_tiles()` returns changed in the same expression.
+  blocked layer's `replace_closed_tiles()` called, the blocked layer's own dictionary `_closed`
+  (`src/world/blocked_layer.gd`, where the closed ground lives) assigned or changed, or the
+  dictionary `closed_tile_set()` or `todays_closed_tiles()` returns changed in the same expression.
 
 A site is a file and the function (or the property) the line stands in. **An allowed site that
 no longer holds its kind of line fails too**, so the table cannot outlive the code it describes.
@@ -69,6 +70,10 @@ ALLOWED = {
     ("src/city/city_map.gd", "_closed_tiles", "ground"): (
         "the property that holds the closed ground on the map's blocked layer"
     ),
+    ("src/world/blocked_layer.gd", "replace_closed_tiles", "ground"): (
+        "the blocked layer's one writer of its closed ground, which the map's allowed sites call"
+    ),
+    ("src/world/blocked_layer.gd", "copy", "ground"): ("a copy of the layer takes its own copy of the closed ground"),
 }
 
 BASE_CLASS = "RoadClosure"
@@ -83,6 +88,8 @@ GROUND = (
     re.compile(r"\b_closed_tiles\b[ \t]*(?:\[[^\]]*\][ \t]*)?(?:=(?!=)|\+=|-=)"),
     re.compile(r"\b_closed_tiles[ \t]*\.[ \t]*(?:clear|merge|erase|assign|append)[ \t]*\("),
     re.compile(r"\breplace_closed_tiles[ \t]*\("),
+    re.compile(r"\b_closed\b[ \t]*(?:\[[^\]]*\][ \t]*)?(?:=(?!=)|\+=|-=)"),
+    re.compile(r"\b_closed[ \t]*\.[ \t]*(?:clear|merge|erase|assign|append)[ \t]*\("),
     re.compile(
         r"\b(?:closed_tile_set|todays_closed_tiles)[ \t]*\([ \t]*\)[ \t]*"
         r"(?:\.[ \t]*(?:clear|merge|erase|assign)[ \t]*\(|\[[^\]]*\][ \t]*=(?!=))"
