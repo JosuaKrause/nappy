@@ -205,7 +205,7 @@ func _walk_to(day: Dictionary, tile: Vector2i) -> Dictionary:
 	var next_choice := STEP
 	var noticed := false
 	var nearest := INF
-	var notice := EventCatalogue.by_id("alley_robbery").notice_within()
+	var notice := Shipped.rows().by_id("alley_robbery").notice_within()
 	for i in range(1, points.size()):
 		var from: Vector2 = points[i - 1]
 		var to: Vector2 = points[i]
@@ -251,7 +251,7 @@ static func _a_way_past_from(map: CityMap, guard: EventInstance, roadblock: Even
 		from: Vector2) -> bool:
 	if guard == null or roadblock == null:
 		return true
-	var notice := EventCatalogue.by_id("alley_robbery").notice_within()
+	var notice := Shipped.rows().by_id("alley_robbery").notice_within()
 	var reach := ResistanceDirector._touch_reach(roadblock)
 	var body := roadblock.body_position()
 	var start := map.world_to_tile(from)
@@ -283,7 +283,7 @@ func _what_he_guards(city: City, director: ResistanceDirector, moves: int) -> Di
 	var arrow := _live_instance(director._arrow_key)
 	if guard == null or arrow == null:
 		return {"kind": "none", "from_arrow": -1.0, "clear": false, "moves": moves}
-	var robbery := EventCatalogue.by_id("alley_robbery")
+	var robbery := Shipped.rows().by_id("alley_robbery")
 	var reach := ResistanceDirector._touch_reach(arrow)
 	var from_arrow := guard.global_position.distance_to(arrow.body_position())
 	var clear := city.map().clear_line(guard.global_position, arrow.body_position())
@@ -291,14 +291,16 @@ func _what_he_guards(city: City, director: ResistanceDirector, moves: int) -> Di
 	if from_arrow >= robbery.core_within() + reach - 0.5 \
 			and from_arrow <= robbery.notice_within() + reach + 0.5 and clear:
 		kind = "guarding"
-	elif clear and from_arrow <= ResistanceDirector.task_guard_farthest(reach) + 0.5:
+	elif clear and from_arrow <= ResistanceDirector.task_guard_farthest(
+			Shipped.rows(), reach) + 0.5:
 		kind = "near"
 	return {"kind": kind, "from_arrow": from_arrow, "clear": clear, "moves": moves}
 
 ## The task's guard as the street has him: the live `task_guard` among `city`'s instances, or null.
 static func _task_guard(city: City) -> EventInstance:
 	for instance in RunCity.events(city).instances():
-		if instance.row_id() == EventCatalogue.task_guard().id() and not instance.is_gone():
+		if instance.row_id() == Shipped.rows().task_guard() \
+				.id() and not instance.is_gone():
 			return instance
 	return null
 
@@ -340,8 +342,8 @@ func _start_the_day(t: TestRunner, city: City, run: RunState, director: Resistan
 	RunCity.events(city).start_day(DaySpec.for_day(DAY), _rng(seed_value, "events"), [], city.map().doorstep_world_position())
 	t.add_child(director)
 	director.set_process(false)
-	director.setup(city.map(), run, RunCity.events(city), city.streets(), city.fronts(), city,
-			null, RunCity.spawn_siting(city))
+	director.setup(Shipped.rows(), city.map(), run, RunCity.events(city),
+			city.streets(), city.fronts(), city, null, RunCity.spawn_siting(city))
 	director.start_day(DAY, _rng(seed_value, "resistance"), 300.0)
 	var player := Stroller.new()
 	var camera := Camera2D.new()

@@ -73,12 +73,13 @@ func _test_plain_pose_with_no_objective(t: TestRunner) -> void:
 ## (`EventSurroundings.pointing_protests_with()`) and nothing otherwise.
 func _protest(t: TestRunner, at: Vector2, recorded: RecordingEventDrawer,
 		where := Callable()) -> EventInstance:
-	var surroundings := EventSurroundings.new().drawing_through(recorded)
+	var surroundings := EventSurroundings.new().reading(Shipped.rows()) \
+			.drawing_through(recorded)
 	if where.is_valid():
 		surroundings.pointing_protests_with(where)
 	var protest := EventInstance.new()
-	protest.setup(EventCatalogue.by_id("protest"), at, PackedVector2Array(), Vector2.RIGHT,
-			surroundings)
+	protest.setup(Shipped.rows().by_id("protest"), at, PackedVector2Array(),
+			Vector2.RIGHT, surroundings)
 	t.add_child(protest)
 	return protest
 

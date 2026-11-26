@@ -156,7 +156,8 @@ func _plan(map: CityMap, own_run: RunState, walk: FinalePlanner.Plan, day: int,
 		var counts: Array = mix["counts"]
 		spec.bag = {"military_convoy": counts[0], "finale_explosion": counts[1],
 				"abduction": counts[2], "roadblock": counts[3], DaySpec.EMPTY_MARBLE: counts[4]}
-	return DayPlanner.plan_the_escape_city(map, walk, rng, spec, GamePlanBuilder.over(map))
+	return DayPlanner.plan_the_escape_city(Shipped.rows(), map, walk, rng, spec,
+			GamePlanBuilder.over(map))
 
 ## Each exit's streets for `seed_value`, with the vans, roadblocks and explosions the plan stands on
 ## them, for the walks' reading of their run logs.

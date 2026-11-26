@@ -22,7 +22,8 @@ func _init(host: EventInstance) -> void:
 ## put in `t`'s tree so that its body is down. Free it with `release()`.
 static func on(t: Node, row: EventDef, band: Vector2, map: WorldMap,
 		where: WhereSheIs) -> RoadblockParts:
-	var surroundings := EventSurroundings.new().on(map).hearing(where)
+	var surroundings := EventSurroundings.new().reading(Shipped.rows()).on(map) \
+			.hearing(where)
 	var host := EventInstance.new()
 	host.setup(row, band, PackedVector2Array(), Vector2.RIGHT, surroundings)
 	t.add_child(host)

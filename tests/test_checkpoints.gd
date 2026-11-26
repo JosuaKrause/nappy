@@ -65,7 +65,8 @@ func run(t: TestRunner) -> void:
 	await PhysicsTicks.settle(t)
 	for i in SEEDS:
 		_maps.append(CityGenerator.generate(BASE_SEED + i * 251))
-		_mast_sites[_maps[i].city_seed()] = MastSites.compute(_maps[i])
+		_mast_sites[_maps[i].city_seed()] = MastSites.compute(Shipped.rows(),
+				_maps[i])
 	_test_every_door_has_its_three_bodies(t)
 	_test_door_bodies_stand_on_their_own_ground(t)
 	await _test_the_boom_bars_the_carriageway(t)
@@ -136,7 +137,8 @@ func _plan_for(map: CityMap, day: int) -> RegionPlan:
 	if not _plan_cache.has(key):
 		_repaint_for(map, day)
 		var tree := RouteTree.for_day(map, day, null)
-		_plan_cache[key] = RegionPlanner.plan_day(map, DaySpec.for_day(day), tree)
+		_plan_cache[key] = RegionPlanner.plan_day(Shipped.rows(), map,
+				DaySpec.for_day(day), tree)
 	return _plan_cache[key]
 
 ## The streets of `day` on `map`: the day's region plan and no closure, the tree being data the
@@ -384,7 +386,8 @@ func _drawn_boom_span(t: TestRunner, gate: EventPlan) -> Vector2:
 	var drawer := RecordingEventDrawer.new(atlas)
 	var instance := EventInstance.new()
 	instance.setup(gate.row(), Vector2.ZERO, PackedVector2Array(), gate.faces(),
-			EventSurroundings.new().on(WorldMap.open_ground()) \
+			EventSurroundings.new().reading(Shipped.rows()) \
+			.on(WorldMap.open_ground()) \
 				.drawn_from(atlas) \
 				.drawing_through(drawer))
 	t.add_child(instance)
@@ -429,7 +432,7 @@ func _drawn_boom_span(t: TestRunner, gate: EventPlan) -> Vector2:
 ## scripted-availability window is a fact about the day, not the map.
 func _test_the_three_rows_validate_and_are_never_rolled(t: TestRunner) -> void:
 	for id: String in ["checkpoint_hut", "checkpoint_gate", "checkpoint_post"]:
-		t.check(EventCatalogue.by_id(id) != null, "'%s' is in the catalogue" % id)
+		t.check(Shipped.rows().by_id(id) != null, "'%s' is in the catalogue" % id)
 
 	var map := _maps[0]
 	var rolled := 0
@@ -538,7 +541,8 @@ func _test_nothing_the_day_places_reaches_into_a_doors_gap(t: TestRunner) -> voi
 			_repaint_for(map, day)
 			var tree := RouteTree.for_day(map, day, null)
 			var doors := PackedVector2Array()
-			for body in RegionPlanner.plan_day(map, DaySpec.for_day(day), tree).door_plans():
+			for body in RegionPlanner.plan_day(Shipped.rows(), map,
+					DaySpec.for_day(day), tree).door_plans():
 				doors.append(body.placed_at())
 			if doors.is_empty():
 				continue
@@ -617,7 +621,8 @@ func _manager(t: TestRunner) -> EventManager:
 	# hands it), so a plan put in by `_door_instance()` stays in however far a test walks her.
 	var world := WorldContext.new()
 	var map := WorldMap.open_ground()
-	var manager := EventManager.new(EventSurroundings.new().on(map).drawn_in(world))
+	var manager := EventManager.new(Shipped.rows(), EventSurroundings.new()
+			.on(map).drawn_in(world))
 	manager.setup(run)
 	manager.stream_within(INF)
 	manager.add_child(world)
@@ -656,7 +661,7 @@ func _stroller_with(t: TestRunner, script: Script) -> Stroller:
 ## instance arrives in its life, and the path a mover walks. `_stand()` puts it in the world.
 func _door_plan(id: String, at: Vector2, face: Vector2, gate_state: GateState = null,
 		age := 0.0, route := PackedVector2Array()) -> EventPlan:
-	return _plan_of(EventCatalogue.by_id(id), at, face, gate_state, age, route)
+	return _plan_of(Shipped.rows().by_id(id), at, face, gate_state, age, route)
 
 ## `_door_plan()` for a row that is not in the catalogue as it stands (a heated copy of one).
 func _plan_of(def: EventDef, at: Vector2, face: Vector2, gate_state: GateState = null,
@@ -916,7 +921,8 @@ func _test_the_hold_charges_only_its_toll(t: TestRunner) -> void:
 	var stood := _stand(manager, [
 		_door_plan("checkpoint_hut", centre, axis),
 		_door_plan("loudspeaker", centre + Vector2(0.0, 72.0), axis, null,
-				EventCatalogue.by_id("loudspeaker").telegraphs_for() + 1.0)] as Array[EventPlan])
+				Shipped.rows().by_id("loudspeaker") \
+				.telegraphs_for() + 1.0)] as Array[EventPlan])
 	var hut := stood[0]
 	var loud := stood[1]
 
@@ -980,7 +986,7 @@ func _test_a_boundarys_structures_charge_as_one(t: TestRunner) -> void:
 	for i in 3:
 		kit_plans.append(_door_plan("checkpoint_post",
 				here + Vector2(-56.0, -32.0 + i * 32.0), axis, null,
-				EventCatalogue.by_id("checkpoint_post").telegraphs_for() + 1.0))
+				Shipped.rows().by_id("checkpoint_post").telegraphs_for() + 1.0))
 	kit_plans.append(_door_plan("checkpoint_hut", here + Vector2(0.0, 54.0), axis))
 	kit_plans.append(_door_plan("checkpoint_gate", here + Vector2(64.0, 54.0), axis))
 	var kit := _stand(manager, kit_plans)
@@ -1398,7 +1404,8 @@ func _test_the_ground_she_is_let_out_onto_is_survivable(t: TestRunner) -> void:
 		for day in days:
 			_repaint_for(map, day)
 			var tree := RouteTree.for_day(map, day, null)
-			var region := RegionPlanner.plan_day(map, DaySpec.for_day(day), tree)
+			var region := RegionPlanner.plan_day(Shipped.rows(), map,
+					DaySpec.for_day(day), tree)
 			if region.door_plans().is_empty():
 				continue
 			var doors := PackedVector2Array()
@@ -1452,7 +1459,7 @@ func _test_the_ground_she_is_let_out_onto_is_survivable(t: TestRunner) -> void:
 func _test_the_run_that_killed_her_five_times(t: TestRunner) -> void:
 	var axis := Vector2.RIGHT
 	var hut_at := Vector2(8000.0, 8000.0)
-	var hut := EventPlan.new(EventCatalogue.by_id("checkpoint_hut"), hut_at)
+	var hut := EventPlan.new(Shipped.rows().by_id("checkpoint_hut"), hut_at)
 	hut.face(axis)
 	var clearance := hut.obstructs_within() + Tuning.PLAYER_BODY_RADIUS \
 			+ CheckpointController.CHECKPOINT_RELEASE_MARGIN
@@ -1460,12 +1467,12 @@ func _test_the_run_that_killed_her_five_times(t: TestRunner) -> void:
 	var released := hut_at + Vector2(0.0, -clearance)
 
 	var plans: Array[EventPlan] = [hut]
-	var wall := EventCatalogue.by_id("roadblock")
+	var wall := Shipped.rows().by_id("roadblock")
 	for distance: float in [57.0, 61.0, 112.0]:
 		plans.append(EventPlan.new(wall,
 				released + Vector2(-distance, 0.0)))
 
-	var patrol := EventCatalogue.by_id("police_patrol")
+	var patrol := Shipped.rows().by_id("police_patrol")
 	var patrol_at := released + Vector2(0.0, -66.0)
 	var doors := PackedVector2Array([hut_at])
 	t.check(not DoorClearanceRule.clear_of_the_doors(patrol_at, PackedVector2Array(), doors,
@@ -1859,7 +1866,7 @@ func _test_the_chatting_mother_still_detains_once(t: TestRunner) -> void:
 	var stroller := _real_stroller(t)
 	manager.use_player(stroller)
 
-	var def := EventCatalogue.by_id("chatting_mother")
+	var def := Shipped.rows().by_id("chatting_mother")
 	var at := Vector2(6000.0, 6000.0)
 	var mother := _stand(manager, [_plan_of(def, at, Vector2.RIGHT, null, 0.0,
 			PackedVector2Array([at, at + Vector2(256.0, 0.0)]))] as Array[EventPlan])[0]
@@ -2066,7 +2073,7 @@ func _street_door_rig(t: TestRunner, along := Vector2.ZERO) -> Dictionary:
 	t.add_child(city)
 	RunCity.build(city, run, map)
 	_repaint_for(map, day)
-	var plan := RegionPlanner.plan_day(map, DaySpec.for_day(day),
+	var plan := RegionPlanner.plan_day(Shipped.rows(), map, DaySpec.for_day(day),
 			RouteTree.for_day(map, day, null))
 	t.check(not plan.gate_states().is_empty(),
 			"day %d on seed %d has a street door" % [day, BASE_SEED])
@@ -2232,17 +2239,17 @@ func _test_walking_under_the_boom_sets_a_guard_on_her(t: TestRunner) -> void:
 	EventBus.pursuit_warned.connect(on_warned)
 	# Across, and back before the warning runs: called off.
 	await _step_her_to(t, rig, lane + axis * 20.0)
-	await _stand_for(t, rig, EventCatalogue.charger_timing().warning() * 0.5)
+	await _stand_for(t, rig, Shipped.rows().charger_timing().warning() * 0.5)
 	t.check(far_hut.is_its_guard_warning() and not near_hut.is_its_guard_warning(),
 			"the frame she crosses, the guard across the road raises his hand")
 	t.check(_door_guard_after_her(RunCity.events(city)) == null, "and nobody is after her yet")
 	await _step_her_to(t, rig, lane - axis * 20.0)
-	await _stand_for(t, rig, EventCatalogue.charger_timing().warning() * 2.0)
+	await _stand_for(t, rig, Shipped.rows().charger_timing().warning() * 2.0)
 	t.check(_door_guard_after_her(RunCity.events(city)) == null and not far_hut.is_its_guard_warning(),
 			"back across before it runs, it is called off: nobody comes, and his hand is down")
 	# Across, and staying across: the guard comes once it has run.
 	await _step_her_to(t, rig, lane + axis * 20.0)
-	await _stand_for(t, rig, EventCatalogue.charger_timing().warning() - 0.1)
+	await _stand_for(t, rig, Shipped.rows().charger_timing().warning() - 0.1)
 	t.check(_door_guard_after_her(RunCity.events(city)) == null, "staying across, nobody comes before it runs")
 	await _stand_for(t, rig, 0.2)
 	EventBus.pursuit_warned.disconnect(on_warned)
@@ -2265,7 +2272,7 @@ func _test_walking_under_the_boom_sets_a_guard_on_her(t: TestRunner) -> void:
 				"while the hut and its own guard stay where they are")
 	var walks := _walks_under(walks_told)
 	await _step_her_to(t, rig, lane - axis * 20.0)
-	await _stand_for(t, rig, EventCatalogue.charger_timing().warning() + 0.2)
+	await _stand_for(t, rig, Shipped.rows().charger_timing().warning() + 0.2)
 	t.check(_walks_under(walks_told) == walks + 1 and _door_guard_after_her(RunCity.events(city)) == guard,
 			"walking back under it while he is after her sets nobody else on her")
 	_free_street_door_rig(rig)
@@ -2376,7 +2383,7 @@ func _test_the_guard_who_warned_is_the_guard_who_comes(t: TestRunner) -> void:
 	# Until the guard is set on her, so that he is read where he steps out, before his first step.
 	await _ticks_until(t,
 			func() -> bool: return _door_guard_after_her(RunCity.events(city)) != null,
-			int(ceil(EventCatalogue.charger_timing().warning() * 2.0 / STEP)))
+			int(ceil(Shipped.rows().charger_timing().warning() * 2.0 / STEP)))
 	var guard := _door_guard_after_her(RunCity.events(city))
 	t.check(guard != null and guard.global_position.distance_to(far_hut.global_position)
 			<= far_hut.row().obstructs_within() + 0.5,
@@ -2397,7 +2404,7 @@ func _test_the_guard_who_warned_is_the_guard_who_comes(t: TestRunner) -> void:
 ## centre, 80px across from the near lane she crossed in; from an alley's post, 32px along, 16px to
 ## 48px across.
 func _test_the_guard_leaves_room_to_answer(t: TestRunner) -> void:
-	var def := EventCatalogue.by_id("door_guard")
+	var def := Shipped.rows().by_id("door_guard")
 	t.check(def != null and def.pursues() and def.ends_the_day() and def.starts_by(PursuitSpec.Start.CHARGES_AT_ONCE),
 			"door_guard is a lethal pursuer that charges at once once the crossing's warning has run")
 	if not def:
@@ -2407,22 +2414,22 @@ func _test_the_guard_leaves_room_to_answer(t: TestRunner) -> void:
 		var her_at := Vector2(1.0, 0.0)
 		var where := "from %s" % guard_at
 		var walked := _guard_rig(def, guard_at, her_at, Vector2.RIGHT, Tuning.WALK_SPEED, 0.0,
-				EventCatalogue.charger_timing().warning())
+				Shipped.rows().charger_timing().warning())
 		t.check(walked["caught"], "%s: walking on along the street is caught (at %.2fs)"
 				% [where, walked["ended_at"]])
 		var stood := _guard_rig(def, guard_at, her_at, Vector2.RIGHT, 0.0, 0.0,
-				EventCatalogue.charger_timing().warning())
+				Shipped.rows().charger_timing().warning())
 		t.check(stood["caught"], "%s: and so is standing there (at %.2fs)" % [where, stood["ended_at"]])
 		for heading: Vector2 in [Vector2.RIGHT, Vector2(1.0, -1.0).normalized(), Vector2.UP]:
 			var ran := _guard_rig(def, guard_at, her_at, heading, Tuning.RUN_SPEED, 0.0,
-					EventCatalogue.charger_timing().warning())
+					Shipped.rows().charger_timing().warning())
 			t.check(not ran["caught"] and ran["gave_up"],
 					"%s: going on at a run toward %s outpaces him and he gives up (%.1fs)"
 					% [where, heading, ran["ended_at"]])
 		lines.append("%s: walking on caught at %.2fs, standing at %.2fs" % [where,
 				walked["ended_at"], stood["ended_at"]])
 	print("[test_checkpoints] door_guard after the %.1fs crossing warning: %s"
-			% [EventCatalogue.charger_timing().warning(), "; ".join(lines)])
+			% [Shipped.rows().charger_timing().warning(), "; ".join(lines)])
 
 ## Walks her from `her_at` along `heading`, walking until `reaction` seconds and at `speed`
 ## (accelerating as she really does) after it, against a `door_guard` set off at `guard_at` once
@@ -2440,7 +2447,7 @@ func _guard_rig(def: EventDef, guard_at: Vector2, her_at: Vector2, heading: Vect
 	var guard_where := WhereSheIs.nowhere()
 	var guard := EventInstance.new()
 	guard.setup(def, guard_at, PackedVector2Array(), Vector2.RIGHT,
-			EventSurroundings.new().hearing(guard_where))
+			EventSurroundings.new().reading(Shipped.rows()).hearing(guard_where))
 	var result := {"caught": false, "gave_up": false, "lethal_in_notice": false, "ended_at": INF}
 	while elapsed < 12.0 + head_start and not guard.is_gone() and not guard.is_on_its_way_out():
 		var wanted := speed if elapsed >= reaction else minf(speed, Tuning.WALK_SPEED)
@@ -2489,7 +2496,7 @@ func _guard_after_her_rig(t: TestRunner) -> Dictionary:
 	stroller.teleport_to(lane - axis * 20.0)
 	await _ticks(t, 1)
 	stroller.global_position = lane + axis * 20.0
-	await _ticks(t, int(ceil(EventCatalogue.charger_timing().warning() / STEP)) + 2)
+	await _ticks(t, int(ceil(Shipped.rows().charger_timing().warning() / STEP)) + 2)
 	var guard := _door_guard_after_her(manager)
 	assert(guard != null, "the crossing's guard is in the world")
 	rig["doors"] = doors
@@ -2560,7 +2567,8 @@ func _test_a_hold_does_not_end_the_roadblock_guard(t: TestRunner) -> void:
 	var doors: Array[EventInstance] = rig["doors"]
 	var far_hut := doors[2]
 
-	var hot := EventCatalogue.heated(EventCatalogue.by_id("roadblock"), EventDef.HEAT_HUNTS_LEVEL)
+	var hot := Shipped.rows().heated(Shipped.rows().by_id("roadblock"),
+			EventDef.HEAT_HUNTS_LEVEL)
 	t.check(hot.pursues() and hot.ends_the_day(), "the heated roadblock hunts like any other pursuer")
 	var axis := far_hut.facing_now()
 	var road_guard := manager.spawn_extra(hot, far_hut.global_position + axis * 200.0)
@@ -2592,7 +2600,7 @@ func _test_a_huts_hold_does_not_end_the_robbers_chase(t: TestRunner) -> void:
 	var hut := doors[0]
 	var axis := hut.facing_now()
 	var her := hut.global_position - axis * 40.0 + Vector2(0.0, 16.0)
-	var robber := manager.spawn_extra(EventCatalogue.by_id("robber_giving_chase"),
+	var robber := manager.spawn_extra(Shipped.rows().by_id("robber_giving_chase"),
 			her - axis * 200.0)
 
 	stroller.global_position = her

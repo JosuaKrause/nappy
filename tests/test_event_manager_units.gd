@@ -341,7 +341,7 @@ func _test_an_area_cleared_of_its_rows_draws_first(t: TestRunner) -> void:
 	var events := _stage.events()
 	var drew := _the_day_drawn_whole()
 	var not_ambient := func(one: _Drew, k: int) -> bool:
-		return not EventCatalogue.by_id(one.ids[k]).is_ambient()
+		return not Shipped.rows().by_id(one.ids[k]).is_ambient()
 	var far_row := _a_far_row(drew, not_ambient, _home())
 	t.check(not far_row.is_empty(), "the day drawn whole holds a row far from her door")
 	if far_row.is_empty():
@@ -376,7 +376,7 @@ func _test_a_swap_changes_no_units_draw(t: TestRunner) -> void:
 	var events := _stage.events()
 	var map := _stage.map()
 	var drew := _the_day_drawn_whole()
-	var def := EventCatalogue.by_id("roadblock").for_day(DAY)
+	var def := Shipped.rows().by_id("roadblock").for_day(DAY)
 	var far := Tuning.EVENT_STREAM_RADIUS + Tuning.EVENT_DRAW_AHEAD * 2.0
 	# The name of a unit a row of which stands in `section`, far from her door: what a swap there
 	# replaces. "" where the section holds none.

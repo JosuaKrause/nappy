@@ -76,7 +76,8 @@ func _manager(t: TestRunner) -> EventManager:
 	# spawned event is added to (`WorldContext.add_entity()`).
 	var holder := WorldContext.new()
 	t.add_child(holder)
-	var manager := EventManager.new(EventSurroundings.new().on(map).drawn_in(holder))
+	var manager := EventManager.new(Shipped.rows(), EventSurroundings.new()
+			.on(map).drawn_in(holder))
 	# The game's bus, which this suite listens on, as whoever stands a manager hands it.
 	manager.use_bus(EventBus)
 	manager.setup(run)
@@ -98,7 +99,7 @@ func _watch() -> EncounterWatch:
 ## An instance of the row `id` standing at `at`, in the tree and never ticking on its own.
 func _instance(t: TestRunner, id: String, at: Vector2) -> EventInstance:
 	var instance := EventInstance.new()
-	instance.setup(EventCatalogue.by_id(id), at)
+	instance.setup(Shipped.rows().by_id(id), at)
 	t.add_child(instance)
 	instance.set_process(false)
 	return instance
@@ -360,7 +361,7 @@ func _test_an_influence_from_off_screen_waits_to_be_seen(t: TestRunner) -> void:
 func _test_a_chase_or_a_catch_is_always_an_influence(t: TestRunner) -> void:
 	_clear()
 	var watch := _watch()
-	var dog := _chasing_dog(t, EventCatalogue.by_id("charging_dog"))
+	var dog := _chasing_dog(t, Shipped.rows().by_id("charging_dog"))
 	_run(watch, [dog] as Array[EventInstance], Vector2.ZERO, 0.5)
 	var landed := dog.source().landed_ever()
 	t.check(dog.is_chasing() and landed < EncounterWatch.ENCOUNTER_INFLUENCE_POINTS,
@@ -397,7 +398,8 @@ func _test_a_chase_or_a_catch_is_always_an_influence(t: TestRunner) -> void:
 	_clear()
 	var manager := _manager(t)
 	manager.set_physics_process(false)
-	var post := manager.spawn_extra(EventCatalogue.by_id("checkpoint_post"), Vector2.ZERO)
+	var post := manager.spawn_extra(Shipped.rows().by_id("checkpoint_post"),
+			Vector2.ZERO)
 	post.set_process(false)
 	var hold_reach := post.detain_distance()
 	_run(watch, [post] as Array[EventInstance], Vector2(0.0, hold_reach + 40.0), 0.5)
@@ -427,9 +429,9 @@ func _test_influenced_follows_the_real_catch_and_hold(t: TestRunner) -> void:
 	map.fill_rect(Rect2i(0, 0, 8, 8), GameEnums.TileType.SIDEWALK)
 	map.set_tile(Vector2i(4, 4), GameEnums.TileType.BUILDING)
 	var guard := EventInstance.new()
-	guard.setup(EventCatalogue.by_id("alley_robbery"), Vector2(122.0, 134.0),
+	guard.setup(Shipped.rows().by_id("alley_robbery"), Vector2(122.0, 134.0),
 			PackedVector2Array(), Vector2.RIGHT,
-			EventSurroundings.new().on(map) \
+			EventSurroundings.new().reading(Shipped.rows()).on(map) \
 				.moving_by(Navigator.new(map)))
 	t.add_child(guard)
 	guard.set_process(false)
@@ -471,9 +473,11 @@ func _test_influenced_follows_the_real_catch_and_hold(t: TestRunner) -> void:
 	_clear()
 	var manager := _manager(t)
 	manager.set_physics_process(false)
-	var mother := manager.spawn_extra(EventCatalogue.by_id("chatting_mother"), Vector2.ZERO)
+	var mother := manager.spawn_extra(Shipped.rows().by_id("chatting_mother"),
+			Vector2.ZERO)
 	mother.set_process(false)
-	var post := manager.spawn_extra(EventCatalogue.by_id("checkpoint_post"), Vector2(0.0, 500.0))
+	var post := manager.spawn_extra(Shipped.rows().by_id("checkpoint_post"),
+			Vector2(0.0, 500.0))
 	post.set_process(false)
 	mother.start_chat()
 	var at_post := Vector2(0.0, 500.0 + post.detain_distance() - 2.0)
@@ -501,12 +505,12 @@ func _test_a_catch_on_the_frame_a_door_releases_her_counts(t: TestRunner) -> voi
 	manager.use_player(stroller)
 	var axis := Vector2.RIGHT
 	var centre := Vector2(4000.0, 4000.0)
-	var hut := manager.spawn_extra(EventCatalogue.by_id("checkpoint_hut"), centre)
+	var hut := manager.spawn_extra(Shipped.rows().by_id("checkpoint_hut"), centre)
 	var entry := centre + axis * 40.0 + Vector2(0.0, 16.0)
 	var clearance := hut.row().obstructs_within() + Tuning.PLAYER_BODY_RADIUS \
 			+ CheckpointController.CHECKPOINT_RELEASE_MARGIN
 	var released := centre - axis * maxf(40.0, clearance) + Vector2(0.0, 16.0)
-	var cyclist := manager.spawn_extra(EventCatalogue.by_id("cyclist"), released)
+	var cyclist := manager.spawn_extra(Shipped.rows().by_id("cyclist"), released)
 	cyclist.set_process(false)
 	cyclist.restore(EventSave.new(cyclist.telegraphs_for() + 0.1, 0.0, 0.0))
 	# Where the test puts it: the manager's tick does not step it off the place the door sets her.
@@ -577,7 +581,7 @@ func _chasing_dog(t: TestRunner, def: EventDef) -> EventInstance:
 	var dog_where := WhereSheIs.nowhere()
 	var dog := EventInstance.new()
 	dog.setup(def, Vector2(200.0, 0.0), PackedVector2Array(), Vector2.RIGHT,
-			EventSurroundings.new().hearing(dog_where))
+			EventSurroundings.new().reading(Shipped.rows()).hearing(dog_where))
 	t.add_child(dog)
 	dog.set_process(false)
 	dog.arrive_from_its_warning()
@@ -645,11 +649,11 @@ func _test_the_manager_reads_the_controls_scheme(t: TestRunner) -> void:
 	var view := _view(Stroller.view_centre_of(stroller))
 	var scale := view.size / ScreenOrientation.DESIGN_SIZE
 	var corner := view.position + TouchCover.joystick().left_corner().get_center() * scale
-	var def := EventCatalogue.by_id("homeless_yeller")
+	var def := Shipped.rows().by_id("homeless_yeller")
 	var yeller := events.spawn_extra(def, her)
 	yeller.global_position = corner - yeller.drawn_box().get_center()
 	var right_corner := view.position + TouchCover.joystick().right_corner().get_center() * scale
-	var cyclist := EventCatalogue.by_id("cyclist")
+	var cyclist := Shipped.rows().by_id("cyclist")
 	# Warned of as a pelican, as the director's rider is (`spawn_warned()` makes the pelican of the
 	# roll its warning made).
 	var pelican := events.spawn_warned(cyclist,
@@ -699,7 +703,8 @@ func _test_the_manager_tells_the_encounter_under_its_day(t: TestRunner) -> void:
 	var her := CrowdLanes.arterial_pavement(city.map())
 	stroller.reset_at(her)
 	events.use_player(stroller)
-	var yeller := events.spawn_extra(EventCatalogue.by_id("homeless_yeller"), her + Vector2(60.0, 0.0))
+	var yeller := events.spawn_extra(Shipped.rows().by_id("homeless_yeller"),
+			her + Vector2(60.0, 0.0))
 
 	stroller.stand_aside()
 	await PhysicsTicks.pass_ticks(t, 30)

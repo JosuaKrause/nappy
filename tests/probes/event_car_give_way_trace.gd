@@ -21,7 +21,7 @@ func run(t: TestRunner) -> void:
 	var defs: Array[EventDef] = []
 	for def in CatalogueRows.every():
 		for level in EventCatalogue.heat_levels():
-			var hot := EventCatalogue.heated(def, level)
+			var hot := Shipped.rows().heated(def, level)
 			if hot.drives() and hot.moves() and not defs.has(hot):
 				defs.append(hot)
 	var cases := 0
@@ -200,7 +200,8 @@ func _drive(t: TestRunner, map: CityMap, def: EventDef, rig: Dictionary) -> Dict
 	var car_where := WhereSheIs.nowhere()
 	var car := EventInstance.new()
 	car.setup(def, route[0], route, (route[1] - route[0]).normalized(),
-			EventSurroundings.new().on(map).hearing(car_where) \
+			EventSurroundings.new().reading(Shipped.rows()).on(map) \
+			.hearing(car_where) \
 				.stopping_at(signals if rig.has("junction") else null))
 	t.add_child(car)
 	car.set_process(false)

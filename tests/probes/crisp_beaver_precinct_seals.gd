@@ -36,7 +36,7 @@ func run(t: TestRunner) -> void:
 	var total_open := 0
 	for seed_value in SEEDS:
 		var map := CityGenerator.generate(seed_value)
-		var tutorial := TutorialRoute.for_city(map)
+		var tutorial := TutorialRoute.for_city(Shipped.rows(), map)
 		var seals := 0
 		var soft := 0
 		var open := 0
@@ -48,8 +48,8 @@ func run(t: TestRunner) -> void:
 			var route: TutorialRoute = tutorial if spec.walks_the_tutorial() else null
 			var rng := RandomNumberGenerator.new()
 			rng.seed = hash("seals:%d:%d" % [map.city_seed(), day])
-			var plans := SealPlanner.plan_day(map, spec, RouteTree.for_day(map, day, route), rng,
-					{}, null, route)
+			var plans := SealPlanner.plan_day(Shipped.rows(), map, spec,
+					RouteTree.for_day(map, day, route), rng, {}, null, route)
 			var footprint := {}
 			for plan in plans:
 				for tile in EventSpawner.footprint_of(BodyStance.of_plan(map, plan)):

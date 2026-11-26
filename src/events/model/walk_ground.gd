@@ -207,10 +207,8 @@ func solids_of(plan: EventPlan) -> Array[Solid]:
 	var found: Array[Solid] = []
 	var row := plan.row()
 	var defs: Array[EventDef] = [row]
-	if row.leaves_behind() != "":
-		var successor := EventCatalogue.by_id(row.leaves_behind())
-		if successor:
-			defs.append(successor)
+	if row.left_behind():
+		defs.append(row.left_behind())
 	for def in defs:
 		if def.moves():
 			continue

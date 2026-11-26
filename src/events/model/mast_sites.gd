@@ -47,8 +47,8 @@ class Site extends RefCounted:
 ## before a site is ever offered, rather than repaired once six have already been chosen
 ## (`docs/DECISIONS.md`, the city and events non-choices: "closures and events are checked before
 ## they are accepted, never repaired afterwards").
-static func compute(map: CityMap) -> Array[Site]:
-	var candidates := _eligible_candidates(map)
+static func compute(rows: EventCatalogue, map: CityMap) -> Array[Site]:
+	var candidates := _eligible_candidates(rows, map)
 	if candidates.is_empty():
 		return []
 	var chosen: Array[Vector2] = []
@@ -91,25 +91,25 @@ static func compute(map: CityMap) -> Array[Site]:
 ## The points a region door could stand at are worked out once for every candidate
 ## (`possible_door_points()`): they are the same for each, and rebuilding them per candidate is
 ## every boundary segment of the city once per candidate.
-static func _eligible_candidates(map: CityMap) -> Array[Vector2]:
+static func _eligible_candidates(rows: EventCatalogue, map: CityMap) -> Array[Vector2]:
 	var found: Array[Vector2] = []
 	var seen := {}
 	var door_points := possible_door_points(map)
 	for at in _junction_sites(map):
-		_consider(found, seen, at, map, door_points)
+		_consider(rows, found, seen, at, map, door_points)
 	for at in _square_sites(map):
-		_consider(found, seen, at, map, door_points)
+		_consider(rows, found, seen, at, map, door_points)
 	for at in _main_road_sites(map):
-		_consider(found, seen, at, map, door_points)
+		_consider(rows, found, seen, at, map, door_points)
 	return found
 
-static func _consider(found: Array[Vector2], seen: Dictionary, at: Vector2, map: CityMap,
-		door_points: PackedVector2Array) -> void:
+static func _consider(rows: EventCatalogue, found: Array[Vector2], seen: Dictionary,
+		at: Vector2, map: CityMap, door_points: PackedVector2Array) -> void:
 	var key := Vector2i(roundi(at.x), roundi(at.y))
 	if seen.has(key):
 		return
 	seen[key] = true
-	if is_eligible(at, map, door_points):
+	if is_eligible(rows, at, map, door_points):
 		found.append(at)
 
 ## A mast's own foot may stand on her own sidewalk or on a square's paving — never a road, a
@@ -200,12 +200,12 @@ static func _main_road_sites(map: CityMap) -> Array[Vector2]:
 ## `door_points` is `possible_door_points(map)` for a caller that asks of many tiles: it is the one
 ## costly part (every boundary segment rebuilt), and it is the same for every tile of a run. Left
 ## empty, it is computed for this one call.
-static func is_eligible(at: Vector2, map: CityMap,
+static func is_eligible(rows: EventCatalogue, at: Vector2, map: CityMap,
 		door_points := PackedVector2Array()) -> bool:
-	if _too_close_to_home(at, map) or _reaches_a_calm_interior(at, map):
+	if _too_close_to_home(at, map) or _reaches_a_calm_interior(rows, at, map):
 		return false
 	var points := door_points if not door_points.is_empty() else possible_door_points(map)
-	return not _reaches_a_possible_door(at, points)
+	return not _reaches_a_possible_door(rows, at, points)
 
 static func _too_close_to_home(at: Vector2, map: CityMap) -> bool:
 	var margin := MAST_HOME_STREET_MARGIN * float(CityMap.period()) * Tuning.TILE_SIZE
@@ -217,8 +217,8 @@ static func _too_close_to_home(at: Vector2, map: CityMap) -> bool:
 ## the block's own pavement edge without counting as reaching its interior. Read off the
 ## `loudspeaker` row's own `outer radius` rather than a second copy of the number, so a balance
 ## pass that moves the field moves this refusal with it.
-static func _reaches_a_calm_interior(at: Vector2, map: CityMap) -> bool:
-	var reach := EventCatalogue.mast().heard_within()
+static func _reaches_a_calm_interior(rows: EventCatalogue, at: Vector2, map: CityMap) -> bool:
+	var reach := rows.mast().heard_within()
 	var seen := {}
 	for block in map.calm_blocks_now():
 		var anchor := map.anchor_of(block)
@@ -246,8 +246,9 @@ static func _reaches_a_calm_interior(at: Vector2, map: CityMap) -> bool:
 ## for that and for anything this misses, exactly as it is for held ground.
 ## *(2026-09-23, CI on PR 292, tests/test_checkpoints.gd: "nothing the day placed reaches inside a
 ## door's 176px gap" — the gap this had never checked at all.)*
-static func _reaches_a_possible_door(at: Vector2, door_points: PackedVector2Array) -> bool:
-	var limit := Tuning.CHECKPOINT_EVENT_GAP + EventCatalogue.mast().field_reach()
+static func _reaches_a_possible_door(rows: EventCatalogue, at: Vector2,
+		door_points: PackedVector2Array) -> bool:
+	var limit := Tuning.CHECKPOINT_EVENT_GAP + rows.mast().field_reach()
 	for position in door_points:
 		if at.distance_to(position) < limit:
 			return true

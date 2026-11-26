@@ -21,7 +21,7 @@ func run(context: DawnContext) -> void:
 	var events := context.events()
 	if day != Tuning.RUN_TAUGHT_DAY or events.has_a_pursuit():
 		return
-	for def in EventCatalogue.available_on(day, context.heat()):
+	for def in context.rows().available_on(day, context.heat()):
 		if not def.pursues() or def.spawn_mode_on(day) != EventDef.SpawnMode.AHEAD_OF_PLAYER:
 			continue
 		events.add(EventPlan.new(def, Vector2.INF))

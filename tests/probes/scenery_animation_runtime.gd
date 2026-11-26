@@ -116,16 +116,17 @@ class SeeingDrawer extends EventDrawer:
 
 	## Overrides EventDrawer.scenery.
 	func scenery(picture: String, extent: Vector2, anchor: Vector2, shadow: String,
-			band: Rect2) -> EventScenery:
-		var built := super(picture, extent, anchor, shadow, band)
+			band: Rect2, mirrored := false) -> EventScenery:
+		var built := super(picture, extent, anchor, shadow, band, mirrored)
 		sceneries.append(built)
 		return built
 
 func _event(id: String, vertical: bool, at: Vector2, factor: float) -> void:
 	var event := EventInstance.new()
 	var drawer := SeeingDrawer.new(_atlas)
-	event.setup(EventCatalogue.by_id(id), at, PackedVector2Array(), Vector2.RIGHT,
-			EventSurroundings.new().on(EastWestStreet.new() if vertical else WorldMap.open_ground()) \
+	event.setup(Shipped.rows().by_id(id), at, PackedVector2Array(), Vector2.RIGHT,
+			EventSurroundings.new().reading(Shipped.rows()) \
+			.on(EastWestStreet.new() if vertical else WorldMap.open_ground()) \
 				.drawn_from(_atlas) \
 				.drawing_through(drawer))
 	event.scale = Vector2.ONE * factor

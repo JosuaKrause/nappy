@@ -28,7 +28,7 @@ func run(t: TestRunner) -> void:
 ## preference puts the count near the mean and fails it.
 func _test_the_mouse_prefers_a_pile(t: TestRunner) -> void:
 	var day := Tuning.RUN_LENGTH_DAYS
-	var mouse := EventCatalogue.by_id("alley_mouse")
+	var mouse := Shipped.rows().by_id("alley_mouse")
 	var mice := 0
 	var near := 0
 	var expected := 0.0

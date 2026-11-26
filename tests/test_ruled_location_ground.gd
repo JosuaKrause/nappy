@@ -90,7 +90,7 @@ static func _tile_of(plan: EventPlan) -> Vector2i:
 	return Vector2i(plan.placed_at() / Tuning.TILE_SIZE)
 
 func _test_the_first_allowed_tile_or_the_roomiest(t: TestRunner) -> void:
-	var cafe := EventCatalogue.by_id("cafe_tables")
+	var cafe := Shipped.rows().by_id("cafe_tables")
 	var refused := Vector2i(20, 14)
 	var cramped := Vector2i(21, 14)
 	var crampeder := Vector2i(22, 14)
@@ -122,7 +122,7 @@ func _test_the_first_allowed_tile_or_the_roomiest(t: TestRunner) -> void:
 			"either way, a location every tile of which a rule refuses takes nothing")
 
 func _test_a_route_is_built_inside_its_run(t: TestRunner) -> void:
-	var walker := EventCatalogue.by_id("dog_walker")
+	var walker := Shipped.rows().by_id("dog_walker")
 	var only := Vector2i(21, 14)
 	var rules := _Rules.new()
 	rules.rooms = {only: ROOMY}
@@ -159,7 +159,7 @@ func _test_a_locations_weight_is_its_grounds_alone(t: TestRunner) -> void:
 ## location's own ground alone and the gap's weight is skipped; asked of a null corridor it was a
 ## call on nothing.
 func _test_a_costly_wall_is_weighed_with_no_corridor(t: TestRunner) -> void:
-	var truck := EventCatalogue.by_id("military_convoy")
+	var truck := Shipped.rows().by_id("military_convoy")
 	var day := DaySpec.CITY_DAY
 	t.check(EventScheduler.role_for(truck, day) == GameEnums.BlockerRole.WALL and not truck.ends_the_day(),
 			"the army truck is a wall that does not end the day on the escape's day")
@@ -177,7 +177,7 @@ func _test_a_costly_wall_is_weighed_with_no_corridor(t: TestRunner) -> void:
 ## lays): the first the rules leave valid answers whatever the rooms of the ones after it, no tile
 ## after it is tried, none is shuffled, and tiles every rule refuses answer null.
 func _test_tiles_brought_are_asked_in_the_order_handed(t: TestRunner) -> void:
-	var cafe := EventCatalogue.by_id("cafe_tables")
+	var cafe := Shipped.rows().by_id("cafe_tables")
 	var refused := Vector2i(20, 14)
 	var cramped := Vector2i(21, 14)
 	var roomy := Vector2i(22, 14)

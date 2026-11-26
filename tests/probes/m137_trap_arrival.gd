@@ -39,7 +39,7 @@ func run(t: TestRunner) -> void:
 ## `day`'s mark touched at `mark_step_index`, the same way the matching `_director_on_..._perform()`
 ## test helper reaches the perform step, then `SEEDS_TO_SWEEP` cities swept for `row_id`'s own draw.
 func _measure(t: TestRunner, row_id: String, day: int, mark_step_index: int) -> void:
-	var def := EventCatalogue.by_id(row_id)
+	var def := Shipped.rows().by_id(row_id)
 	if not def:
 		print("| %s | — | row not found |  |  |  |" % row_id)
 		return
@@ -55,8 +55,8 @@ func _measure(t: TestRunner, row_id: String, day: int, mark_step_index: int) -> 
 		var director := ResistanceDirector.new()
 		t.add_child(director)
 		director.set_process(false)
-		director.setup(city.map(), run, RunCity.events(city), city.streets(), city.fronts(),
-				city, null, RunCity.spawn_siting(city))
+		director.setup(Shipped.rows(), city.map(), run, RunCity.events(city),
+				city.streets(), city.fronts(), city, null, RunCity.spawn_siting(city))
 		var rng := RandomNumberGenerator.new()
 		rng.seed = hash("%d:%d:%s" % [seed_value, day, "resistance"])
 		director.start_day(day, rng, 300.0)

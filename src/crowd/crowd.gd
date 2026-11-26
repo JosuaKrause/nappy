@@ -290,9 +290,11 @@ func set_gates(gates: Array[GateState]) -> void:
 ## ahead of her (`Tuning.PLAYER_BODY_RADIUS` + `Stroller.PRAM_BODY_RADIUS`, the reach
 ## `PosterWalls.PRESS_REACH` is built from too). Stated over the pram rather than over her alone, so
 ## an arm cannot come down on the pram she is pushing under it either.
-static func _under_the_boom_within() -> float:
-	return EventCatalogue.by_id("checkpoint_gate").solid_reach() \
-			+ Tuning.PLAYER_BODY_RADIUS + Stroller.PRAM_BODY_RADIUS
+## Worked out once, from the catalogue `setup()` is handed.
+var _under_the_boom := 0.0
+
+func _under_the_boom_within() -> float:
+	return _under_the_boom
 
 ## Whether she is standing under this gate's arm, so it must not come down on her. `false` before
 ## the first frame has found her, or in a rig with no player — nobody to lower it onto.
@@ -305,9 +307,12 @@ func _is_she_under(gate: GateState) -> bool:
 ## push moves a walker by — the city's own (`City.navigator()`), or one over the map
 ## (`Navigator.new(map)`) for a rig that hands none. The simulation's builder stands a city's
 ## crowd and hands it the city's own (`SimulationBuilder`); a test hands a bare `WorldContext` and a
-## map of its own.
-func setup(world: WorldContext, map: CityMap, signals: TrafficSignals, streets: DayStreets,
-		navigator: Navigator = null) -> void:
+## map of its own. `rows` is the run's catalogue, which a boom's reach is read off
+## (`_under_the_boom_within()`).
+func setup(rows: EventCatalogue, world: WorldContext, map: CityMap, signals: TrafficSignals,
+		streets: DayStreets, navigator: Navigator = null) -> void:
+	_under_the_boom = rows.by_id("checkpoint_gate").solid_reach() \
+			+ Tuning.PLAYER_BODY_RADIUS + Stroller.PRAM_BODY_RADIUS
 	_world = world
 	_map = map
 	_navigator = navigator if navigator else Navigator.new(map)

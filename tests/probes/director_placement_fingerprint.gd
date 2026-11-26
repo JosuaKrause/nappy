@@ -88,8 +88,8 @@ func _a_day(t: TestRunner, city: City, run: RunState, seed_value: int, day: int)
 	director.set_process(false)
 	_lines.clear()
 	director.use_trace(RecordingTrace.new(_lines))
-	director.setup(city.map(), run, RunCity.events(city), city.streets(), city.fronts(), city,
-			null, RunCity.spawn_siting(city))
+	director.setup(Shipped.rows(), city.map(), run, RunCity.events(city),
+			city.streets(), city.fronts(), city, null, RunCity.spawn_siting(city))
 	director.use_player(player)
 	director.set_sight(RunCity.events(city).visible_view())
 	director.start_day(day, _rng(seed_value, day, "resistance"), 300.0)
@@ -295,11 +295,11 @@ func _the_events_ahead(city: City, player: Stroller, label: String) -> int:
 	var printed := 0
 	var view := RunCity.events(city).visible_view()
 	var map := city.map()
-	var cyclist := EventCatalogue.by_id("cyclist")
-	var dog := EventCatalogue.by_id("loose_dog")
-	var charger := EventCatalogue.by_id("charging_dog")
-	var engine := EventCatalogue.by_id("fire_truck")
-	var column := EventCatalogue.by_id("military_convoy")
+	var cyclist := Shipped.rows().by_id("cyclist")
+	var dog := Shipped.rows().by_id("loose_dog")
+	var charger := Shipped.rows().by_id("charging_dog")
+	var engine := Shipped.rows().by_id("fire_truck")
+	var column := Shipped.rows().by_id("military_convoy")
 	var headings: Array[Vector2] = [Vector2.UP, Vector2.DOWN, Vector2.LEFT, Vector2.RIGHT]
 	for her in _spots(city):
 		_stand(city, player, her)
@@ -328,7 +328,7 @@ func _the_events_ahead(city: City, player: Stroller, label: String) -> int:
 							map.size_in_tiles().y * Tuning.TILE_SIZE - 16.0, view))])
 			printed += 1
 		# The men a hunting van owes get out beside it.
-		var hot := EventCatalogue.heated(EventCatalogue.by_id("abduction"),
+		var hot := Shipped.rows().heated(Shipped.rows().by_id("abduction"),
 				Tuning.RESISTANCE_GOAL)
 		var van := RunCity.events(city).spawn_extra(hot, her + Vector2(hot.notice_within() - 10.0, 0.0))
 		RunCity.events(city).world.where_she_is().tell(her)
@@ -383,7 +383,8 @@ func _print(line: String) -> void:
 ## The task's guard as the street has him: the live `task_guard` among `city`'s instances, or null.
 static func _task_guard(city: City) -> EventInstance:
 	for instance in RunCity.events(city).instances():
-		if instance.row_id() == EventCatalogue.task_guard().id() and not instance.is_gone():
+		if instance.row_id() == Shipped.rows().task_guard() \
+				.id() and not instance.is_gone():
 			return instance
 	return null
 

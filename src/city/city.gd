@@ -169,6 +169,10 @@ var _streets := DayStreets.new()
 ## Day 1's tutorial route, worked out once for the run's city in the composition root and handed in
 ## before `build()` (`use_tutorial_route()`), or null for a city handed none.
 var _tutorial: TutorialRoute = null
+## The run's catalogue (`EventCatalogue`), handed to `build()`: the rows the region wall's doors
+## and the day's closures are planned with (`RegionPlanner.plan_day()`,
+## `ClosurePlanner.plan_day()`).
+var _rows: EventCatalogue = null
 ## Where the city and the day's closures write their own account for the run log — handed in by
 ## `equip()` before `build()`, which hands it on to the fronts; silent until then.
 var _trace := RunTrace.new()
@@ -349,12 +353,14 @@ func draw_scenery_through(drawer: SceneryDrawer) -> void:
 	_scenery_drawer = drawer
 
 ## Everything that is fixed for the whole run. What a block *is* changes day to day, and
-## that lives in `start_day()`.
-func build(city_map: CityMap) -> void:
+## that lives in `start_day()`. `rows` is the run's catalogue, which every dawn plans the region
+## wall and the closures with.
+func build(rows: EventCatalogue, city_map: CityMap) -> void:
 	if _run == null:
 		push_error("City.build(): the run must be handed in first")
 		return
 	assert(_atlas != null, "City.build(): equip() must hand the city its library first")
+	_rows = rows
 	_map = city_map
 	_navigator = Navigator.new(_map)
 	scenery = SceneryResidency.new()
@@ -1148,7 +1154,7 @@ func start_recipe_day(state: CityState, day: int, _rng: RandomNumberGenerator,
 	var edges := _map.witness_only()
 	var walk := _tutorial_for(spec)
 	var tree := RouteTree.for_day(_map, day, walk)
-	var plan := RegionPlanner.plan_day(_map, spec, tree)
+	var plan := RegionPlanner.plan_day(_rows, _map, spec, tree)
 	_map.restore_edges(edges)
 	var closures: Array[RoadClosure] = _map.recipe_road_closures().duplicate()
 	_streets.begin_day(tree, plan, closures, walk, _walk_left_open_for(spec))
@@ -1190,12 +1196,13 @@ func _close_streets(spec: DaySpec, rng: RandomNumberGenerator) -> void:
 	tint_the_route(tree)
 	# Before the closures too: a closure may not land on a region boundary (wall or door), which
 	# `ClosurePlanner.plan_day` needs handed to it rather than recomputing — see its own doc.
-	var plan := RegionPlanner.plan_day(_map, spec, tree)
+	var plan := RegionPlanner.plan_day(_rows, _map, spec, tree)
 	_trace.note("plan", "regions: %d boundary, %d wall, %d door, calm by region: %s"
 			% [plan.wall_segments().size() + plan.door_segments().size(), plan.wall_segments().size(),
 			plan.door_segments().size(), RegionPlanner.regions_with_calm(_map)])
 	var left_open := _walk_left_open_for(spec)
-	var closures := ClosurePlanner.plan_day(_map, spec, rng, tree, plan, _trace, left_open)
+	var closures := ClosurePlanner.plan_day(_rows, _map, spec, rng, tree, plan, _trace,
+			left_open)
 	_streets.begin_day(tree, plan, closures, walk, left_open)
 	_map.close_streets(closures)
 	for closure in closures:

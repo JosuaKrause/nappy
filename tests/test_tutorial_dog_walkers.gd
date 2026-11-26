@@ -45,4 +45,4 @@ func run(t: TestRunner) -> void:
 ## **How near a dog walker comes for her to have met it**: inside its field
 ## (`EventDef.field_reach()`), where passing it is a decision rather than scenery across the street.
 static func within_its_reach() -> float:
-	return EventCatalogue.by_id(Rig.ROW).field_reach()
+	return Shipped.rows().by_id(Rig.ROW).field_reach()

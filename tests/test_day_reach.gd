@@ -28,7 +28,7 @@ func _street() -> CityMap:
 
 ## `id` standing across the sidewalk at tile column `x`.
 func _across(map: CityMap, x: int, id := "barricade") -> EventPlan:
-	return EventPlan.new(EventCatalogue.by_id(id),
+	return EventPlan.new(Shipped.rows().by_id(id),
 			map.tile_to_world(Vector2i(x, 5)) + Vector2(0, Tuning.TILE_SIZE * 0.5))
 
 func _test_a_body_across_the_street_shuts_the_way(t: TestRunner) -> void:
@@ -52,7 +52,7 @@ func _test_a_door_body_shuts_nothing(t: TestRunner) -> void:
 
 func _test_a_plan_not_placed_shuts_nothing(t: TestRunner) -> void:
 	var map := _street()
-	var unplaced := EventPlan.new(EventCatalogue.by_id("barricade"), Vector2.INF)
+	var unplaced := EventPlan.new(Shipped.rows().by_id("barricade"), Vector2.INF)
 	t.check(DayReach.of(map, [unplaced] as Array[EventPlan]).reaches(BEYOND),
 			"a row the day budgeted but has not sited stands nowhere")
 
@@ -102,7 +102,7 @@ func _test_a_body_drawn_later_shuts_the_way_once_told(t: TestRunner) -> void:
 	var map := _street()
 	var reach := DayReach.of(map, [] as Array[EventPlan])
 	t.check(reach.reaches(BEYOND), "with nothing standing, the far end of the street is reached")
-	reach.shut_more([EventPlan.new(EventCatalogue.by_id("barricade"), Vector2.INF)]
+	reach.shut_more([EventPlan.new(Shipped.rows().by_id("barricade"), Vector2.INF)]
 			as Array[EventPlan])
 	t.check(reach.reaches(BEYOND), "a drawn row with no place shuts nothing")
 	reach.shut_more([_across(map, ACROSS)] as Array[EventPlan])

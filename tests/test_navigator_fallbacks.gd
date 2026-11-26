@@ -25,7 +25,7 @@ func _test_a_crowd_handed_no_navigator_pushes_a_walker_aside(t: TestRunner) -> v
 	crowd.name = "Crowd"
 	world.add_child(crowd)
 	# The rig's shape: the crowd is handed its world, map, lights and streets and no navigator.
-	crowd.setup(world, map, TrafficSignals.new(map), DayStreets.new())
+	crowd.setup(Shipped.rows(), world, map, TrafficSignals.new(map), DayStreets.new())
 	var her_tile := _open_sidewalk(map)
 	t.check(her_tile != Vector2i(-1, -1), "the map has open sidewalk to stand her on")
 	if her_tile == Vector2i(-1, -1):

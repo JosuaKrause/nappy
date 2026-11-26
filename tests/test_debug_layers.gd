@@ -181,13 +181,13 @@ func _test_the_escapes_second_world_hands_the_event_routes_its_events(t: TestRun
 	var rig := Rig.new(t, _config([], true))
 	var route_a := PackedVector2Array([Vector2.ZERO, Vector2(50.0, 0.0)])
 	var route_b := PackedVector2Array([Vector2(10.0, 10.0), Vector2(10.0, 90.0)])
-	var building := StandInEvents.new()
+	var building := StandInEvents.new(Shipped.rows(), EventSurroundings.new())
 	var instance_a := EventInstance.new()
-	instance_a.setup(EventCatalogue.by_id("police_patrol"), route_a[0], route_a)
+	instance_a.setup(Shipped.rows().by_id("police_patrol"), route_a[0], route_a)
 	building.live = [instance_a]
-	var city := StandInEvents.new()
+	var city := StandInEvents.new(Shipped.rows(), EventSurroundings.new())
 	var instance_b := EventInstance.new()
-	instance_b.setup(EventCatalogue.by_id("police_patrol"), route_b[0], route_b)
+	instance_b.setup(Shipped.rows().by_id("police_patrol"), route_b[0], route_b)
 	city.live = [instance_b]
 	var event_routes := rig.readout.get_node("EventRouteLines") as EventRouteLines
 	rig.readout.show_the_world(building, null, rig.world, Callable(), null, null)
@@ -492,7 +492,7 @@ func _rect_tiles(rect: Rect2i) -> Array[Vector2i]:
 func _musician(def: EventDef, at: Vector2, map: CityMap) -> EventInstance:
 	var instance := EventInstance.new()
 	instance.setup(def, at, PackedVector2Array(), Vector2.RIGHT,
-			EventSurroundings.new().on(map))
+			EventSurroundings.new().reading(Shipped.rows()).on(map))
 	instance.restore(EventSave.aged(def.telegraphs_for() + 1.0))
 	return instance
 
@@ -502,7 +502,7 @@ func _musician(def: EventDef, at: Vector2, map: CityMap) -> EventInstance:
 ## the outline is still drawn, each cut ends within a pixel of where that answer turns, and on open
 ## ground the same outline is the whole closed loop.
 func _test_the_fields_layer_is_cut_where_a_wall_stops_the_field(t: TestRunner) -> void:
-	var def := EventCatalogue.by_id("busker")
+	var def := Shipped.rows().by_id("busker")
 	# A map wide enough that the outline stays on it: ground off the map counts as building.
 	var at := Vector2(304.0, 384.0)
 	var behind := _musician(def, at, _map_with(_rect_tiles(Rect2i(11, 0, 2, 24)), 24, 24))
@@ -719,7 +719,7 @@ class _Source extends FakeEventManager:
 ## an outline is unchanged; a musician moved a tile closer to the building between two frames has an
 ## outline the building cuts differently, and the second frame draws that cut, not the first.
 func _test_the_fields_layer_cuts_a_moved_source_again(t: TestRunner) -> void:
-	var def := EventCatalogue.by_id("busker")
+	var def := Shipped.rows().by_id("busker")
 	var map := _map_with(_rect_tiles(Rect2i(11, 0, 2, 24)), 24, 24)
 	var musician := _musician(def, Vector2(272.0, 384.0), map)
 	var source := _Source.new()
@@ -775,7 +775,7 @@ class _Emitter extends EventInstance:
 func _test_the_fields_layer_never_culls_an_outline_on_screen(t: TestRunner) -> void:
 	var rng := RandomNumberGenerator.new()
 	rng.seed = 6420
-	var busker := EventCatalogue.by_id("busker")
+	var busker := Shipped.rows().by_id("busker")
 	var source := _Source.new()
 	var layers := DebugLayers.new()
 	layers.setup(source, null, null, Callable(), null)

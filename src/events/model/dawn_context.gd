@@ -39,6 +39,7 @@ var _doors := PackedVector2Array()
 var _standing: Array[EventPlan] = []
 var _mast_sites: Array[MastSites.Site] = []
 var _trace: RunTrace = null
+var _rows: EventCatalogue
 var _roadblock_row: EventDef = null
 ## The lesson streets of day 1's walk on the day that leaves it open, else none.
 var _walk_left_open: Array[StreetNetwork.Segment] = []
@@ -60,9 +61,11 @@ var _unit_draw: UnitDraw = null
 ## `seed_value` is the day's seed, `builder` builds every plan the dawn sites at a tile, and
 ## `ground_of` makes the walk's ground for a row from the map, the walk's corridor and the spec's
 ## home-street rule (the game's is `EventScheduler.row_ground`, whose weights and whose reading of
-## a wall are the scheduler's own, so this file names neither).
-func _init(spec: DaySpec, seed_value: int, map: CityMap, walk: RouteSource, calm: CalmAreas,
-		builder: PlanBuilder, ground_of: Callable) -> void:
+## a wall are the scheduler's own, so this file names neither). `rows` is the run's catalogue,
+## the one every row the dawn stands is read from (`rows()`).
+func _init(rows: EventCatalogue, spec: DaySpec, seed_value: int, map: CityMap,
+		walk: RouteSource, calm: CalmAreas, builder: PlanBuilder, ground_of: Callable) -> void:
+	_rows = rows
 	_spec = spec
 	_seed = seed_value
 	_map = map
@@ -195,7 +198,12 @@ func catalogue_rows(kind: GameEnums.EventKind) -> Array[EventDef]:
 	if not _spec.walk_bag().is_empty():
 		var none: Array[EventDef] = []
 		return none
-	return EventCatalogue.of_kind(kind, day(), _heat)
+	return _rows.of_kind(kind, day(), _heat)
+
+## **The run's catalogue**, the one every row the dawn stands is read from: what a phase asks
+## for a row by id, the mast, a heated row.
+func rows() -> EventCatalogue:
+	return _rows
 
 ## The permanent marks earlier days left (`DawnScars`, `DawnMasts`).
 func scars() -> Array[Dictionary]:

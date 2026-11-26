@@ -138,7 +138,7 @@ func _test_a_hard_seal_shuts_its_street_to_the_crowd(t: TestRunner) -> void:
 	_city.map().clear_day_holds()
 	_city.map().clear_day_obstructions()
 	_city.map().hold_segment(segment.key(), HeldStreets.Why.SEAL)
-	var def := SealPlanner.sealed_variant(EventCatalogue.by_id("fallen_tree"), true)
+	var def := SealPlanner.sealed_variant(Shipped.rows().by_id("fallen_tree"), true)
 	var body_tiles := {}
 	var owner := 1
 	for at_body: Vector2 in _across(segment, def):
@@ -359,7 +359,7 @@ func _test_a_walker_turns_into_a_street_sealed_further_along(t: TestRunner) -> v
 	_city.map().clear_day_holds()
 	_city.map().clear_day_obstructions()
 	_city.map().hold_segment(arm.key(), HeldStreets.Why.SEAL)
-	var def := SealPlanner.sealed_variant(EventCatalogue.by_id("fallen_tree"), true)
+	var def := SealPlanner.sealed_variant(Shipped.rows().by_id("fallen_tree"), true)
 	var owner := 1
 	for at_body: Vector2 in _across(arm, def):
 		_city.map().obstruct_tiles(owner, EventSpawner.footprint_of(
@@ -1147,7 +1147,8 @@ func _test_a_soft_seal_shuts_both_pavements_to_walkers_only(t: TestRunner) -> vo
 	var tree := RouteTree.for_day(_city.map(), day, null)
 	var seal_rng := RandomNumberGenerator.new()
 	seal_rng.seed = hash("crowd-soft-seal:%d:%d" % [SEED, day])
-	SealPlanner.plan_day(_city.map(), DaySpec.for_day(day), tree, seal_rng)
+	SealPlanner.plan_day(Shipped.rows(), _city.map(), DaySpec.for_day(day), tree,
+			seal_rng)
 	t.check(not _city.map().soft_sealed_tiles().is_empty(),
 			"today's tree leaves at least one street soft-sealed (%d tiles)"
 			% _city.map().soft_sealed_tiles().size())

@@ -366,7 +366,7 @@ func _test_a_car_is_louder_and_carries_further_than_a_person(t: TestRunner) -> v
 			"a car is heard from further away than a person")
 	t.check(Tuning.CAR_SPEED.x > Tuning.WALK_SPEED,
 			"even the slowest car outpaces a walk, so a road cannot be strolled alongside")
-	t.check(Tuning.CAR_SPEED.y <= EventCatalogue.by_id("fire_truck").speed(),
+	t.check(Tuning.CAR_SPEED.y <= Shipped.rows().by_id("fire_truck").speed(),
 			"an emergency vehicle is still the fastest thing on the road")
 
 ## Finding 4, and the reason the crowd exists at all: a day must not be winnable by walking any
@@ -1729,7 +1729,7 @@ func _check_a_walker_finds_a_hut_across_a_bucket_edge(t: TestRunner, lane: Dicti
 	var edge: float = lane["edge"]
 	var side := "just below the edge" if lane["centre"] < edge else "just above the edge"
 	var along := 8.0 * Tuning.TILE_SIZE
-	var hut_def := EventCatalogue.by_id("checkpoint_hut")
+	var hut_def := Shipped.rows().by_id("checkpoint_hut")
 	var below := EventPlan.new(hut_def, Vector2(edge - 16.0, along + 50.0))
 	var above := EventPlan.new(hut_def, Vector2(edge + 16.0, along + 50.0))
 	var own := below if lane["centre"] < edge else above

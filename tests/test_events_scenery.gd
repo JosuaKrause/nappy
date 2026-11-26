@@ -19,7 +19,7 @@ func run(t: TestRunner) -> void:
 func _instance(t: TestRunner, def: EventDef, at := Vector2.ZERO,
 		path := PackedVector2Array(), where: WhereSheIs = null) -> EventInstance:
 	var instance := EventInstance.new()
-	var surroundings := EventSurroundings.new()
+	var surroundings := EventSurroundings.new().reading(Shipped.rows())
 	if where != null:
 		surroundings.hearing(where)
 	instance.setup(def, at, path, Vector2.RIGHT, surroundings)
@@ -94,7 +94,7 @@ func _widest_gap_between_birds(instance: EventInstance) -> float:
 ## - **The middle costs and the rim does not**, which is the whole reason a flock is worth eleven
 ##   sources: the price of one depends on whether you went through it or round it.
 func _test_a_flock_is_birds_rather_than_one_bird_drawn_often(t: TestRunner) -> void:
-	var def := EventCatalogue.by_id("pigeon_flock")
+	var def := Shipped.rows().by_id("pigeon_flock")
 	t.check(def.flock().spread() < def.heard_within(),
 			"and the room it takes up comes out of the field it emits over, not on top of it")
 	var instance_where := WhereSheIs.nowhere()
@@ -154,7 +154,7 @@ func _test_a_flock_is_birds_rather_than_one_bird_drawn_often(t: TestRunner) -> v
 ## she is (`WhereSheIs.tell()`) every tick, which is the one thing the pass rig behind
 ## `docs/COSTS.md` never does and the reason that table dashes this row.
 func _test_a_flock_goes_up_when_she_reaches_the_birds(t: TestRunner) -> void:
-	var def := EventCatalogue.by_id("pigeon_flock")
+	var def := Shipped.rows().by_id("pigeon_flock")
 	var touch := def.flock().spread() + Tuning.PLAYER_BODY_RADIUS
 	t.check(touch < def.notice_within(),
 			"she is inside the trigger (%.0fpx) well before she is among the birds (%.0fpx)"
@@ -190,9 +190,9 @@ func _test_a_flock_goes_up_when_she_reaches_the_birds(t: TestRunner) -> void:
 ## bound: *"not following the procedure should be costly"* — the procedure being to wait the birds
 ## out, which is free — so what walking into them costs is the player's to set by feel.
 func _test_a_flock_walked_through_stays_in_relation_to_what_else_she_meets(t: TestRunner) -> void:
-	var def := EventCatalogue.by_id("pigeon_flock")
+	var def := Shipped.rows().by_id("pigeon_flock")
 	var through := _flock_walked_through(t, def, 0.0)
-	var dog := M174Pass.pass_net_averaged(EventCatalogue.by_id("loose_dog"), 0.0,
+	var dog := M174Pass.pass_net_averaged(Shipped.rows().by_id("loose_dog"), 0.0,
 			Tuning.EXCITEMENT_DECAY_WALKING, 1.0)
 	t.check(through > dog,
 			"walking through a flock costs %.1f, above the %.1f a loose dog's pass costs"
@@ -212,7 +212,7 @@ func _test_mobile_follows_its_path(t: TestRunner) -> void:
 	# `military_convoy` rather than the fire engine: this is about the generic path-following
 	# mechanic, not about fire. At its path's end the truck is done with it (`_be_done()`): it
 	# drives on out of sight, leaving, with nothing left to do on the path.
-	var def := EventCatalogue.by_id("military_convoy")
+	var def := Shipped.rows().by_id("military_convoy")
 	var path := PackedVector2Array([Vector2(0.0, 0.0), Vector2(300.0, 0.0)])
 	var instance := _instance(t, def, Vector2.ZERO, path)
 	t.check(instance.position == Vector2.ZERO, "a mobile event starts at its first waypoint")
@@ -235,7 +235,7 @@ func _test_mobile_follows_its_path(t: TestRunner) -> void:
 ## wide, so at 240px/s it finished the whole crossing inside its own 1.6s telegraph — it never
 ## reached full intensity, and the running sprite never drew once in six milestones.
 func _test_a_crouching_event_holds_still_until_it_bolts(t: TestRunner) -> void:
-	var def := EventCatalogue.by_id("cat_dash")
+	var def := Shipped.rows().by_id("cat_dash")
 	var path := PackedVector2Array([Vector2(0.0, 0.0), Vector2(400.0, 0.0)])
 	var instance := _instance(t, def, Vector2.ZERO, path)
 

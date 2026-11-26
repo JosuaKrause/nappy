@@ -103,7 +103,7 @@ class _Ground extends SitedGround:
 	var asked: Array[Vector2i] = []
 
 	func _init() -> void:
-		super(null, null, {})
+		super(Shipped.rows(), null, null, {})
 
 	## Overrides SitedGround.takes.
 	func takes(_def: EventDef, tile: Vector2i) -> bool:
@@ -164,7 +164,7 @@ static func _her() -> Vector2:
 	return Vector2(HER) * float(Tuning.TILE_SIZE) + Vector2.ONE * (Tuning.TILE_SIZE * 0.5)
 
 static func _unplaced(id: String) -> EventPlan:
-	return EventPlan.new(EventCatalogue.by_id(id), Vector2.INF)
+	return EventPlan.new(Shipped.rows().by_id(id), Vector2.INF)
 
 ## The locations a judge was asked about, in order.
 static func _asked(judge: _Judge) -> Array[Location]:
@@ -208,7 +208,7 @@ func _test_a_taken_or_unavailable_location_is_never_offered_nor_a_tile_the_tree_
 	var unavailable := _location(60, ROW_Y, false)
 	var uncarried := _location(70, ROW_Y)
 	var free := _location(80, ROW_Y)
-	taken.take(EventPlan.new(EventCatalogue.by_id("cafe_tables"), taken.centre()))
+	taken.take(EventPlan.new(Shipped.rows().by_id("cafe_tables"), taken.centre()))
 	rig.tree = _tree_without(rig, uncarried.tiles())
 	rig.siting = WalkSiting.new(rig.map, rig.tree, rig.walk, rig.locations,
 			rig.judge, rig.ground)
@@ -323,7 +323,7 @@ func _test_a_placed_beat_keeps_its_location_until_another_takes_it(t: TestRunner
 	var l60 := _location(60, ROW_Y)
 	rig.locations.table = [l50, l60] as Array[Location]
 	var fire := _unplaced("burning_building")
-	var other := EventPlan.new(EventCatalogue.by_id("cafe_tables"), Vector2(500, 500))
+	var other := EventPlan.new(Shipped.rows().by_id("cafe_tables"), Vector2(500, 500))
 	rig.walk.set_plans([fire, other] as Array[EventPlan])
 	rig.judge.refuses = [l50] as Array[Location]
 	rig.siting.begin_look(_her(), Vector2.RIGHT)
@@ -399,10 +399,10 @@ func _test_among_offered_tiles_the_first_free_location_in_the_order_offered_take
 	var l70 := _location(70, ROW_Y)
 	var l80 := _location(80, ROW_Y)
 	rig.locations.table = [l50, l60, l70, l80] as Array[Location]
-	l70.take(EventPlan.new(EventCatalogue.by_id("cafe_tables"), l70.centre()))
+	l70.take(EventPlan.new(Shipped.rows().by_id("cafe_tables"), l70.centre()))
 	var offered: Array[Vector2i] = [Vector2i(70, 10), Vector2i(81, 10), Vector2i(61, 10), Vector2i(82, 10)]
 	rig.judge.refuses = [l80] as Array[Location]
-	var mast := EventPlan.new(EventCatalogue.mast(), Vector2.INF)
+	var mast := EventPlan.new(Shipped.rows().mast(), Vector2.INF)
 	var laid := rig.siting.lay_among(mast, offered)
 	t.check(laid and _asked(rig.judge) == ([l80, l60] as Array[Location]) and l60.is_taken(),
 			"the first free location in the order offered that the judge answers for takes it, a taken one "
@@ -448,8 +448,8 @@ func _test_at_dusk_off_her_path_first_then_merely_away_and_no_location_is_taken(
 func _test_a_crew_faces_the_wall(t: TestRunner) -> void:
 	var rig := _rig(24, 50)
 	rig.locations.table = [_location(50, ROW_Y)] as Array[Location]
-	var crew := _SpyPlan.new(EventCatalogue.by_id("poster_crew"), Vector2.INF)
-	var fire := _SpyPlan.new(EventCatalogue.by_id("burning_building"), Vector2.INF)
+	var crew := _SpyPlan.new(Shipped.rows().by_id("poster_crew"), Vector2.INF)
+	var fire := _SpyPlan.new(Shipped.rows().by_id("burning_building"), Vector2.INF)
 	rig.siting.begin_look(_her(), Vector2.RIGHT)
 	rig.siting.lay_ahead(crew)
 	rig.locations.table = [_location(60, ROW_Y)] as Array[Location]
@@ -465,7 +465,7 @@ func _test_laying_a_mast_asks_the_ground_only_of_tiles_on_her_way(t: TestRunner)
 	rig.locations.table = [_location(50, ROW_Y), _location(56, ROW_Y)] as Array[Location]
 	for x in range(100, 400):
 		rig.ground.set_of_tiles[Vector2i(x, 20)] = 1
-	var mast := EventPlan.new(EventCatalogue.mast(), Vector2.INF)
+	var mast := EventPlan.new(Shipped.rows().mast(), Vector2.INF)
 	rig.siting.begin_look(_her(), Vector2.RIGHT)
 	var laid := rig.siting.lay_ahead(mast)
 	rig.siting.end_look()

@@ -28,7 +28,7 @@ func run(t: TestRunner) -> void:
 	for seed_value in SEEDS:
 		var city := _start(t, seed_value)
 		var map := city.map()
-		var barricade := EventCatalogue.by_id("barricade")
+		var barricade := Shipped.rows().by_id("barricade")
 		for going: float in [1.0, -1.0]:
 			if map.main_road_corridor() < 0:
 				break
@@ -41,7 +41,7 @@ func run(t: TestRunner) -> void:
 				var at := Vector2(lane_x, map.tile_to_world(tile).y)
 				_count(beats["barricade"], _gap(map, barricade, at, Vector2(0, going)))
 				asked += 1
-		var roadblock := EventCatalogue.by_id("roadblock")
+		var roadblock := Shipped.rows().by_id("roadblock")
 		var ground := EventScheduler.row_ground(map).tiles_for(roadblock)
 		for i in range(0, ground.size(), 7):
 			_count(beats["roadblock"],

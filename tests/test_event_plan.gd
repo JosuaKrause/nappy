@@ -21,7 +21,8 @@ func run(t: TestRunner) -> void:
 
 ## A body of the row `id` as the region planner stands it, at `at`.
 func _sealed(id: String, at := Vector2(320, 320)) -> EventPlan:
-	return EventPlan.new(SealPlanner.sealed_variant(EventCatalogue.by_id(id), true), at)
+	return EventPlan.new(SealPlanner.sealed_variant(Shipped.rows().by_id(id), true),
+			at)
 
 ## A region door's body: `id` stood as a door.
 func _door(id: String) -> EventPlan:
@@ -38,7 +39,7 @@ func _test_a_door_body_is_never_against_the_line(t: TestRunner) -> void:
 	var wall := _sealed("roadblock")
 	t.check(not wall.is_door(), "the region wall's own body is not a door")
 	t.check(wall.counts_against_the_line(), "and it still counts against the line")
-	var unplaced := EventPlan.new(EventCatalogue.by_id("roadblock"), Vector2.INF)
+	var unplaced := EventPlan.new(Shipped.rows().by_id("roadblock"), Vector2.INF)
 	t.check(not unplaced.counts_against_the_line(),
 			"a row not yet placed stands nowhere, so it counts against nothing")
 
@@ -47,18 +48,18 @@ func _test_a_door_body_never_blocks_the_way(t: TestRunner) -> void:
 		t.check(not _door(id).obstructs(),
 				"a %s stood at a door is a crossing she walks through, not a block" % id)
 	t.check(_sealed("roadblock").obstructs(), "while the region wall's own body blocks the way")
-	t.check(not EventPlan.new(EventCatalogue.by_id("roadblock"), Vector2.INF).obstructs(),
-			"and a row not yet placed blocks nothing")
+	t.check(not EventPlan.new(Shipped.rows().by_id("roadblock"),
+			Vector2.INF).obstructs(), "and a row not yet placed blocks nothing")
 
 func _test_the_wall_s_body_says_so(t: TestRunner) -> void:
 	var wall := _sealed("roadblock")
 	t.check(not wall.is_in_the_wall(), "a body is not the wall's until it is stood in it")
 	wall.stand_in_the_wall()
 	t.check(wall.is_in_the_wall() and not wall.is_door(), "and then it is, and still not a door")
-	var still := EventPlan.new(EventCatalogue.by_id("roadblock"), Vector2(320, 320))
+	var still := EventPlan.new(Shipped.rows().by_id("roadblock"), Vector2(320, 320))
 	t.check(still.stands_still() and not still.is_in_the_world(),
 			"a roadblock placed at a point stands still and is not in the world yet")
-	var moving := EventPlan.new(EventCatalogue.by_id("roadblock"), Vector2(320, 320),
+	var moving := EventPlan.new(Shipped.rows().by_id("roadblock"), Vector2(320, 320),
 			PackedVector2Array([Vector2(320, 320), Vector2(640, 320)]))
 	t.check(not moving.stands_still(), "while a plan with a route moves")
 
@@ -99,13 +100,14 @@ func _test_what_stands_clear_of_it(t: TestRunner) -> void:
 ## post, nothing for a row that moves.
 func _test_the_ground_it_shuts(t: TestRunner) -> void:
 	var at := Vector2(320, 320)
-	var van_def := EventCatalogue.by_id("abduction")
+	var van_def := Shipped.rows().by_id("abduction")
 	var van := EventPlan.new(van_def, at)
 	t.check(van_def.obstructs_within() < van_def.lethal_reach()
 			and is_equal_approx(van.blocking_radius(), van_def.lethal_reach()) and van.obstructs(),
 			"a van shuts the ground its catch covers, wider than its body (%.0fpx)"
 			% van.blocking_radius())
-	var hunting_def := EventCatalogue.heated(EventCatalogue.by_id("roadblock"),
+	var hunting_def := Shipped.rows().heated(Shipped.rows()
+			.by_id("roadblock"),
 			EventDef.HEAT_HUNTS_LEVEL)
 	var hunting := EventPlan.new(hunting_def, at)
 	t.check(hunting.blocking_radius() < hunting_def.core_within()
@@ -113,13 +115,13 @@ func _test_the_ground_it_shuts(t: TestRunner) -> void:
 			maxf(hunting_def.obstructs_within(), hunting_def.lethal_reach())),
 			"a hunting roadblock shuts the wider of its band and its guard's catch, not its field's "
 			+ "core (%.0fpx of %.0fpx)" % [hunting.blocking_radius(), hunting_def.core_within()])
-	var robbery_def := EventCatalogue.by_id("alley_robbery")
+	var robbery_def := Shipped.rows().by_id("alley_robbery")
 	var robbery := EventPlan.new(robbery_def, at)
 	t.check(robbery_def.pursues() and is_equal_approx(
 			robbery.blocking_radius(), robbery_def.lethal_reach()),
 			"a pursuer waiting at its post shuts the ground its catch covers (%.0fpx)"
 			% robbery.blocking_radius())
-	var cyclist := EventPlan.new(EventCatalogue.by_id("cyclist"), at)
+	var cyclist := EventPlan.new(Shipped.rows().by_id("cyclist"), at)
 	t.check(cyclist.row().ends_the_day() and cyclist.row().moves()
 			and cyclist.blocking_radius() == 0.0 and not cyclist.obstructs(),
 			"a row that ends the day and moves shuts nothing")
@@ -130,11 +132,12 @@ func _test_the_ground_it_shuts(t: TestRunner) -> void:
 ## whose sections day 13's swap never takes; the day's cafe tables, a barricade it rolled rather than
 ## sealed with, and the burnt shell a fire left, which the player called a regular event, are not.
 func _test_which_plans_are_fixed_parts(t: TestRunner) -> void:
-	var tables := EventPlan.new(EventCatalogue.by_id("cafe_tables"), Vector2(320, 320))
+	var tables := EventPlan.new(Shipped.rows().by_id("cafe_tables"), Vector2(320,
+			320))
 	t.check(not tables.is_a_fixed_part(), "the day's cafe tables are the day's own")
 	t.check(not _sealed("barricade").is_a_fixed_part(),
 			"and so is a barricade the seal planner did not stand")
-	var shell := EventPlan.new(EventCatalogue.by_id("burnt_shell"), Vector2(320, 320))
+	var shell := EventPlan.new(Shipped.rows().by_id("burnt_shell"), Vector2(320, 320))
 	shell.make_permanent()
 	t.check(not shell.is_a_fixed_part(), "and so is the burnt shell a fire left: a regular event")
 	var seal := _sealed("barricade")
@@ -144,10 +147,11 @@ func _test_which_plans_are_fixed_parts(t: TestRunner) -> void:
 	wall.stand_in_the_wall()
 	t.check(wall.is_a_fixed_part(), "and so is the region wall's body")
 	t.check(_door("checkpoint_hut").is_a_fixed_part(), "and a door's")
-	var mast := EventPlan.new(EventCatalogue.mast(), Vector2(320, 320))
+	var mast := EventPlan.new(Shipped.rows().mast(), Vector2(320, 320))
 	mast.stand_as_a_mast("a mast's site")
 	t.check(mast.is_a_fixed_part(), "and a loudspeaker mast")
-	var playground := EventPlan.new(EventCatalogue.by_id("playground"), Vector2(320, 320))
+	var playground := EventPlan.new(Shipped.rows().by_id("playground"), Vector2(320,
+			320))
 	t.check(playground.is_a_fixed_part(), "and an ambient row")
 
 ## **A walker the crowd holds at a door is held at the gatehouse on its own sidewalk, like her, and
@@ -163,7 +167,8 @@ func _test_a_walker_is_held_at_the_hut_and_never_at_the_boom(t: TestRunner) -> v
 ## **Whether its field reaches a point** (`field_reaches()`) is its live event's answer while it is
 ## in the world, whatever shape that field has, and false while it is not.
 func _test_what_its_field_reaches(t: TestRunner) -> void:
-	var plan := EventPlan.new(EventCatalogue.by_id("alley_robbery"), Vector2(320, 320))
+	var plan := EventPlan.new(Shipped.rows().by_id("alley_robbery"), Vector2(320,
+			320))
 	var point := Vector2(500, 40)
 	t.check(not plan.field_reaches(point), "a plan out of the world reaches nothing")
 	var standing := FakeStanding.new()
@@ -184,7 +189,7 @@ func _test_what_its_field_reaches(t: TestRunner) -> void:
 ## in the world is true from the first entering for good, and what it was in the middle of is kept.
 func _test_what_it_says_of_its_live_event_is_its_handles_answer(t: TestRunner) -> void:
 	var at := Vector2(320, 320)
-	var plan := EventPlan.new(EventCatalogue.by_id("alley_robbery"), at)
+	var plan := EventPlan.new(Shipped.rows().by_id("alley_robbery"), at)
 	plan.face(Vector2.UP)
 	t.check(not plan.is_in_the_world() and not plan.has_been_in_the_world(),
 			"a new plan is not in the world and has not been")
@@ -248,18 +253,18 @@ func _test_where_its_body_stands(t: TestRunner) -> void:
 	var lane := Vector2((Tuning.SIDEWALK_WIDTH + 0.5) * tile, (Tuning.STREET_WIDTH + 3.5) * tile)
 	var kerb := CityMap.kerb_beside(lane)
 	t.check(kerb != lane, "the lane point has a kerb beside it")
-	var roadblock := EventPlan.new(EventCatalogue.by_id("roadblock"), lane)
+	var roadblock := EventPlan.new(Shipped.rows().by_id("roadblock"), lane)
 	t.check(roadblock.body_at() == kerb and roadblock.placed_at() == lane,
 			"a roadblock placed in the lane stands on the kerb beside it, placed where it was put")
 	t.check(roadblock.where_it_stands_now() == kerb and is_equal_approx(roadblock.distance_from(kerb), 0.0),
 			"and its geometry reads it at the kerb")
-	t.check(EventPlan.new(EventCatalogue.by_id("market_stall"), lane).body_at() == lane,
-			"a sidewalk row stands where it was placed")
+	t.check(EventPlan.new(Shipped.rows().by_id("market_stall"),
+			lane).body_at() == lane, "a sidewalk row stands where it was placed")
 	t.check(_sealed("roadblock", lane).body_at() == lane,
 			"and so does the region wall's pinned roadblock")
 
 func _test_a_plan_stands_where_a_candidate_was_judged(t: TestRunner) -> void:
-	var def := EventCatalogue.by_id("poster_crew")
+	var def := Shipped.rows().by_id("poster_crew")
 	var judged := EventPlan.new(def, Vector2(640, 96),
 			PackedVector2Array([Vector2(640, 96), Vector2(704, 96)]))
 	judged.face(Vector2.UP)
@@ -277,7 +282,7 @@ func _test_a_plan_stands_where_a_candidate_was_judged(t: TestRunner) -> void:
 			"while the candidate is left as it was")
 
 func _test_a_plan_turns_to_face(t: TestRunner) -> void:
-	var plan := EventPlan.new(EventCatalogue.by_id("poster_crew"), Vector2(640, 96))
+	var plan := EventPlan.new(Shipped.rows().by_id("poster_crew"), Vector2(640, 96))
 	plan.face(Vector2.UP)
 	t.check(plan.faces() == Vector2.UP, "a crew turned to face the wall it pastes faces it")
 	plan.face(Vector2.LEFT)

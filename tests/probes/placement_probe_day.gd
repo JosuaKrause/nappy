@@ -8,9 +8,9 @@ extends RefCounted
 ## `prepared()` makes the city `BASE + i * STEP` and plans its day's closures, holds, region
 ## wall and seals (`City.start_day()`, `DayPlanner._plan_a_day()`), the seals and the wall's
 ## bodies stood as the day's standing. `placements()` then plans the dawn with the day's
-## guarded-band roadblock row through `EventCatalogue.heated()` as `DayPlanner` hands it, and
-## refreshes the street trees (`City.refresh_street_trees()`) once the dawn has placed, where
-## the game refreshes them (`DayDirector`, after `EventManager.start_day()`).
+## guarded-band roadblock row through `EventCatalogue.heated()` as `DayPlanner` hands
+## it, and refreshes the street trees (`City.refresh_street_trees()`) once the dawn has placed,
+## where the game refreshes them (`DayDirector`, after `EventManager.start_day()`).
 ##
 ## **The dawn is planned at heat 0, a run with no resistance progress**: every baseline reading
 ## of the placement (`docs/evidence/minty-quail-baseline-2026-11-09/`) was taken at that heat,
@@ -57,7 +57,7 @@ func _prepare(tag: String, parent: Node) -> void:
 	parent.add_child(city)
 	RunCity.build(city, RunCity.started_run(RUN_SEED), map)
 	# The run's mast sites, worked out once on the city as built, as the game does.
-	_sites = MastSites.compute(map)
+	_sites = MastSites.compute(Shipped.rows(), map)
 	var state := CityState.new()
 	state.begin_day(map.plans_by_block(), _day)
 	map.repaint(state)
@@ -66,10 +66,11 @@ func _prepare(tag: String, parent: Node) -> void:
 	# The day's own closures, holds, region wall and seals, planned as the game plans them
 	# (`City.start_day()`, `DayPlanner._plan_a_day()`), so the seals and the wall's bodies
 	# stand as the day's standing and hold their locations.
-	var region_plan := RegionPlanner.plan_day(map, _spec, _tree)
+	var region_plan := RegionPlanner.plan_day(Shipped.rows(), map, _spec, _tree)
 	var closure_rng := RandomNumberGenerator.new()
 	closure_rng.seed = hash("%s closures:%d:%d" % [tag, _i, _day])
-	var closures := ClosurePlanner.plan_day(map, _spec, closure_rng, _tree, region_plan)
+	var closures := ClosurePlanner.plan_day(Shipped.rows(), map, _spec, closure_rng,
+			_tree, region_plan)
 	map.close_streets(closures)
 	map.clear_day_holds()
 	for closure: RoadClosure in closures:
@@ -92,7 +93,8 @@ func _prepare(tag: String, parent: Node) -> void:
 		boundary[rect.position] = true
 	var seal_rng := RandomNumberGenerator.new()
 	seal_rng.seed = hash("%s seals:%d:%d" % [tag, _i, _day])
-	_seals = SealPlanner.plan_day(map, _spec, _tree, seal_rng, boundary, map.held_streets())
+	_seals = SealPlanner.plan_day(Shipped.rows(), map, _spec, _tree, seal_rng,
+			boundary, map.held_streets())
 	for seal in _seals:
 		seal.stand_as_a_seal()
 	for body in region_plan.door_plans():
@@ -109,7 +111,8 @@ func placements() -> Array[EventPlan]:
 	var rng := RandomNumberGenerator.new()
 	rng.seed = hash("placement_view_mix:%d:%d" % [_i, _day])
 	var guarded := ResistanceSteps.guarded_row_on(_day)
-	var beside: EventDef = EventCatalogue.heated(EventCatalogue.by_id(guarded), HEAT) \
+	var beside: EventDef = Shipped.rows().heated(Shipped.rows()
+			.by_id(guarded), HEAT) \
 			if guarded != "" else null
 	var consumed: Array[String] = []
 	var placed := GameDawn.of(_spec, rng, map).masts(_sites).spent(consumed).heat(HEAT).on(_tree) \

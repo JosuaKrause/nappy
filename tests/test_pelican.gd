@@ -87,7 +87,7 @@ func _day_rng() -> RandomNumberGenerator:
 ## pelican is the cyclists drawn over 400.
 func _test_a_run_meets_at_most_one_pelican_and_about_one_cyclist_in_400_is_it(t: TestRunner) -> void:
 	_new_run(1)
-	var all := _rolls_for(1, [EventCatalogue.by_id("cyclist")], 800)
+	var all := _rolls_for(1, [Shipped.rows().by_id("cyclist")], 800)
 	var first := all.slice(0, 400)
 	var second := all.slice(400)
 	t.check(first.count(true) == 1 and second.count(true) == 1,
@@ -96,7 +96,8 @@ func _test_a_run_meets_at_most_one_pelican_and_about_one_cyclist_in_400_is_it(t:
 	var runs_with_one := 0
 	var two_in_a_run := 0
 	for run_seed in range(1, SHARE_SEEDS + 1):
-		var this_run := _rolls_for(run_seed, [EventCatalogue.by_id("cyclist")], CYCLISTS_PER_RUN)
+		var this_run := _rolls_for(run_seed, [Shipped.rows().by_id("cyclist")],
+				CYCLISTS_PER_RUN)
 		if this_run.has(true):
 			runs_with_one += 1
 		if this_run.count(true) > 1:
@@ -111,7 +112,7 @@ func _test_a_run_meets_at_most_one_pelican_and_about_one_cyclist_in_400_is_it(t:
 ## Two spawners on the same run roll the same riders, one draw per cyclist in the order they are
 ## created, whatever the day; another run rolls others.
 func _test_the_seed_decides_which_cyclist_is_the_pelican(t: TestRunner) -> void:
-	var cyclist := EventCatalogue.by_id("cyclist")
+	var cyclist := Shipped.rows().by_id("cyclist")
 	var first := _rolls_for(5, [cyclist], 400)
 	var again := _rolls_for(5, [cyclist], 400)
 	var other_run := _rolls_for(6, [cyclist], 400)
@@ -124,7 +125,7 @@ func _test_the_seed_decides_which_cyclist_is_the_pelican(t: TestRunner) -> void:
 ## then: one spawner kept across a new run, and across a count a lost day put back, draws what a
 ## fresh spawner would.
 func _test_the_bag_follows_the_run_and_the_count(t: TestRunner) -> void:
-	var cyclist := EventCatalogue.by_id("cyclist")
+	var cyclist := Shipped.rows().by_id("cyclist")
 	var spawner := _spawner_over()
 	_new_run(11)
 	var first: Array[bool] = []
@@ -154,7 +155,7 @@ func _test_the_bag_follows_the_run_and_the_count(t: TestRunner) -> void:
 ## rigs (`PelicanRig.ALWAYS`, which the city sets from it) make every cyclist the pelican while a
 ## loose dog still is not, and the bag draws what it would have.
 func _test_the_dev_flag_makes_every_cyclist_a_pelican(t: TestRunner) -> void:
-	var cyclist := EventCatalogue.by_id("cyclist")
+	var cyclist := Shipped.rows().by_id("cyclist")
 	var plain := _rolls_for(5, [cyclist], 40)
 	t.check(RunConfig.parse(PackedStringArray(["--pelican"]), "", true)
 			.draws_cyclists_as_the_pelican(),
@@ -163,7 +164,8 @@ func _test_the_dev_flag_makes_every_cyclist_a_pelican(t: TestRunner) -> void:
 			.draws_cyclists_as_the_pelican(),
 			"and answers nothing on a release build")
 	var flagged := _rolls_for(5, [cyclist], 40, EventSpawner.PelicanRig.ALWAYS)
-	var dog := _rolls_for(5, [EventCatalogue.by_id("loose_dog")], 5, EventSpawner.PelicanRig.ALWAYS)
+	var dog := _rolls_for(5, [Shipped.rows().by_id("loose_dog")], 5,
+			EventSpawner.PelicanRig.ALWAYS)
 	t.check(flagged.count(true) == 40 and dog.count(true) == 0,
 			"with it every cyclist is a pelican and no dog is")
 	t.check(_run.pelican().draws() == 0 and _rolls_for(5, [cyclist], 40) == plain,
@@ -172,8 +174,8 @@ func _test_the_dev_flag_makes_every_cyclist_a_pelican(t: TestRunner) -> void:
 ## A row that is not a cyclist is never the pelican and draws nothing from the bag, so the loose
 ## dogs sent between two cyclists do not move which of them it is.
 func _test_only_a_cyclist_draws_from_the_bag(t: TestRunner) -> void:
-	var cyclist := EventCatalogue.by_id("cyclist")
-	var dog := EventCatalogue.by_id("loose_dog")
+	var cyclist := Shipped.rows().by_id("cyclist")
+	var dog := Shipped.rows().by_id("loose_dog")
 	var cyclists_only := _rolls_for(5, [cyclist], 400)
 	var with_dogs := _rolls_for(5, [cyclist, dog, dog], 1200)
 	var cyclists_among_dogs: Array[bool] = []
@@ -193,7 +195,7 @@ func _test_only_a_cyclist_draws_from_the_bag(t: TestRunner) -> void:
 ## a lost day".)* A lost day gives the count back to the day's dawn and a save written mid-day reads
 ## it back, and a spawner that meets either draws the cyclists, and the pelican, the day first drew.
 func _test_a_lost_day_and_a_resumed_save_draw_the_same_cyclists(t: TestRunner) -> void:
-	var cyclist := EventCatalogue.by_id("cyclist")
+	var cyclist := Shipped.rows().by_id("cyclist")
 	# Some run whose pelican is among the day's cyclists, so the comparison compares one.
 	# The day is draws 7 to 26, so the window searched is that one.
 	var seed_value := 1
@@ -236,7 +238,8 @@ func _new_run(run_seed: int) -> void:
 ## A spawner of the suite's own over the suite's run, its surroundings rigged as `rig` says: the
 ## bag is the spawner's, and no manager is asked for it.
 func _spawner_over(rig := EventSpawner.PelicanRig.BAG) -> EventSpawner:
-	var world := EventWorld.new(EventSurroundings.new().rigging_the_pelican(rig))
+	var world := EventWorld.new(EventSurroundings.new().reading(Shipped.rows())
+			.rigging_the_pelican(rig))
 	world.use_run(_run)
 	return EventSpawner.new(world, WarningBoard.new(world))
 
@@ -263,7 +266,7 @@ func _rolls(def: EventDef, count: int, run_seed: int) -> Array[bool]:
 ## the roll its warning made), is drawn as the pelican on its first frame and late in its ride; one
 ## created as the kid stays the kid.
 func _test_a_pelican_rides_as_one_throughout(t: TestRunner) -> void:
-	var def := EventCatalogue.by_id("cyclist")
+	var def := Shipped.rows().by_id("cyclist")
 	var events := _events
 	var pelican := events.spawn_warned(def, _ride(), true)
 	var kid := events.spawn_warned(def, _ride(), false)
@@ -285,7 +288,7 @@ func _test_a_pelican_rides_as_one_throughout(t: TestRunner) -> void:
 			EventPictures.PELICAN_BY_VIEW, EventPictures.PELICAN_BY_VIEW_B),
 			"and is still drawn as the pelican late in its ride")
 	t.check(not kid.is_drawn_as_a_pelican(), "and the kid is still the kid")
-	var dog := events.spawn_warned(EventCatalogue.by_id("loose_dog"), _ride(), true)
+	var dog := events.spawn_warned(Shipped.rows().by_id("loose_dog"), _ride(), true)
 	t.check(not dog.is_drawn_as_a_pelican(), "a loose dog sent the same way is never the pelican, whatever its roll")
 	for instance: EventInstance in [pelican, kid, dog]:
 		events.retire(instance)
@@ -293,7 +296,7 @@ func _test_a_pelican_rides_as_one_throughout(t: TestRunner) -> void:
 ## The same ride, rolled both ways: the same row, the same field and the same lethal reach at every
 ## point around it, the same speed. Only the pictures it is drawn with differ.
 func _test_a_pelican_is_the_cyclist_in_everything_but_the_picture(t: TestRunner) -> void:
-	var def := EventCatalogue.by_id("cyclist")
+	var def := Shipped.rows().by_id("cyclist")
 	var events := _events
 	var pelican := events.spawn_warned(def, _ride(), true)
 	var kid := events.spawn_warned(def, _ride(), false)
@@ -361,7 +364,7 @@ func _ride() -> PackedVector2Array:
 ##   loss `pelican` (`EventManager.what_struck_her()`), where a kid's names `cyclist`;
 ## - **the observer's own lines call it `pelican`**: on screen, struck, and nearest.
 func _test_the_pelican_is_named_and_told_from_its_warning_to_its_hit(t: TestRunner) -> void:
-	var def := EventCatalogue.by_id("cyclist")
+	var def := Shipped.rows().by_id("cyclist")
 	var events := _events
 	var map := _map
 	# Nothing but what this test sends is in the world: the day's plan is let go and nothing is sited

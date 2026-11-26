@@ -60,8 +60,9 @@ func _count_day(map: CityMap, day: int) -> Dictionary:
 	state.begin_day(map.plans_by_block(), day)
 	map.repaint(state)
 	var tree := RouteTree.for_day(map, day, null)
-	var region_plan := RegionPlanner.plan_day(map, DaySpec.for_day(day), tree)
-	var closures := ClosurePlanner.plan_day(map, DaySpec.for_day(day),
+	var region_plan := RegionPlanner.plan_day(Shipped.rows(), map,
+			DaySpec.for_day(day), tree)
+	var closures := ClosurePlanner.plan_day(Shipped.rows(), map, DaySpec.for_day(day),
 			_rng(map, day, "closures"), tree, region_plan)
 	map.close_streets(closures)
 	var street_closures := 0
@@ -96,8 +97,8 @@ func _count_day(map: CityMap, day: int) -> Dictionary:
 		if map.has_street(segment.key()) and not tree.is_on_the_tree(segment.key()):
 			off_tree += 1
 
-	var seals := SealPlanner.plan_day(map, DaySpec.for_day(day), tree, _rng(map, day, "seals"), boundary,
-			map.held_streets())
+	var seals := SealPlanner.plan_day(Shipped.rows(), map, DaySpec.for_day(day), tree,
+			_rng(map, day, "seals"), boundary, map.held_streets())
 	var sealed := {}
 	var mouths := 0
 	for plan in seals:

@@ -95,10 +95,10 @@ func _test_band_reduces_to_a_point_under_its_own_radius(t: TestRunner) -> void:
 			"exactly BAND_RADIUS is the boundary case and reduces to a point too")
 
 # ------------------------------------------------------- the catalogue invariant ---
-# `EventDef.validate()` already checks this on load and `EventCatalogue.all()` calls it over every
-# heated shape of every row — so a broken invariant fails `check.sh`, not only this suite. These
-# tests hold the same rule directly, over the shapes themselves, so a failure here says which row
-# and which copy rather than only that validation failed somewhere.
+# `EventDef.validate()` already checks this on load and `EventCatalogue.all()` calls
+# it over every heated shape of every row — so a broken invariant fails `check.sh`, not only
+# this suite. These tests hold the same rule directly, over the shapes themselves, so a failure
+# here says which row and which copy rather than only that validation failed somewhere.
 
 func _shape_agrees(def: EventDef) -> bool:
 	if def.obstructs_within() <= 0.0:
@@ -123,7 +123,7 @@ func _test_every_heated_copy_agrees_with_its_shape(t: TestRunner) -> void:
 	var checked := 0
 	for def in CatalogueRows.every():
 		for level in EventCatalogue.heat_levels():
-			var hot := EventCatalogue.heated(def, level)
+			var hot := Shipped.rows().heated(def, level)
 			checked += 1
 			if hot.look().is_drawn_in_the_world():
 				t.check(hot.ground_shape() != null,
@@ -138,7 +138,7 @@ func _test_every_seal_candidate_agrees_with_its_shape(t: TestRunner) -> void:
 	var checked := 0
 	for candidate in SealPlanner.candidates():
 		for id in candidate.def_ids:
-			var def := EventCatalogue.by_id(id)
+			var def := Shipped.rows().by_id(id)
 			t.check(def != null, "seal candidate '%s' names a real catalogue row" % id)
 			var sealed := SealPlanner.sealed_variant(def, candidate.strength == SealPlanner.Strength.HARD)
 			checked += 1
@@ -225,7 +225,7 @@ func _test_a_hard_seal_capsule_spans_the_street_not_the_kerb(t: TestRunner) -> v
 	var map := CityGenerator.generate(_HARD_SEAL_SEED)
 	var atlas := AtlasLibrary.new()
 	atlas.acquire(&"events")
-	var def := EventCatalogue.by_id("barricade")
+	var def := Shipped.rows().by_id("barricade")
 	t.check(def != null and def.ground_shape() != null
 			and def.ground_shape().spine_half_length() > 0.0,
 			"'barricade' is a hard seal row whose shape is a real segment, not a point")
@@ -242,7 +242,7 @@ func _test_a_hard_seal_capsule_spans_the_street_not_the_kerb(t: TestRunner) -> v
 			continue
 		var instance := EventInstance.new()
 		instance.setup(def, positions[0], PackedVector2Array(), Vector2.RIGHT,
-				EventSurroundings.new().on(map) \
+				EventSurroundings.new().reading(Shipped.rows()).on(map) \
 					.drawn_from(atlas))
 		t.add_child(instance)
 

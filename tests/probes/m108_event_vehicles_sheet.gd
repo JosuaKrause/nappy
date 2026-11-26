@@ -77,7 +77,7 @@ func _heading_row(def_id: String, by_view: Dictionary, side_faces_west: bool) ->
 	for sector in range(8):
 		var instance := FakeEvent.new()
 		instance.heading = _sector_heading(sector)
-		var look := instance.look_for(EventCatalogue.by_id(def_id))
+		var look := instance.look_for(Shipped.rows().by_id(def_id))
 		var view := look.select_view(instance.heading)
 		var mirror := look.is_mirrored()
 		if view == "side" and side_faces_west:

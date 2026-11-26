@@ -414,8 +414,8 @@ func _raise_a_badge(t: TestRunner, main: MAIN_SCRIPT, edge: DangerEdge, player: 
 	# The edge is drawn once the day is on screen; the title stands over it until it is tapped.
 	if not edge.is_visible_in_tree():
 		await _press_tap(t, main)
-	var row := EventCatalogue.by_id("military_convoy")
-	var source := StandIns.Source.new()
+	var row := Shipped.rows().by_id("military_convoy")
+	var source := StandIns.Source.new(Shipped.rows(), EventSurroundings.new())
 	source.visible_view().look_from(player.global_position)
 	t.add_child(source)
 	var convoy := StandIns.Coming.new(row, EventFootprints.drawn_box_of(row, true))

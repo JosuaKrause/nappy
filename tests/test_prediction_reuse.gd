@@ -198,7 +198,8 @@ func _swept_event(t: TestRunner, definition: EventDef, where: WhereSheIs) -> Cou
 	var event := CountedEvent.new()
 	event.setup(_copy_definition(definition), Vector2.ZERO,
 		PackedVector2Array([Vector2.ZERO, Vector2(ROUTE_LENGTH, 0.0)]), Vector2.RIGHT,
-		EventSurroundings.new().on(SplitStreets.new()).hearing(where))
+		EventSurroundings.new().reading(Shipped.rows()).on(SplitStreets.new()) \
+		.hearing(where))
 	if event.row().is_a_flock():
 		t.add_child(event)
 		event.set_process(false)
@@ -247,7 +248,7 @@ func _crowd_parity(t: TestRunner, source: CountedCrowd, at: Vector2, label: Stri
 ## must differ from the row's own (so the check cannot be passing on equal numbers) and match the
 ## reference.
 func _test_a_cored_row(t: TestRunner) -> void:
-	var row := EventCatalogue.by_id("leaf_blower")
+	var row := Shipped.rows().by_id("leaf_blower")
 	var field := row.field()
 	var inside := Vector2(-(field.core_within() * 0.5), 0.0)
 	var between := Vector2(-(field.core_within() + (field.core_reach() - field.core_within()) * 0.5), 0.0)
@@ -255,7 +256,7 @@ func _test_a_cored_row(t: TestRunner) -> void:
 	var source := CountedEvent.new()
 	source.setup(_copy_definition(row), Vector2.ZERO,
 		PackedVector2Array([Vector2.ZERO, Vector2(600.0, 0.0)]), Vector2.RIGHT,
-		EventSurroundings.new().hearing(where))
+		EventSurroundings.new().reading(Shipped.rows()).hearing(where))
 	source.restore(EventSave.aged(0.0))
 	# Barely moving, so the answer is the price of the point and its surroundings, not an average over
 	# a whole pass (a still baby is projected as zero).
@@ -280,7 +281,7 @@ func _test_a_cored_row(t: TestRunner) -> void:
 
 func _test_catalogue_and_mutations(t: TestRunner) -> void:
 	# What retires an instance from outside its tick (`EventManager.retire()`).
-	var retiring := EventManager.new()
+	var retiring := EventManager.new(Shipped.rows(), EventSurroundings.new())
 	var sampled := 0
 	var positive := 0
 	var flock_queries := 0
@@ -543,7 +544,7 @@ func _test_a_startled_body_is_projected_out_to_its_jolt_reach(t: TestRunner) -> 
 
 func _test_live_net_and_skipped_work(t: TestRunner) -> void:
 	var event := CountedEvent.new()
-	event.setup(_copy_definition(EventCatalogue.by_id("cafe_tables")), Vector2.ZERO)
+	event.setup(_copy_definition(Shipped.rows().by_id("cafe_tables")), Vector2.ZERO)
 	var crowd := CountedCrowd.new()
 	crowd.lane().ease_speed_toward(0.0, 1000.0)
 	var at := Vector2(-170.0, 0.0)
@@ -579,12 +580,12 @@ func _test_consumer_order(t: TestRunner) -> void:
 	var reference := ReferenceEvent.new()
 	var car := CountedCrowd.new(CrowdAgent.Kind.CAR)
 	var reference_car := ReferenceCrowd.new(CrowdAgent.Kind.CAR)
-	cached.setup(_copy_definition(EventCatalogue.by_id("cyclist")), Vector2.ZERO,
+	cached.setup(_copy_definition(Shipped.rows().by_id("cyclist")), Vector2.ZERO,
 			PackedVector2Array([Vector2.ZERO, Vector2(700.0, 0.0)]), Vector2.RIGHT,
-			EventSurroundings.new().hearing(cached_where))
-	reference.setup(_copy_definition(EventCatalogue.by_id("cyclist")), Vector2.ZERO,
+			EventSurroundings.new().reading(Shipped.rows()).hearing(cached_where))
+	reference.setup(_copy_definition(Shipped.rows().by_id("cyclist")), Vector2.ZERO,
 			PackedVector2Array([Vector2.ZERO, Vector2(700.0, 0.0)]), Vector2.RIGHT,
-			EventSurroundings.new().hearing(reference_where))
+			EventSurroundings.new().reading(Shipped.rows()).hearing(reference_where))
 	for source: CrowdAgent in [car, reference_car]:
 		source.lane().ease_speed_toward(80.0, 1000.0)
 	var sources: Array[ExcitementSource] = [cached.source(), reference.source(), car.mood(),
@@ -644,14 +645,16 @@ func _test_halo_and_removal(t: TestRunner) -> void:
 	player.velocity = Vector2(92.0, 0.0)
 	var baby := Baby.new()
 	for cached: bool in [true, false]:
-		var manager := EventManager.new()
+		var manager := EventManager.new(Shipped.rows(), EventSurroundings.new())
 		t.add_child(manager)
 		# After it enters the tree: entering turns on the tick of a node that defines one.
 		manager.set_physics_process(false)
 		managers.append(manager)
 		var source: EventInstance = CountedEvent.new() if cached else ReferenceEvent.new()
-		source.setup(_copy_definition(EventCatalogue.by_id("cafe_tables")), Vector2.ZERO,
-				PackedVector2Array(), Vector2.RIGHT, EventSurroundings.new().drawn_from(atlas))
+		source.setup(_copy_definition(Shipped.rows().by_id("cafe_tables")),
+				Vector2.ZERO,
+				PackedVector2Array(), Vector2.RIGHT, EventSurroundings.new() \
+				.reading(Shipped.rows()).drawn_from(atlas))
 		source.restore(EventSave.aged(3.0))
 		manager.add_child(source)
 		source.set_process(false)

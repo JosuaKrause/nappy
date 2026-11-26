@@ -89,7 +89,7 @@ func _loop() -> CityMap:
 
 ## A barricade standing across the row at `row`, at tile column `ACROSS`.
 func _across(map: CityMap, row: int) -> EventPlan:
-	return EventPlan.new(EventCatalogue.by_id("barricade"),
+	return EventPlan.new(Shipped.rows().by_id("barricade"),
 			map.tile_to_world(Vector2i(ACROSS, row)) + Vector2(0, Tuning.TILE_SIZE * 0.5))
 
 ## The draw over `map` with `bodies` still to draw, and its reach with nothing standing.
@@ -106,7 +106,7 @@ func _confirmation(map: CityMap, draw: _Draw) -> WayConfirmation:
 
 ## A barricade standing across the far side's two columns at `row`.
 func _across_the_far_side(map: CityMap, row: int) -> EventPlan:
-	return EventPlan.new(EventCatalogue.by_id("barricade"),
+	return EventPlan.new(Shipped.rows().by_id("barricade"),
 			map.tile_to_world(Vector2i(RIGHT, row)) + Vector2(Tuning.TILE_SIZE * 0.5, 0))
 
 ## Where she stands on the far side, six tiles up it from the place.

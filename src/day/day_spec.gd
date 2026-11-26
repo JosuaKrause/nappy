@@ -201,9 +201,9 @@ var pastes_posters := true
 ## view's fill: every one of the fourteen days. Set by `_place_the_escape_city()`; a suite or a
 ## probe sets another mix to plan with. `src/` reads it through `walk_bag()`.
 var bag := {}
-## What each of `bag`'s marbles stands, a marble -> `EventDef`; `EMPTY_MARBLE` has none. Read
-## through `walk_bag_rows()`.
-var _bag_rows := {}
+## The marbles of `bag` that stand a row, each the id of the row it stands; `EMPTY_MARBLE` has
+## none. Read as rows of the run's catalogue through `walk_bag_rows()`.
+var _bag_rows: Array[String] = []
 ## How many marbles a unit of the walk draws and no more (`MarbleDraw`), `ESCAPE_MARBLES_A_STREET`
 ## for the escape's bag: with one, a row's stands alone in the unit and an empty one leaves it with
 ## nothing. *(Inbox #1185 in gentle-owl's board answer: "one
@@ -384,12 +384,7 @@ static func _place_the_escape_city(spec: DaySpec, escape_bag: String) -> void:
 	assert(ESCAPE_BAGS.has(escape_bag), "the escape has no bag named %s" % escape_bag)
 	var counts: Dictionary = ESCAPE_BAGS[escape_bag]
 	spec.bag = counts.duplicate()
-	spec._bag_rows = {
-		"military_convoy": EventCatalogue.by_id("military_convoy"),
-		"finale_explosion": EventCatalogue.by_id("finale_explosion"),
-		"abduction": EventCatalogue.by_id("abduction"),
-		"roadblock": EventCatalogue.escape_roadblock(),
-	}
+	spec._bag_rows = ["military_convoy", "finale_explosion", "abduction", "roadblock"]
 	spec._keeps_unused_calm_clear = false
 	spec._holds_the_home_streets = false
 	spec._marbles_a_street = int(ESCAPE_MARBLES_A_STREET[escape_bag])
@@ -490,10 +485,14 @@ func share_of_walls_drawn() -> float:
 func walk_bag() -> Dictionary:
 	return bag
 
-## The rows the walk bag's marbles stand, a marble -> its row; `EMPTY_MARBLE` has none
-## (`_bag_rows`).
-func walk_bag_rows() -> Dictionary:
-	return _bag_rows
+## The rows the walk bag's marbles stand, a marble -> its row in `rows`, the run's catalogue;
+## `EMPTY_MARBLE` has none (`_bag_rows`). The roadblock is the escape's own
+## (`EventCatalogue.escape_roadblock()`), the row at full heat.
+func walk_bag_rows(rows: EventCatalogue) -> Dictionary:
+	var found := {}
+	for marble: String in _bag_rows:
+		found[marble] = rows.escape_roadblock() if marble == "roadblock" else rows.by_id(marble)
+	return found
 
 ## How many marbles a unit of the walk draws (`_marbles_a_street`), and so how many events a street
 ## of it stands at most (`MarbleDraw`): zero where a unit draws until its room is spoken for.

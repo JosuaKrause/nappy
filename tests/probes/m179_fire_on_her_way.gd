@@ -199,7 +199,7 @@ func _what_the_pair_costs(city: City, rig: Stroller, plan: EventPlan) -> void:
 		# the fire finishes its telegraph.
 		RunCity.events(city)._physics_process(STEP)
 	var engine_at := city.map().kerb_across_from(plan.placed_at())
-	var engine := EventCatalogue.by_id(plan.row().calls_in())
+	var engine := Shipped.rows().by_id(plan.row().calls_in())
 	var along := Vector2.RIGHT
 	var inward := city.map().pavement_inward(city.map().world_to_tile(plan.placed_at()))
 	if inward != Vector2i.ZERO:

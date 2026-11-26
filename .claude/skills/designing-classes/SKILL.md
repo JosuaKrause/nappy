@@ -58,13 +58,6 @@ only the map: a break not listed there fails, and so does a listed one that is g
 request that fixes one deletes it from both. The declaration here is held by the review, through
 **pr-review**'s architecture questions, and no check fails a break that is listed but not declared.
 
-**One break stands: the run's charger timing in the static catalogue.** `EventCatalogue._chargers`
-is run configuration, written once at boot by `main.configure()`, and every row of the catalogue is
-built from it. So the ten world and simulation files that read the static catalogue fetch run
-state from a static (the `static` exception on `EventCatalogue` in `tools/layer_map.py`). It
-stands until the run's rows are built once in `main` and handed to what reads them, which is the
-queue entry curly-finch, the run's rows handed from main.
-
 **The map lookup stays with the city maps in the model** (inbox #904 in freckled-moose), and a
 record the map holds is placed on the map's layer as it appears. Each thing's own drawing is on the
 layer of the thing it draws. A fix lands in the shared mechanism rather than a branch keyed
@@ -207,11 +200,6 @@ that proposes it, and says so where the player's words name nothing on the point
   open to the player's correction; the player objected to marking what they had approved as only
   proposed (inbox #1268 in olive-ferret), so the two parts are told apart here.
 
-- **The one break that stands, the run's charger timing in the static catalogue, stands until the
-  run's rows are handed from main, the queue entry curly-finch**: the orchestrator's ruling, open to
-  the player.
-  The plainer alternative is the refactor now (47 files under `src/`, 183 under `tests/` and
-  `tools/`).
 - **Which layers there are**, apart from the two points the player decided, the observers and the
   view as siblings and the map lookup in the model (plush-kestrel).
 - **A fix lands in the shared mechanism, new code follows the target shape, and a brief names its

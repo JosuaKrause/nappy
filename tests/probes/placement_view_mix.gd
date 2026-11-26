@@ -9,14 +9,14 @@ extends RefCounted
 ## Each day is planned as the game plans it (`DayPlanner._plan_a_day()`): its closures, holds,
 ## region wall and seals first, the seals and the wall's bodies handed in as standing, then
 ## `EventScheduler.build_day()` on the repainted city and its route tree at heat 0, like every
-## baseline reading, the guarded-band roadblock row handed through `EventCatalogue.heated()` as
-## the day does (`PlacementProbeDay`), the street trees refreshed after. Every placed plan is
-## counted under the view of the ground it stands on (`Corridor.view_of()` for a
-## street, `Corridor.view_of_ground()` for an alley, a lot or a junction box), by row, against
-## the number of locations each view has (`DayLocations.all()`). The rows the director sites in
-## front of her, which the day owes her but places nowhere, are counted apart (`MOMENTS`).
-## `PV_VIEW` lines give each view's events per location and `PV_DAY` the day's whole count;
-## the declared table's own cells, by view, kind of ground and act, are
+## baseline reading, the guarded-band roadblock row handed through
+## `EventCatalogue.heated()` as the day does (`PlacementProbeDay`), the street trees
+## refreshed after. Every placed plan is counted under the view of the ground it stands on
+## (`Corridor.view_of()` for a street, `Corridor.view_of_ground()` for an alley, a lot or a
+## junction box), by row, against the number of locations each view has (`DayLocations.all()`).
+## The rows the director sites in front of her, which the day owes her but places nowhere, are
+## counted apart (`MOMENTS`). `PV_VIEW` lines give each view's events per location and `PV_DAY`
+## the day's whole count; the declared table's own cells, by view, kind of ground and act, are
 ## `tests/probes/placement_cells.gd`'s.
 
 const SEEDS := 18

@@ -219,6 +219,9 @@ var _quit_override := Callable()
 ## on an instance rather than called as a `static`. The `--spawn`/`--overview`/`--meters` lookups
 ## against the live city need no instance and are called on `DevRig` itself.
 var _dev_rig := DevRig.new()
+## **The run's catalogue** (`EventCatalogue`), every row as this run plays its chargers: built
+## once by `configure()` and handed to everything that reads a row.
+var _rows: EventCatalogue = null
 ## `--route`'s own walker, `null` outside a debug build or with no `--route` given — see
 ## `src/dev/route_rig.gd`. Unlike `_dev_rig`, this owns a whole target queue that has to survive
 ## across a day's frames, so it is a child node rather than a bag of static lookups.
@@ -283,9 +286,10 @@ class Worlds extends DayWorldSource:
 ## recipe's boot hands it the same run with the recipe on top.
 func configure(run_config: RunConfig) -> void:
 	config = run_config
-	# Before anything is built from a catalogue row: every charger's warning and notice as this
-	# run plays them.
-	EventCatalogue.use_charger_timing(config.charger_timing())
+	# Before anything is built from a catalogue row: every row as this run plays its chargers,
+	# built once here and handed to every reader of a row. A second configure() at the same
+	# timing (a recipe's boot) keeps the catalogue the first one built.
+	_rows = EventCatalogue.of_run(_rows, config.charger_timing())
 	_escape_scene_requested = config.starts_in_the_escape()
 	_no_focus_pause = config.skips_the_focus_pause()
 	_touch_available = TouchInput.available(config)
@@ -495,8 +499,8 @@ func _ready() -> void:
 		_resistance.use_atlas(_sitting.atlas())
 		_resistance.use_bus(EventBus)
 		var events := _city_simulation.events()
-		_resistance.setup(_city.map(), _run, events, _city.streets(), _city.fronts(), _city,
-				_city.navigator(), events.spawn_siting())
+		_resistance.setup(_rows, _city.map(), _run, events, _city.streets(), _city.fronts(),
+				_city, _city.navigator(), events.spawn_siting())
 		_resistance.use_player(_player)
 		# The director's own question about her view — no camera of its own, so it asks the day's
 		# one view (`VisibleView`) rather than growing a second one: "has she seen this" for a
@@ -866,8 +870,8 @@ func _build_the_city(dark_from_the_start := false) -> void:
 	_city = _new_city()
 	var map := _city_map()
 	# Day 1's tutorial route, worked out once for the run's city and handed down in the city.
-	_city.use_tutorial_route(TutorialRoute.for_city(map))
-	_city.build(map)
+	_city.use_tutorial_route(TutorialRoute.for_city(_rows, map))
+	_city.build(_rows, map)
 	_city_simulation = _simulation_builder().in_the_city(_city, _city.map(), _city.navigator(),
 			_city.streets(), _city.traffic_signals(), _city.buildings(), _run, dark_from_the_start)
 
@@ -884,7 +888,7 @@ func _todays_mark() -> Vector2:
 func _simulation_builder() -> SimulationBuilder:
 	if _simulations:
 		return _simulations
-	_simulations = SimulationBuilder.new()
+	_simulations = SimulationBuilder.new(_rows)
 	_simulations.equip(_the_trace(), _sitting.atlas(), _sitting.kept_frame_timing())
 	_simulations.use_bus(EventBus)
 	# The thought bubble that hints at the chalk mark asks the resistance where today's mark is, and
@@ -2022,14 +2026,15 @@ func _spawn_start(target: String) -> Vector2:
 ## configures the flow with it (`RunFlow.author()`), which every place an authored scene differs
 ## then asks. False, with the game quitting, when the recipe does not load.
 func _author_the_scene() -> bool:
-	var result := SceneRecipeRuntime.load_recipe(config.recipe_path(), config.dev_flag_words())
+	var result := SceneRecipeRuntime.load_recipe(_rows, config.recipe_path(),
+			config.dev_flag_words())
 	var errors: Array = result["errors"]
 	if not errors.is_empty():
 		_scene_failed(errors)
 		return false
 	configure(config.with_recipe(result["data"]))
 	var scene := SceneRecipeRuntime.new()
-	scene.configure(result, config, _run, _end_with)
+	scene.configure(_rows, result, config, _run, _end_with)
 	scene.use_trace(_the_trace())
 	add_child(scene)
 	_flow.author(scene)

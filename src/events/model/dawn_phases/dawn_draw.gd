@@ -70,7 +70,7 @@ func run(context: DawnContext) -> void:
 static func _rows_of(context: DawnContext) -> Dictionary:
 	var spec := context.spec()
 	if not spec.walk_bag().is_empty():
-		return spec.walk_bag_rows()
+		return spec.walk_bag_rows(context.rows())
 	var day := context.day()
 	var beside_the_routes := context.roadblock_row()
 	var beside_id := beside_the_routes.id() if beside_the_routes != null else ""

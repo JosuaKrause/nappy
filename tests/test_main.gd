@@ -101,6 +101,28 @@ func _test_a_boot_gives_the_day_its_configured_length(t: TestRunner) -> void:
 	booted.free_all()
 	home.free()
 
+## **`main` hands the events the catalogue built at the run's own charger timing**, not the
+## shipped one: a `--chargers` run plays every charger's warning as asked.
+func _test_a_charger_timing_run_hands_its_catalogue_to_the_events(t: TestRunner) -> void:
+	var calls := Calls.new()
+	var main := await _boot(t, ["--chargers", "1.5", "1.2", "--day", "8"], calls)
+	var asked := EventCatalogue.new(ChargerTiming.of(1.5, 1.2))
+	var moved := 0
+	var nearer_the_asked := true
+	for node: Node in _all(main, "EventInstance"):
+		var instance := node as EventInstance
+		var shipped := Shipped.rows().by_id(instance.row_id())
+		var built := asked.by_id(instance.row_id())
+		if shipped == null or built == null or built.notice_within() == shipped.notice_within():
+			continue
+		moved += 1
+		var live := instance.row().notice_within()
+		nearer_the_asked = nearer_the_asked \
+				and absf(live - built.notice_within()) < absf(live - shipped.notice_within())
+	t.check(moved > 0, "the day has a charger the timing moves (%d)" % moved)
+	t.check(nearer_the_asked, "each reads as the row built at the run's timing (--chargers 1.5 1.2)")
+	_shut(t, main)
+
 ## **`main` hands the baby her world at every place it puts her in one** (`Baby.set_world()`): the
 ## escape builds the building first and the city when she walks out of the service door, with the
 ## same stroller rig, and so the same `Baby`, reparented between them, so a baby told her world once
@@ -414,6 +436,7 @@ func run(t: TestRunner) -> void:
 	await _test_a_boot_builds_its_city_on_the_map_it_is_handed(t)
 	await _test_an_authored_scenes_map_wins_over_the_map_source(t)
 	await _test_a_boot_gives_the_day_its_configured_length(t)
+	await _test_a_charger_timing_run_hands_its_catalogue_to_the_events(t)
 	await _test_main_hands_the_baby_the_world_it_puts_her_in(t)
 	await _test_main_puts_her_down_when_the_building_says_she_came_through_a_door(t)
 	await _test_main_connects_her_release_to_the_controls(t)

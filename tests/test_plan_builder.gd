@@ -17,7 +17,7 @@ func run(t: TestRunner) -> void:
 ## plans standing, not which row it is.
 func _test_place_at_sites_a_row_only_where_the_days_spacing_leaves_room(t: TestRunner) -> void:
 	var map := MapCache.of(SEED)
-	var def := EventCatalogue.mast()
+	var def := Shipped.rows().mast()
 	var walled: Array[Rect2i] = []
 	var tile := Vector2i(-1, -1)
 	for candidate_tile in map.tiles_of_type(GameEnums.TileType.SIDEWALK):

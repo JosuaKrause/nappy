@@ -14,7 +14,7 @@ func run(t: TestRunner) -> void:
 	_test_the_walk_holds_the_days_locations(t)
 
 func _row(id: String, at: Vector2) -> EventPlan:
-	return EventPlan.new(EventCatalogue.by_id(id), at)
+	return EventPlan.new(Shipped.rows().by_id(id), at)
 
 func _test_a_plan_placed_while_she_walks_joins_the_walk(t: TestRunner) -> void:
 	var first := _row("busker", Vector2(64, 64))

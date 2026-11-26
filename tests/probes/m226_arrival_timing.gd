@@ -71,7 +71,7 @@ static func collect(t: Node, encounter: Dictionary, answer: int, pelican: bool) 
 	var her: Vector2 = encounter["her"]
 	var heading: Vector2 = encounter["heading"]
 	var velocity: Vector2 = heading * Tuning.WALK_SPEED * [1.0, 0.0, -1.0][answer]
-	var source := Source.new()
+	var source := Source.new(Shipped.rows(), EventSurroundings.new())
 	t.add_child(source)
 	var where := WhereSheIs.nowhere()
 	var player := Node2D.new()
@@ -88,7 +88,8 @@ static func collect(t: Node, encounter: Dictionary, answer: int, pelican: bool) 
 		var route_of: Callable = encounter["route"]
 		var route: PackedVector2Array = route_of.call(place, at)
 		var instance := EventInstance.new()
-		instance.setup(def, place, route, Vector2.RIGHT, EventSurroundings.new().hearing(where))
+		instance.setup(def, place, route, Vector2.RIGHT,
+				EventSurroundings.new().reading(Shipped.rows()).hearing(where))
 		instance.arrive_from_its_warning()
 		if pelican:
 			instance.be_drawn_as_the_pelican()
@@ -108,7 +109,7 @@ static func collect(t: Node, encounter: Dictionary, answer: int, pelican: bool) 
 		var route: PackedVector2Array = encounter["path"]
 		var instance := EventInstance.new()
 		instance.setup(def, route[0], route, Vector2.RIGHT,
-				EventSurroundings.new().hearing(where))
+				EventSurroundings.new().reading(Shipped.rows()).hearing(where))
 		instance.restore(EventSave.new(float(encounter.get("age", 0.0)), 0.0))
 		source.add_child(instance)
 		source.live.append(instance)

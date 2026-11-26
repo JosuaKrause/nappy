@@ -38,7 +38,8 @@ class _Parts:
 
 	func _init(t: TestRunner, on: CityMap = null) -> void:
 		t.add_child(holder)
-		world = EventWorld.new(EventSurroundings.new().on(on if on else CityMap.new())
+		world = EventWorld.new(EventSurroundings.new().reading(Shipped.rows())
+				.on(on if on else CityMap.new())
 				.drawn_in(holder))
 		world.use_run(RunState.new())
 		board = WarningBoard.new(world)
@@ -69,7 +70,7 @@ func _her(t: TestRunner) -> Stroller:
 func _test_streaming_carries_a_plan_out_and_back_on_its_own(t: TestRunner) -> void:
 	var parts := _parts(t)
 	var streaming := parts.streaming
-	var def := EventCatalogue.by_id("alley_robbery")
+	var def := Shipped.rows().by_id("alley_robbery")
 	var at := Vector2(5000.0, 5000.0)
 	var plan := EventPlan.new(def, at)
 	var plans: Array[EventPlan] = [plan]
@@ -121,8 +122,9 @@ func _test_a_drawn_body_is_told_to_whoever_listens(t: TestRunner) -> void:
 	# One row with a solid body and one without, stood on the sidewalk a block apart.
 	var at := CrowdLanes.arterial_pavement(map)
 	var drawn: Array[EventPlan] = [
-		EventPlan.new(EventCatalogue.by_id("barricade"), at),
-		EventPlan.new(EventCatalogue.by_id("cat_dash"), at + Vector2(0.0, CityMap.period() * Tuning.TILE_SIZE)),
+		EventPlan.new(Shipped.rows().by_id("barricade"), at),
+		EventPlan.new(Shipped.rows().by_id("cat_dash"), at + Vector2(0.0,
+		CityMap.period() * Tuning.TILE_SIZE)),
 	]
 	var expected: Array[String] = []
 	for plan in drawn:
@@ -145,7 +147,7 @@ func _test_a_drawn_body_is_told_to_whoever_listens(t: TestRunner) -> void:
 	var told_so_far := told.size()
 	parts.streaming.use_body_listener(Callable())
 	var drawn_before := parts.walk.plans().size()
-	parts.streaming.add(EventPlan.new(EventCatalogue.by_id("barricade"),
+	parts.streaming.add(EventPlan.new(Shipped.rows().by_id("barricade"),
 			at + Vector2(0.0, 2.0 * CityMap.period() * Tuning.TILE_SIZE)))
 	t.check(told.size() == told_so_far and parts.walk.plans().size() > drawn_before,
 			"with no listener a draw tells nobody and still stands its rows")
@@ -154,7 +156,7 @@ func _test_a_drawn_body_is_told_to_whoever_listens(t: TestRunner) -> void:
 func _test_a_warning_creates_its_row_once_its_time_is_up(t: TestRunner) -> void:
 	var parts := _parts(t)
 	var board := parts.board
-	var def := EventCatalogue.by_id("cyclist")
+	var def := Shipped.rows().by_id("cyclist")
 	var place := Vector2(800.0, 0.0)
 	var arrived: Array = []
 	var where := func(_her: Vector2) -> Vector2: return place
@@ -178,7 +180,7 @@ func _test_a_warning_creates_its_row_once_its_time_is_up(t: TestRunner) -> void:
 func _test_a_warning_with_nowhere_to_put_it_is_withdrawn(t: TestRunner) -> void:
 	var parts := _parts(t)
 	var board := parts.board
-	var def := EventCatalogue.by_id("cyclist")
+	var def := Shipped.rows().by_id("cyclist")
 	var asked := [0]
 	var where := func(_her: Vector2) -> Vector2:
 		asked[0] += 1
@@ -200,7 +202,7 @@ func _test_a_warning_with_nowhere_to_put_it_is_withdrawn(t: TestRunner) -> void:
 func _test_a_scar_is_recorded_once_however_often_it_streams_in(t: TestRunner) -> void:
 	var parts := _parts(t)
 	var streaming := parts.streaming
-	var def := EventCatalogue.by_id("burning_building")
+	var def := Shipped.rows().by_id("burning_building")
 	t.check(def.scar_id() != "", "the fire leaves a scar")
 	t.check(parts.world.run().attempt_spend().scars().is_empty(),
 			"and the run starts with none")
@@ -218,16 +220,16 @@ func _test_a_scar_is_recorded_once_however_often_it_streams_in(t: TestRunner) ->
 	parts.free_all()
 
 func _test_the_pelican_bag_is_the_handed_runs(t: TestRunner) -> void:
-	var world := EventWorld.new()
+	var world := EventWorld.new(EventSurroundings.new().reading(Shipped.rows()))
 	var run := RunState.new()
 	run.header().use_seed(4242)
 	world.use_run(run)
 	var spawner := EventSpawner.new(world, WarningBoard.new(world))
-	var cyclist := EventCatalogue.by_id("cyclist")
+	var cyclist := Shipped.rows().by_id("cyclist")
 	for _i in 5:
 		spawner.rolls_a_pelican(cyclist)
 	t.check(run.pelican().draws() == 5, "five cyclists draw five marbles from the handed run's bag")
-	spawner.rolls_a_pelican(EventCatalogue.by_id("loose_dog"))
+	spawner.rolls_a_pelican(Shipped.rows().by_id("loose_dog"))
 	t.check(run.pelican().draws() == 5, "a dog draws nothing")
 
 func _test_a_door_says_what_it_does_to_her_and_moves_nobody(t: TestRunner) -> void:
@@ -236,11 +238,12 @@ func _test_a_door_says_what_it_does_to_her_and_moves_nobody(t: TestRunner) -> vo
 	var spawn := func(def: EventDef, at: Vector2) -> EventInstance:
 		made.append([def, at])
 		return null
-	var doors := CheckpointController.new(parts.world, spawn, EventCatalogue.door_guard(),
-			EventCatalogue.charger_timing().warning())
+	var doors := CheckpointController.new(parts.world, spawn,
+			Shipped.rows().door_guard(),
+			Shipped.rows().charger_timing().warning())
 	# A post is a plan the day's streaming brings in once she is near (`EventStreaming.add()`).
 	var post_at := Vector2(3000.0, 3000.0)
-	var post_plan := EventPlan.new(EventCatalogue.by_id("checkpoint_post"), post_at)
+	var post_plan := EventPlan.new(Shipped.rows().by_id("checkpoint_post"), post_at)
 	parts.streaming.add(post_plan)
 	parts.streaming.stream_around(post_at)
 	var hut := parts.streaming.event_of(post_plan)
@@ -278,10 +281,11 @@ func _test_the_manager_sees_her_only_once_she_is_handed_in(t: TestRunner) -> voi
 	t.add_child(holder)
 	var map := CityMap.new()
 	var run := RunState.new()
-	var manager := EventManager.new(EventSurroundings.new().on(map).drawn_in(holder))
+	var manager := EventManager.new(Shipped.rows(), EventSurroundings.new()
+			.on(map).drawn_in(holder))
 	manager.setup(run)
 	t.add_child(manager)
-	var def := EventCatalogue.by_id("alley_robbery")
+	var def := Shipped.rows().by_id("alley_robbery")
 	var at := Vector2(5000.0, 5000.0)
 	var plan := EventPlan.new(def, at)
 	manager.walk_events().take([plan] as Array[EventPlan])
@@ -331,7 +335,7 @@ class _RetryDirector extends EventDirector:
 		if handed:
 			return []
 		handed = true
-		return [EventCatalogue.by_id("charging_dog"),
+		return [Shipped.rows().by_id("charging_dog"),
 				PackedVector2Array([Vector2(400.0, 0.0), Vector2(300.0, 0.0)])]
 
 ## The board the lesson puts its warning up on, counting how often it is asked to; on the empty
@@ -348,14 +352,15 @@ func _test_a_failed_lesson_retry_leaves_the_director_running(t: TestRunner) -> v
 	# An empty city map: the director owes its retry the same way with nothing on the ground.
 	var map := CityMap.new()
 	var told: Array[String] = []
-	var world := EventWorld.new(EventSurroundings.new().in_the_city(map)
+	var world := EventWorld.new(EventSurroundings.new().reading(Shipped.rows())
+			.in_the_city(map)
 			.tracing_to(RecordingTrace.new(told)))
 	var walk := WalkEvents.new()
 	var board := _CountingBoard.new(world)
 	var spawner := EventSpawner.new(world, WarningBoard.new(world))
 	var streaming := EventStreaming.new(world, spawner, walk)
 	var lesson := EventsAhead.new(world, streaming, spawner, board, walk)
-	var director := _RetryDirector.new(map)
+	var director := _RetryDirector.new(Shipped.rows(), map)
 	lesson.use_director(director, null)
 	var body := CharacterBody2D.new()
 	body.velocity = Vector2.RIGHT * Tuning.WALK_SPEED
@@ -388,7 +393,7 @@ func _test_a_failed_lesson_retry_leaves_the_director_running(t: TestRunner) -> v
 func _test_only_a_lethal_thing_puts_the_mark_over_her_head(t: TestRunner) -> void:
 	# The board is handed the world it asks for the player and the live events: no manager is
 	# asked anything.
-	var world := EventWorld.new()
+	var world := EventWorld.new(EventSurroundings.new().reading(Shipped.rows()))
 	var board := WarningBoard.new(world)
 	var rig := _her(t)
 	world.use_player(rig)
@@ -396,14 +401,14 @@ func _test_only_a_lethal_thing_puts_the_mark_over_her_head(t: TestRunner) -> voi
 
 	# An ordinary telegraphing event, right on top of her. It costs her the meter and says so
 	# through the meter; it is not an instruction.
-	var ordinary := _a_live(EventCatalogue.by_id("dog_walker"), rig.global_position)
+	var ordinary := _a_live(Shipped.rows().by_id("dog_walker"), rig.global_position)
 	world.take_in(ordinary)
 	board.warn_about_the_ground_she_is_on()
 	t.check(rig.alert_level() == Stroller.Alert.NONE,
 			"a dog walker whose radius covers her raises nothing over her head")
 
 	# A lethal one, still telegraphing: the contract is now about her and the clock has started.
-	var lethal := _a_live(EventCatalogue.by_id("abduction"), rig.global_position)
+	var lethal := _a_live(Shipped.rows().by_id("abduction"), rig.global_position)
 	world.take_in(lethal)
 	board.warn_about_the_ground_she_is_on()
 	t.check(rig.alert_level() == Stroller.Alert.SOON,

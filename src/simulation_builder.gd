@@ -19,6 +19,8 @@ const _BUS := preload("res://src/autoload/event_bus.gd")
 
 ## Where every part writes its own account for the run log; silent until handed one.
 var _trace := RunTrace.new()
+## The run's catalogue, handed to the constructor.
+var _rows: EventCatalogue
 ## The baked atlas pages every part draws from; a part handed none makes its own.
 var _atlas: AtlasLibrary = null
 ## Where the events charge their time to the frame record; none until handed, and until then the
@@ -51,6 +53,12 @@ var _blackout_forced := false
 ## the city's simulation, so `main` hands this narrow reader of it (`use_the_mark()`) for the thought
 ## bubble that hints at the mark; none until then.
 var _the_mark := func() -> Vector2: return Vector2.INF
+
+## A builder of the run's catalogue `rows` (`EventCatalogue`), what every world's events and
+## crowd read their rows from: the composition root's own, built once at boot
+## (`main.configure()`).
+func _init(rows: EventCatalogue) -> void:
+	_rows = rows
 
 ## Hands the builder what every part is equipped with: the trace it writes to, the atlas pages it
 ## draws from and the frame record's sink the events charge their time to.
@@ -143,7 +151,7 @@ func in_the_city(world: CityDressing, map: CityMap, navigator: Navigator, street
 	crowd.equip(_crowd_view, _crowd_timing, _atlas)
 	crowd.use_bus(_bus)
 	simulation.add_child(crowd)
-	crowd.setup(world, map, signals, streets, navigator)
+	crowd.setup(_rows, world, map, signals, streets, navigator)
 	# A body placed on her walk that stands on a lane takes the car there away, where she cannot see.
 	events.use_body_listener(crowd.recycle_cars_on)
 
@@ -218,7 +226,8 @@ func _stand_under(world: WorldContext) -> WorldSimulation:
 ## atlas, its frame timing, the drawn view, and whether they skip their drawing, drawn in
 ## `world`. The caller adds the map and what it moves by.
 func _the_events_surroundings(world: WorldContext) -> EventSurroundings:
-	var surroundings := EventSurroundings.new().drawn_in(world).tracing_to(_trace) \
+	var surroundings := EventSurroundings.new().drawn_in(world) \
+			.tracing_to(_trace) \
 			.drawn_from(_atlas).shown_by(_drawn_view)
 	if _timing != null:
 		surroundings.timed_by(_timing)
@@ -231,7 +240,7 @@ func _the_events_surroundings(world: WorldContext) -> EventSurroundings:
 ## **An event manager over `surroundings`, equipped the one way for every world**: the bus it
 ## reports on. Not yet in the tree: it takes its atlas page as it enters.
 func _new_events(surroundings: EventSurroundings) -> EventManager:
-	var events := EventManager.new(surroundings)
+	var events := EventManager.new(_rows, surroundings)
 	events.name = "Events"
 	events.use_bus(_bus)
 	return events

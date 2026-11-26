@@ -37,7 +37,8 @@ static func plan_for(seed_value: int) -> Dictionary:
 	rng.seed = seed_value
 	var walk := FinalePlanner.route(map)
 	return {"map": map, "plan": walk,
-			"placements": DayPlanner.plan_the_escape_city(map, walk, rng, _city_spec(),
+			"placements": DayPlanner.plan_the_escape_city(Shipped.rows(), map, walk,
+			rng, _city_spec(),
 				GamePlanBuilder.over(map))}
 
 ## The roadblocks among `placements` on each open street of the walk `plan` that carries any,
@@ -180,12 +181,13 @@ class Stage extends RefCounted:
 		if t != null:
 			t.add_child(world)
 		var run := RunState.new()
-		var surroundings := EventSurroundings.new().on(map).drawn_in(world)
+		var surroundings := EventSurroundings.new().reading(Shipped.rows()).on(map) \
+				.drawn_in(world)
 		if atlas != null:
 			surroundings.drawn_from(atlas)
 		if drawer != null:
 			surroundings.drawing_through(drawer)
-		manager = EventManager.new(surroundings)
+		manager = EventManager.new(Shipped.rows(), surroundings)
 		manager.setup(run)
 		world.add_child(manager)
 		manager.set_physics_process(false)

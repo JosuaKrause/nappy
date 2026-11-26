@@ -47,12 +47,13 @@ func _test_a_badge_comes_down_the_frame_its_danger_is_in_sight(t: TestRunner) ->
 ## The edge watching the stand-in source, with her standing at the origin and the convoy, created
 ## under its warning, at `at`.
 func _rig(t: TestRunner, at: Vector2) -> Dictionary:
-	var source := StandIns.Source.new()
+	var source := StandIns.Source.new(Shipped.rows(), EventSurroundings.new())
 	source.visible_view().look_from(Vector2.ZERO)
 	t.add_child(source)
 	var her := Node2D.new()
 	t.add_child(her)
-	var convoy := StandIns.Coming.new(EventCatalogue.by_id("military_convoy"), _convoy_box())
+	var convoy := StandIns.Coming.new(Shipped.rows().by_id("military_convoy"),
+			_convoy_box())
 	convoy.position = at
 	convoy.arrive_from_its_warning()
 	source.bring(convoy)
@@ -77,7 +78,7 @@ static func _in_sight(at: Vector2) -> bool:
 ## the row (`EventFootprints.drawn_box_of()`, what `EventInstance.drawn_box()` asks): a change to its
 ## picture or its footprint moves the box both the edge and `_in_sight()` are checked against.
 static func _convoy_box() -> Rect2:
-	return EventFootprints.drawn_box_of(EventCatalogue.by_id("military_convoy"), true)
+	return EventFootprints.drawn_box_of(Shipped.rows().by_id("military_convoy"), true)
 
 ## Whether the convoy's badge is on the edge.
 static func _up(edge: DangerEdge) -> bool:

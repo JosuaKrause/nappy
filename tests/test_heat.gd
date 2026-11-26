@@ -7,14 +7,15 @@ extends RefCounted
 ## validated cold has its contract stated about precisely the harmless version of itself. Progress
 ## is a bounded integer, so the whole set of shapes exists and all of it is checkable.
 ##
-## **No city and no day are built.** The row cases are asked of `EventCatalogue.heated()`'s rows and of
-## `EventInstance`s set up on a hand-drawn path, with no world round them. **Why real `EventInstance`s
-## are in a heat suite**: what heat promises about a patrol or a raid is how the instance made from
-## the heated row behaves (it notices, stops, lets a man out, resumes from a stream), a guarantee
-## between the catalogue's row and the instance that plays it, so a fake instance would answer
-## nothing. What a hunting roadblock's guard does (the barrier staying, the catch at a man's reach,
-## the post he sets off from) is `test_barrier_stays.gd`'s, and what a day planned at heat places
-## is `test_events_scheduler.gd`'s.
+## **No city and no day are built.** The row cases are asked of
+## `EventCatalogue.heated()`'s rows and of `EventInstance`s set up on a hand-drawn
+## path, with no world round them. **Why real `EventInstance`s are in a heat suite**: what heat
+## promises about a patrol or a raid is how the instance made from the heated row behaves (it
+## notices, stops, lets a man out, resumes from a stream), a guarantee between the catalogue's
+## row and the instance that plays it, so a fake instance would answer nothing. What a hunting
+## roadblock's guard does (the barrier staying, the catch at a man's reach, the post he sets off
+## from) is `test_barrier_stays.gd`'s, and what a day planned at heat places is
+## `test_events_scheduler.gd`'s.
 
 const STEP := 1.0 / 60.0
 
@@ -49,7 +50,7 @@ func run(t: TestRunner) -> void:
 func _test_every_shape_of_every_row_is_fair(t: TestRunner) -> void:
 	for def in CatalogueRows.every():
 		for level in EventCatalogue.heat_levels():
-			var hot := EventCatalogue.heated(def, level)
+			var hot := Shipped.rows().heated(def, level)
 			t.check(hot.validate(), "'%s' is fair at heat %d" % [def.id(), level])
 			t.check(hot.id() == def.id(), "heat does not change what '%s' is" % def.id())
 
@@ -63,10 +64,10 @@ func _test_the_ladder_has_a_top(t: TestRunner) -> void:
 		if not def.answers_to_heat() or def.hunts_for_her():
 			continue
 		for level in EventCatalogue.heat_levels():
-			t.check(not EventCatalogue.heated(def, level).ends_the_day(),
+			t.check(not Shipped.rows().heated(def, level).ends_the_day(),
 					"'%s' presses without ever ending the day (heat %d)" % [def.id(), level])
 	for day in range(1, Tuning.RUN_LENGTH_DAYS + 1):
-		var out := EventCatalogue.out_of_the_car(DaySpec.for_day(day))
+		var out := Shipped.rows().out_of_the_car(DaySpec.for_day(day))
 		t.check(not out.ends_the_day() and out.pursuit().stop_excitement() > 0.0,
 				"day %d: the man a patrol car lets out stops her rather than ending the day" % day)
 
@@ -84,14 +85,14 @@ func _test_a_hunts_row_wakes_up_at_its_own_threshold(t: TestRunner) -> void:
 			continue
 		checked += 1
 		for level in EventCatalogue.heat_levels():
-			var hot := EventCatalogue.heated(def, level)
+			var hot := Shipped.rows().heated(def, level)
 			var should_hunt := level >= EventDef.HEAT_HUNTS_LEVEL
-			if EventCatalogue.heated(def, EventDef.HEAT_HUNTS_LEVEL).investigates():
+			if Shipped.rows().heated(def, EventDef.HEAT_HUNTS_LEVEL).investigates():
 				t.check(hot.investigates() == should_hunt and not hot.pursues()
 						and hot.ends_the_day() == def.ends_the_day(),
 						"'%s' heat %d: it lets its men out iff at or past its own threshold, never "
 						% [def.id(), level] + "chasing her itself")
-				var man := EventCatalogue.out_of_the_car(DaySpec.for_day(10), false)
+				var man := Shipped.rows().out_of_the_car(DaySpec.for_day(10), false)
 				t.check(man.ends_the_day(), "'%s': and its men's catch ends the day" % def.id())
 				var reach := PursuitSpec.standoff(man.chase_speed(), man.standoff_reach())
 				t.check(not should_hunt or (reach < hot.notice_within()
@@ -122,7 +123,7 @@ func _test_a_hunts_row_wakes_up_at_its_own_threshold(t: TestRunner) -> void:
 	t.check(checked > 0, "and there is a HUNTS row to check")
 
 func _cold_raid() -> EventDef:
-	return EventCatalogue.by_id("night_raid")
+	return Shipped.rows().by_id("night_raid")
 
 ## The raid's own hot shape, named rather than left to the generic `HUNTS` loop above: untouched
 ## below `EventDef.HEAT_HUNTS_LEVEL`, then letting its men out past it, the van itself never chasing
@@ -131,16 +132,17 @@ func _cold_raid() -> EventDef:
 ## day 10 whatever the heat, since heat moves what a row does and never when it is allowed to
 ## appear.
 ##
-## The pursuit numbers `EventCatalogue.heated()` writes in are not restated here: a check that
-## read `HEAT_HUNTS_SPEED` back off the row it was just assigned to could only ever say somebody
-## changed that constant. What the hot row has to *satisfy* is checked instead — `validate()`
-## here, and the stand-off/trigger/field ordering in the generic `HUNTS` loop above.
+## The pursuit numbers `EventCatalogue.heated()` writes in are not restated here: a
+## check that read `HEAT_HUNTS_SPEED` back off the row it was just assigned to could only ever
+## say somebody changed that constant. What the hot row has to *satisfy* is checked instead —
+## `validate()` here, and the stand-off/trigger/field ordering in the generic `HUNTS` loop
+## above.
 func _test_the_raid_hunts_past_its_own_threshold(t: TestRunner) -> void:
 	var cold := _cold_raid()
 	t.check(cold.hunts_for_her(),
 			"the raid answers to the resistance, on the hunting rung")
 	for level in EventCatalogue.heat_levels():
-		var hot := EventCatalogue.heated(cold, level)
+		var hot := Shipped.rows().heated(cold, level)
 		t.check(hot.validate(), "the raid is fair at heat %d" % level)
 		var same_days := true
 		for kind: GameEnums.EventKind in GameEnums.EventKind.values():
@@ -160,7 +162,7 @@ func _test_the_raid_hunts_past_its_own_threshold(t: TestRunner) -> void:
 				% level + "chases or kills")
 
 func _cold_roadblock() -> EventDef:
-	return EventCatalogue.by_id("roadblock")
+	return Shipped.rows().by_id("roadblock")
 
 ## The roadblock's own hot shape, named rather than left to the generic `HUNTS` loop above: below
 ## `EventDef.HEAT_HUNTS_LEVEL` it is the band it always was — untouched, still merely `costly` — and
@@ -175,7 +177,7 @@ func _test_the_roadblock_hunts_past_its_own_threshold(t: TestRunner) -> void:
 			"the roadblock answers to the resistance, the lethal way")
 	t.check(not cold.ends_the_day(), "cold, it is still only a closed street")
 	for level in EventCatalogue.heat_levels():
-		var hot := EventCatalogue.heated(cold, level)
+		var hot := Shipped.rows().heated(cold, level)
 		t.check(hot.validate(), "the roadblock is fair at heat %d" % level)
 		t.check(hot.own_first_day() == cold.own_first_day(),
 				"heat %d: hunting moves what it does, never when it may appear" % level)
@@ -192,7 +194,8 @@ func _test_the_roadblock_hunts_past_its_own_threshold(t: TestRunner) -> void:
 		# number: the catch is the same one the escape's masked man uses, and it is well inside
 		# the reach the band's own body would have forced if the barrier were the killer — which
 		# is exactly the arrangement this row used to be in.
-		t.check(hot.lethal_reach() == EventCatalogue.by_id("masked_pursuer").core_within(),
+		t.check(hot.lethal_reach() == Shipped.rows().by_id("masked_pursuer")
+				.core_within(),
 				"heat %d: it catches at a masked man's own reach (%.0fpx)"
 				% [level, hot.lethal_reach()])
 		t.check(hot.lethal_reach() < hot.obstructs_within() + Tuning.PLAYER_BODY_RADIUS,
@@ -216,7 +219,7 @@ func _test_a_row_that_answers_to_nothing_is_untouched(t: TestRunner) -> void:
 			continue
 		untouched += 1
 		for level in EventCatalogue.heat_levels():
-			t.check(EventCatalogue.heated(def, level) == def,
+			t.check(Shipped.rows().heated(def, level) == def,
 					"'%s' answers to nothing, so heat %d hands back the row itself"
 					% [def.id(), level])
 	t.check(untouched > 0, "most of the catalogue answers to nothing")
@@ -225,18 +228,18 @@ func _test_heat_is_derived_once_and_kept(t: TestRunner) -> void:
 	for def in CatalogueRows.every():
 		# Cold is always the row itself, whatever the row answers to: level zero is *no* heat
 		# rather than a little of it.
-		t.check(EventCatalogue.heated(def, 0) == def,
+		t.check(Shipped.rows().heated(def, 0) == def,
 				"'%s' at heat 0 is the catalogue's own row" % def.id())
 		if not def.answers_to_heat():
 			continue
-		t.check(EventCatalogue.heated(def, 1) == EventCatalogue.heated(def, 1),
-				"'%s' is derived once at a level and kept" % def.id())
-		t.check(EventCatalogue.heated(def, 1) != def,
+		t.check(Shipped.rows().heated(def, 1) == Shipped.rows().heated(def,
+				1), "'%s' is derived once at a level and kept" % def.id())
+		t.check(Shipped.rows().heated(def, 1) != def,
 				"'%s' answers to heat, so heat gives back something else" % def.id())
 		# Progress can reach five over the five tasks while four is what qualifies, so the top of
 		# the ladder has to be a ceiling rather than a number the arithmetic runs past.
-		t.check(EventCatalogue.heated(def, Tuning.RESISTANCE_GOAL + 1).peak()
-						== EventCatalogue.heated(def, Tuning.RESISTANCE_GOAL).peak(),
+		t.check(Shipped.rows().heated(def, Tuning.RESISTANCE_GOAL + 1).peak()
+						== Shipped.rows().heated(def, Tuning.RESISTANCE_GOAL).peak(),
 				"'%s' cannot be heated past the goal" % def.id())
 
 # ------------------------------------------------------------ the patrol presses ---
@@ -246,7 +249,7 @@ func _test_heat_is_derived_once_and_kept(t: TestRunner) -> void:
 # short shelf life, rather than as the literal figures Tuning's comments already carry.
 
 func _cold_patrol() -> EventDef:
-	return EventCatalogue.by_id("police_patrol")
+	return Shipped.rows().by_id("police_patrol")
 
 ## More of them, and louder, and monotonically so across every level the resistance can reach —
 ## not just cold vs. full heat, which would pass even if the ladder dipped in the middle.
@@ -257,14 +260,14 @@ func _test_the_patrol_presses_more_and_louder(t: TestRunner) -> void:
 	var last_population := cold.most_in_a_day()
 	var last_intensity := cold.peak()
 	for level in range(1, EventCatalogue.heat_levels()):
-		var hot := EventCatalogue.heated(cold, level)
+		var hot := Shipped.rows().heated(cold, level)
 		t.check(hot.most_in_a_day() >= last_population,
 				"the patrol's population never drops between heat %d and %d" % [level - 1, level])
 		t.check(hot.peak() >= last_intensity,
 				"and neither does what it costs to stand near it (heat %d)" % level)
 		last_population = hot.most_in_a_day()
 		last_intensity = hot.peak()
-	var full := EventCatalogue.heated(cold, Tuning.RESISTANCE_GOAL)
+	var full := Shipped.rows().heated(cold, Tuning.RESISTANCE_GOAL)
 	t.check(full.most_in_a_day() > cold.most_in_a_day(),
 			"and at full heat there really are more of them (%d vs %d)"
 			% [full.most_in_a_day(), cold.most_in_a_day()])
@@ -285,14 +288,14 @@ func _test_the_patrol_presses_more_and_louder(t: TestRunner) -> void:
 func _test_the_patrol_investigates_past_the_threshold(t: TestRunner) -> void:
 	var cold := _cold_patrol()
 	for level in EventCatalogue.heat_levels():
-		var hot := EventCatalogue.heated(cold, level)
+		var hot := Shipped.rows().heated(cold, level)
 		var should_investigate := level >= EventDef.HEAT_INVESTIGATES_LEVEL
 		t.check(hot.investigates() == should_investigate,
 				"heat %d: the patrol investigates iff it is at or past the threshold" % level)
 		t.check(not hot.pursues(), "heat %d: and the car itself never pursues her" % level)
 		if should_investigate:
 			for day: int in [8, 9]:
-				var officer := EventCatalogue.out_of_the_car(DaySpec.for_day(day))
+				var officer := Shipped.rows().out_of_the_car(DaySpec.for_day(day))
 				var standoff := PursuitSpec.standoff(officer.chase_speed(),
 						officer.standoff_reach())
 				t.check(standoff < hot.notice_within() and hot.notice_within() <= hot.heard_within(),
@@ -305,13 +308,13 @@ func _test_the_patrol_investigates_past_the_threshold(t: TestRunner) -> void:
 ## row's own docstring claims, which a pursuer that merely stood still waiting would have thrown
 ## away the moment it started answering to heat.
 func _test_it_patrols_while_it_waits(t: TestRunner) -> void:
-	var hot := EventCatalogue.heated(_cold_patrol(), Tuning.RESISTANCE_GOAL)
+	var hot := Shipped.rows().heated(_cold_patrol(), Tuning.RESISTANCE_GOAL)
 	t.check(hot.investigates() and hot.moves(), "the fully heated patrol is a mobile investigator")
 	var path := PackedVector2Array([Vector2.ZERO, Vector2(4000.0, 0.0)])
 	var instance_where := WhereSheIs.nowhere()
 	var instance := EventInstance.new()
 	instance.setup(hot, path[0], path, Vector2.RIGHT,
-			EventSurroundings.new().hearing(instance_where))
+			EventSurroundings.new().reading(Shipped.rows()).hearing(instance_where))
 	t.add_child(instance)
 	instance.set_process(false)
 	# Nowhere near her own trigger radius, so nothing here is about noticing.
@@ -333,12 +336,12 @@ func _test_it_patrols_while_it_waits(t: TestRunner) -> void:
 ## follows, arrived at through a different door. A 300px path, so it runs out in about four
 ## seconds.
 func _test_a_patrol_that_never_notices_drives_off_its_route(t: TestRunner) -> void:
-	var hot := EventCatalogue.heated(_cold_patrol(), Tuning.RESISTANCE_GOAL)
+	var hot := Shipped.rows().heated(_cold_patrol(), Tuning.RESISTANCE_GOAL)
 	var path := PackedVector2Array([Vector2.ZERO, Vector2(300.0, 0.0)])
 	var instance_where := WhereSheIs.nowhere()
 	var instance := EventInstance.new()
 	instance.setup(hot, path[0], path, Vector2.RIGHT,
-			EventSurroundings.new().hearing(instance_where))
+			EventSurroundings.new().reading(Shipped.rows()).hearing(instance_where))
 	t.add_child(instance)
 	instance.set_process(false)
 	var far := Vector2(200000.0, 200000.0)
@@ -358,12 +361,12 @@ func _test_a_patrol_that_never_notices_drives_off_its_route(t: TestRunner) -> vo
 ## still while he walks back after giving up, and once he is back in it drives on along its
 ## route the way it was going, never turned round.
 func _test_the_patrol_stops_once_it_notices(t: TestRunner) -> void:
-	var hot := EventCatalogue.heated(_cold_patrol(), Tuning.RESISTANCE_GOAL)
+	var hot := Shipped.rows().heated(_cold_patrol(), Tuning.RESISTANCE_GOAL)
 	var path := PackedVector2Array([Vector2.ZERO, Vector2(4000.0, 0.0)])
 	var instance_where := WhereSheIs.nowhere()
 	var instance := EventInstance.new()
 	instance.setup(hot, path[0], path, Vector2.RIGHT,
-			EventSurroundings.new().hearing(instance_where))
+			EventSurroundings.new().reading(Shipped.rows()).hearing(instance_where))
 	t.add_child(instance)
 	instance.set_process(false)
 	var her := Vector2(hot.notice_within() - 10.0, -40.0)
@@ -374,10 +377,10 @@ func _test_the_patrol_stops_once_it_notices(t: TestRunner) -> void:
 	var stopped_at := instance.position
 	var officer_where := WhereSheIs.nowhere()
 	var officer := EventInstance.new()
-	var out := EventCatalogue.out_of_the_car(DaySpec.for_day(6))
+	var out := Shipped.rows().out_of_the_car(DaySpec.for_day(6))
 	officer.setup(out, instance.where_its_officer_may_get_out(out, 0, 1)[0], PackedVector2Array(),
 			Vector2.RIGHT,
-			EventSurroundings.new().hearing(officer_where))
+			EventSurroundings.new().reading(Shipped.rows()).hearing(officer_where))
 	instance.let_out(officer)
 	for i in int(round(3.0 / STEP)):
 		instance_where.tell(her)
@@ -420,7 +423,8 @@ func _test_the_patrol_stops_once_it_notices(t: TestRunner) -> void:
 ## does not stop for her; with a view that holds the van, both its doors and her, it does, and owes
 ## its men.
 func _test_a_hunting_van_lets_its_men_out_only_in_her_view(t: TestRunner) -> void:
-	var hot := EventCatalogue.heated(EventCatalogue.by_id("abduction"), Tuning.RESISTANCE_GOAL)
+	var hot := Shipped.rows().heated(Shipped.rows().by_id("abduction"),
+			Tuning.RESISTANCE_GOAL)
 	t.check(hot.investigates() and hot.lets_out() == 2, "the fully heated van lets out two men")
 	var instance_where := WhereSheIs.nowhere()
 	var instance := _parked_van(t, hot, instance_where)
@@ -448,7 +452,8 @@ func _test_a_hunting_van_lets_its_men_out_only_in_her_view(t: TestRunner) -> voi
 ## walks off to 322px, past its 225px notice, and the view now holds the van, both its doors and her:
 ## it still does not stop and owes no men. Back inside its notice under the same view, it stops.
 func _test_a_van_that_saw_her_out_of_view_never_stops_past_its_notice(t: TestRunner) -> void:
-	var hot := EventCatalogue.heated(EventCatalogue.by_id("abduction"), Tuning.RESISTANCE_GOAL)
+	var hot := Shipped.rows().heated(Shipped.rows().by_id("abduction"),
+			Tuning.RESISTANCE_GOAL)
 	var instance_where := WhereSheIs.nowhere()
 	var instance := _parked_van(t, hot, instance_where)
 	var her := Vector2(0.0, 215.0)
@@ -487,8 +492,9 @@ func _test_a_van_that_saw_her_out_of_view_never_stops_past_its_notice(t: TestRun
 ## Run disc covers that corner, it does not stop for her; in the tap scheme, under the same view, it
 ## stops and owes its two men.
 func _test_a_van_lets_no_man_out_under_a_covered_corner(t: TestRunner) -> void:
-	var hot := EventCatalogue.heated(EventCatalogue.by_id("abduction"), Tuning.RESISTANCE_GOAL)
-	var man := EventCatalogue.out_of_the_car(DaySpec.for_day(10), false)
+	var hot := Shipped.rows().heated(Shipped.rows().by_id("abduction"),
+			Tuning.RESISTANCE_GOAL)
+	var man := Shipped.rows().out_of_the_car(DaySpec.for_day(10), false)
 	var cover := TouchCover.joystick()
 	var corner_width := cover.left_corner().end.x * Tuning.VIEW_HALF_EXTENT.x * 2.0 \
 			/ cover.design_box().x
@@ -532,10 +538,10 @@ func _test_a_van_lets_no_man_out_under_a_covered_corner(t: TestRunner) -> void:
 func _parked_van(t: TestRunner, hot: EventDef, where: WhereSheIs) -> EventInstance:
 	var instance := EventInstance.new()
 	instance.setup(hot, Vector2.ZERO, PackedVector2Array(), Vector2.RIGHT,
-			EventSurroundings.new().hearing(where))
+			EventSurroundings.new().reading(Shipped.rows()).hearing(where))
 	t.add_child(instance)
 	instance.set_process(false)
-	instance.lets_out_as(EventCatalogue.out_of_the_car(DaySpec.for_day(10), false))
+	instance.lets_out_as(Shipped.rows().out_of_the_car(DaySpec.for_day(10), false))
 	return instance
 
 ## `EventInstance.restore()` restores age and distance travelled so a streamed-out event picks up
@@ -543,12 +549,13 @@ func _parked_van(t: TestRunner, hot: EventDef, where: WhereSheIs) -> EventInstan
 ## row that moves and is also a pursuer, and `restore()`'s own "if the row moves and
 ## path.size() > 1: route.advance(0.0)" line does not know or care whether the def pursues.
 func _test_a_streamed_patrol_resumes_where_it_left_off(t: TestRunner) -> void:
-	var hot := EventCatalogue.heated(_cold_patrol(), Tuning.RESISTANCE_GOAL)
+	var hot := Shipped.rows().heated(_cold_patrol(), Tuning.RESISTANCE_GOAL)
 	var path := PackedVector2Array([Vector2.ZERO, Vector2(4000.0, 0.0)])
 
 	var first_where := WhereSheIs.nowhere()
 	var first := EventInstance.new()
-	first.setup(hot, path[0], path, Vector2.RIGHT, EventSurroundings.new().hearing(first_where))
+	first.setup(hot, path[0], path, Vector2.RIGHT,
+			EventSurroundings.new().reading(Shipped.rows()).hearing(first_where))
 	t.add_child(first)
 	first.set_process(false)
 	var far := Vector2(200000.0, 200000.0)
@@ -583,12 +590,13 @@ func _test_a_streamed_patrol_resumes_where_it_left_off(t: TestRunner) -> void:
 ## enough from where the day planted it — see `_test_every_waiting_row_resumes_the_notice` for
 ## the same restore checked against that row rather than only the patrol that surfaced the gap.
 func _test_a_streamed_patrol_mid_chase(t: TestRunner) -> void:
-	var hot := EventCatalogue.heated(_cold_patrol(), Tuning.RESISTANCE_GOAL)
+	var hot := Shipped.rows().heated(_cold_patrol(), Tuning.RESISTANCE_GOAL)
 	var path := PackedVector2Array([Vector2.ZERO, Vector2(4000.0, 0.0)])
 
 	var first_where := WhereSheIs.nowhere()
 	var first := EventInstance.new()
-	first.setup(hot, path[0], path, Vector2.RIGHT, EventSurroundings.new().hearing(first_where))
+	first.setup(hot, path[0], path, Vector2.RIGHT,
+			EventSurroundings.new().reading(Shipped.rows()).hearing(first_where))
 	t.add_child(first)
 	first.set_process(false)
 	var her := Vector2(hot.notice_within() - 10.0, 0.0)
@@ -607,7 +615,7 @@ func _test_a_streamed_patrol_mid_chase(t: TestRunner) -> void:
 	var second_where := WhereSheIs.nowhere()
 	var second := EventInstance.new()
 	second.setup(hot, path[0], path, Vector2.RIGHT,
-			EventSurroundings.new().hearing(second_where))
+			EventSurroundings.new().reading(Shipped.rows()).hearing(second_where))
 	t.add_child(second)
 	second.restore(EventSave.new(age, travelled, noticed_at))
 	t.check(not second.is_waiting(),
@@ -629,13 +637,13 @@ func _test_a_streamed_patrol_mid_chase(t: TestRunner) -> void:
 ## `alley_robbery` waits for her the same way, cold (`EventDef.waits_for_her()`), with no heat
 ## level needed to reach it, and this is the same restore checked against that row instead.
 func _test_every_waiting_row_resumes_the_notice(t: TestRunner) -> void:
-	var def := EventCatalogue.by_id("alley_robbery")
+	var def := Shipped.rows().by_id("alley_robbery")
 	t.check(def.notice_within() > 0.0, "'alley_robbery' is a waiting pursuer, cold")
 
 	var first_where := WhereSheIs.nowhere()
 	var first := EventInstance.new()
 	first.setup(def, Vector2.ZERO, PackedVector2Array(), Vector2.RIGHT,
-			EventSurroundings.new().hearing(first_where))
+			EventSurroundings.new().reading(Shipped.rows()).hearing(first_where))
 	t.add_child(first)
 	first.set_process(false)
 	var her := Vector2(def.notice_within() - 10.0, 0.0)

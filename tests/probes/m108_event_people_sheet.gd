@@ -88,7 +88,7 @@ func _heading_row(def_id: String, by_view: Dictionary) -> Array:
 	for sector in range(8):
 		var instance := FakeEvent.new()
 		instance.heading = _sector_heading(sector)
-		var look := instance.look_for(EventCatalogue.by_id(def_id))
+		var look := instance.look_for(Shipped.rows().by_id(def_id))
 		var view := look.select_view(instance.heading)
 		row.append(_entry(by_view[view], look.is_mirrored()))
 		instance.free()
@@ -99,7 +99,7 @@ func _heading_row(def_id: String, by_view: Dictionary) -> Array:
 ## `is_waiting()`.
 func _robber_waiting_row() -> Array:
 	var row := []
-	var def := EventCatalogue.by_id("alley_robbery")
+	var def := Shipped.rows().by_id("alley_robbery")
 	for sector in range(8):
 		var instance := FakeEvent.new()
 		instance.waiting = true

@@ -268,7 +268,7 @@ class _Day extends RefCounted:
 		var the_day := _Day.new()
 		var map := CityGenerator.generate(BASE + i * STEP)
 		# The run's mast sites, worked out once on the city as built, as the game does.
-		var sites := MastSites.compute(map)
+		var sites := MastSites.compute(Shipped.rows(), map)
 		var state := CityState.new()
 		state.begin_day(map.plans_by_block(), day)
 		map.repaint(state)
@@ -277,10 +277,11 @@ class _Day extends RefCounted:
 		# The day's own closures, holds, region wall and seals, planned as the game plans them
 		# (`City.start_day()`, `DayPlanner._plan_a_day()`), so the seals and the wall's bodies
 		# stand as the day's standing and hold their locations.
-		var region_plan := RegionPlanner.plan_day(map, spec, tree)
+		var region_plan := RegionPlanner.plan_day(Shipped.rows(), map, spec, tree)
 		var closure_rng := RandomNumberGenerator.new()
 		closure_rng.seed = hash("placement_rows closures:%d:%d" % [i, day])
-		var closures := ClosurePlanner.plan_day(map, spec, closure_rng, tree, region_plan)
+		var closures := ClosurePlanner.plan_day(Shipped.rows(), map, spec,
+				closure_rng, tree, region_plan)
 		map.close_streets(closures)
 		map.clear_day_holds()
 		for closure: RoadClosure in closures:
@@ -303,8 +304,8 @@ class _Day extends RefCounted:
 			boundary[rect.position] = true
 		var seal_rng := RandomNumberGenerator.new()
 		seal_rng.seed = hash("placement_rows seals:%d:%d" % [i, day])
-		var seals := SealPlanner.plan_day(map, spec, tree, seal_rng, boundary,
-				map.held_streets())
+		var seals := SealPlanner.plan_day(Shipped.rows(), map, spec, tree, seal_rng,
+				boundary, map.held_streets())
 		for seal in seals:
 			seal.stand_as_a_seal()
 		var doors := PackedVector2Array()
@@ -323,7 +324,7 @@ class _Day extends RefCounted:
 		the_day.planned_at = Time.get_ticks_usec()
 		var dawn: DawnContext = GameDawn.of(spec, rng, map).masts(sites).spent(consumed) \
 				.on(tree).doors(doors).standing(standing) \
-				.roadblock(EventCatalogue.by_id(guarded) if guarded != "" else null) \
+				.roadblock(Shipped.rows().by_id(guarded) if guarded != "" else null) \
 				.undrawn().planned()
 		the_day.map = map
 		the_day.tree = tree
@@ -419,11 +420,12 @@ func _walk_every_day(reach: float) -> void:
 			# The walk's sitings are judged against the walk itself, as the game's are, and lay a
 			# beat on the locations the units draw into: made by the game's maker, over a world
 			# that holds this probe's city and a run of its own.
-			var world := EventWorld.new(EventSurroundings.new().in_the_city(map))
+			var world := EventWorld.new(EventSurroundings.new()
+					.reading(Shipped.rows()).in_the_city(map))
 			world.use_run(RunState.new())
 			world.use_plan_builder(GamePlanBuilder.over(map))
 			var siting := SitingMaker.new(world, walk).make(day, tree, EventScheduler.row_ground(map))
-			var director := EventDirector.new(map)
+			var director := EventDirector.new(Shipped.rows(), map)
 			var director_rng := RandomNumberGenerator.new()
 			director_rng.seed = hash("walk_rows director:%d:%d" % [i, day])
 			director.start_day(day, plans, director_rng,
@@ -691,7 +693,8 @@ static func _unit_draw_reaching(dawn: DawnContext, reach: float) -> UnitDraw:
 	var beside_the_routes := dawn.roadblock_row()
 	var beside_id := beside_the_routes.id() if beside_the_routes != null else ""
 	var rows := {}
-	for def in EventCatalogue.of_kind(GameEnums.EventKind.RECURRING, day, dawn.heat()):
+	for def in Shipped.rows().of_kind(GameEnums.EventKind.RECURRING, day,
+			dawn.heat()):
 		if def.is_drawn_by_units(day, beside_id):
 			rows[def.id()] = def.for_day(day)
 	var ground := dawn.ground()

@@ -30,7 +30,7 @@ func run(t: TestRunner) -> void:
 # ------------------------------------------------------------------ the rig ---
 
 func _truck() -> EventDef:
-	return EventCatalogue.by_id("fire_truck")
+	return Shipped.rows().by_id("fire_truck")
 
 ## A live truck on `route`, its warning spent (`spawn_warned()` hands it over with the telegraph
 ## used up), in the tree so its body exists, stepped by hand, drawn through `drawer` when one is
@@ -39,7 +39,7 @@ func _engine(t: TestRunner, route: PackedVector2Array, where: WhereSheIs,
 		drawer: EventDrawer = null) -> EventInstance:
 	var def := _truck()
 	var engine := EventInstance.new()
-	var surroundings := EventSurroundings.new().hearing(where)
+	var surroundings := EventSurroundings.new().reading(Shipped.rows()).hearing(where)
 	if drawer != null:
 		surroundings.drawing_through(drawer)
 	engine.setup(def, route[0], route, (route[1] - route[0]).normalized(), surroundings)

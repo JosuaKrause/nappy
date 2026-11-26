@@ -21,7 +21,7 @@ func run(t: TestRunner) -> void:
 		state.begin_day(map.plans_by_block(), 1)
 		map.repaint(state)
 		counts["cities"] += 1
-		var route := TutorialRoute.for_city(map)
+		var route := TutorialRoute.for_city(Shipped.rows(), map)
 		if route == null:
 			counts["no route"] += 1
 			continue

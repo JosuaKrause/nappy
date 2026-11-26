@@ -42,11 +42,13 @@ func run(t: TestRunner) -> void:
 
 ## The rows placed by a bearing from her.
 static func _rows() -> Array[EventDef]:
-	var rows: Array[EventDef] = [EventCatalogue.by_id("cyclist"), EventCatalogue.by_id("loose_dog"),
-			EventSpawner.as_warned(EventCatalogue.by_id("charging_dog")),
-			EventCatalogue.by_id("robber_giving_chase"), EventCatalogue.by_id("van_guard_giving_chase"),
-			EventCatalogue.by_id("policeman_giving_chase"),
-			EventCatalogue.by_id("guardsman_giving_chase")]
+	var rows: Array[EventDef] = [Shipped.rows().by_id("cyclist"),
+			Shipped.rows().by_id("loose_dog"),
+			EventSpawner.as_warned(Shipped.rows().by_id("charging_dog")),
+			Shipped.rows().by_id("robber_giving_chase"), Shipped.rows() \
+			.by_id("van_guard_giving_chase"),
+			Shipped.rows().by_id("policeman_giving_chase"),
+			Shipped.rows().by_id("guardsman_giving_chase")]
 	return rows
 
 ## The cameras she can be seen through, standing at `her`: on her, and led by her look-ahead
@@ -74,7 +76,7 @@ static func _arrival(row: EventDef, at: Vector2, her: Vector2,
 	if path.is_empty() and row.moves() and not row.pursues():
 		path = PackedVector2Array([at, her + (her - at)])
 	instance.setup(row, at, path, Vector2.RIGHT,
-			EventSurroundings.new().hearing(instance_where))
+			EventSurroundings.new().reading(Shipped.rows()).hearing(instance_where))
 	instance.arrive_from_its_warning()
 	if not row.pursues() or row.starts_by(PursuitSpec.Start.ARRIVES_CHASING):
 		instance.restore(EventSave.new(EventSpawner.age_when_warned(row), 0.0))
@@ -145,8 +147,9 @@ func _test_her_own_sidewalk_on_real_cities(t: TestRunner) -> void:
 	for seed_value in SEEDS:
 		var map := CityGenerator.generate(seed_value)
 		var start := CrowdLanes.arterial_pavement(map)
-		for row: EventDef in [EventCatalogue.by_id("cyclist"), EventCatalogue.by_id("loose_dog"),
-				EventCatalogue.by_id("dog_walker").as_sent_ahead()]:
+		for row: EventDef in [Shipped.rows().by_id("cyclist"),
+				Shipped.rows().by_id("loose_dog"),
+				Shipped.rows().by_id("dog_walker").as_sent_ahead()]:
 			for k in 12:
 				var her := start + Vector2(0.0, float(k) * Tuning.TILE_SIZE * 7.0)
 				if not map.in_bounds(map.world_to_tile(her)):
@@ -171,9 +174,9 @@ func _test_her_own_sidewalk_on_real_cities(t: TestRunner) -> void:
 ## in its lane, and the convoy the director sends in the lane of an east-west street beside her,
 ## through every camera.
 func _test_the_road_and_the_lane(t: TestRunner) -> void:
-	var truck := EventCatalogue.by_id("fire_truck")
-	var column := EventSpawner.as_warned(EventCatalogue.by_id("military_convoy"))
-	var sent := EventCatalogue.by_id("military_convoy").as_sent_ahead()
+	var truck := Shipped.rows().by_id("fire_truck")
+	var column := EventSpawner.as_warned(Shipped.rows().by_id("military_convoy"))
+	var sent := Shipped.rows().by_id("military_convoy").as_sent_ahead()
 	var kerb := Vector2(2000.0, 4000.0)
 	var placed := 0
 	var popped: Array[String] = []
@@ -226,7 +229,7 @@ func _test_the_patrol_sent_down_the_road(t: TestRunner) -> void:
 	var none: Array[EventPlan] = []
 	for seed_value in SEEDS:
 		var map := CityGenerator.generate(seed_value)
-		var director := EventDirector.new(map)
+		var director := EventDirector.new(Shipped.rows(), map)
 		director.force("police_patrol", 1.0)
 		var rng := RandomNumberGenerator.new()
 		rng.seed = seed_value
@@ -294,7 +297,7 @@ static func _created_at_once(row: EventDef, path: PackedVector2Array, her: Vecto
 	var instance_where := WhereSheIs.nowhere()
 	var instance := EventInstance.new()
 	instance.setup(row, path[0], path, Vector2.RIGHT,
-			EventSurroundings.new().hearing(instance_where))
+			EventSurroundings.new().reading(Shipped.rows()).hearing(instance_where))
 	instance_where.tell(her)
 	return instance
 
@@ -303,7 +306,7 @@ static func _created_at_once(row: EventDef, path: PackedVector2Array, her: Vecto
 ## come from there, so `in_its_lane()` has no place (the warning is withdrawn) rather than a place in
 ## view. With her a view's height or less from either end, every answer is off screen or none.
 func _test_the_lane_at_the_ends_of_the_road(t: TestRunner) -> void:
-	var column := EventSpawner.as_warned(EventCatalogue.by_id("military_convoy"))
+	var column := EventSpawner.as_warned(Shipped.rows().by_id("military_convoy"))
 	var top := 16.0
 	var bottom := 4000.0
 	var none := 0

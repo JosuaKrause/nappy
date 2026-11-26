@@ -10,7 +10,7 @@ const CITIES: Array[int] = [4242, 77, 1301, 90210, 90241, 90272, 90303, 90334, 2
 func run(t: TestRunner) -> void:
 	for city_seed: int in CITIES:
 		var map := CityGenerator.generate(city_seed)
-		var sites := MastSites.compute(map)
+		var sites := MastSites.compute(Shipped.rows(), map)
 		var counts: Array[int] = []
 		for day: int in [1, 14]:
 			var rng := RandomNumberGenerator.new()

@@ -51,13 +51,14 @@ func run(t: TestRunner) -> void:
 ## dawn's own choice of them is `test_events_scheduler.gd`'s.
 func _start(with_the_announcement := false) -> void:
 	var plans: Array[EventPlan] = []
-	var loudspeaker := EventCatalogue.mast()
+	var loudspeaker := Shipped.rows().mast()
 	for site in _sites():
 		var mast := EventPlan.new(loudspeaker, site.foot())
 		mast.stand_as_a_mast(site.id())
 		plans.append(mast)
 		if with_the_announcement:
-			var announcement := EventPlan.new(EventCatalogue.by_id("curfew_announce"), site.foot())
+			var announcement := EventPlan.new(Shipped.rows().by_id("curfew_announce"),
+					site.foot())
 			announcement.stand_as_a_mast(site.id())
 			plans.append(announcement)
 	# The focus is far off the map, so nothing streams in until a test walks to a mast.
@@ -71,8 +72,8 @@ func _start(with_the_announcement := false) -> void:
 func _test_no_row_is_city_wide(t: TestRunner) -> void:
 	t.check(EventDraft.new("").build().get("city_wide") == null,
 			"EventDef carries no city_wide field any more")
-	var loudspeaker := EventCatalogue.by_id("loudspeaker")
-	var curfew := EventCatalogue.by_id("curfew_announce")
+	var loudspeaker := Shipped.rows().by_id("loudspeaker")
+	var curfew := Shipped.rows().by_id("curfew_announce")
 	t.check(loudspeaker.heard_within() > loudspeaker.core_within(),
 			"the loudspeaker has an edge a route can go round")
 	t.check(curfew.heard_within() > curfew.core_within(),
@@ -83,8 +84,8 @@ func _test_no_row_is_city_wide(t: TestRunner) -> void:
 func _test_the_sites_are_the_same_geometry_every_time(t: TestRunner) -> void:
 	# Pure geometry, called twice: MastSites.compute() takes no day and no RNG, so "the same
 	# places every day" is true of the function itself and not only of what build_day did with it.
-	var once := MastSites.compute(_map)
-	var again := MastSites.compute(_map)
+	var once := MastSites.compute(Shipped.rows(), _map)
+	var again := MastSites.compute(Shipped.rows(), _map)
 	t.check(once.size() == Tuning.MAST_COUNT and again.size() == Tuning.MAST_COUNT,
 			"MastSites.compute() always answers Tuning.MAST_COUNT sites (%d, %d)"
 			% [once.size(), again.size()])
@@ -97,11 +98,11 @@ func _test_a_mast_never_reaches_the_doorstep_or_a_calm_interior(t: TestRunner) -
 	var checked := 0
 	for seed_value: int in SITE_SEEDS:
 		var map := MapCache.of(seed_value)
-		var reach := EventCatalogue.by_id("loudspeaker").heard_within()
+		var reach := Shipped.rows().by_id("loudspeaker").heard_within()
 		var doorstep := map.doorstep_world_position()
 		var home := map.home_world_position()
 		var home_margin := MastSites.MAST_HOME_STREET_MARGIN * float(CityMap.period()) * Tuning.TILE_SIZE
-		for site in MastSites.compute(map):
+		for site in MastSites.compute(Shipped.rows(), map):
 			checked += 1
 			var tile_type := map.tile_at(map.world_to_tile(site.foot()))
 			t.check(tile_type == GameEnums.TileType.SIDEWALK or tile_type == GameEnums.TileType.SQUARE,
@@ -143,11 +144,11 @@ func _test_a_door_a_recipe_stands_is_a_point_a_mast_keeps_clear_of(t: TestRunner
 	var bodies := 0
 	var off_a_point := 0
 	for day: int in [Tuning.REGION_WALL_FIRST_DAY, Tuning.RUN_LENGTH_DAYS - 1]:
-		var plan := RegionPlanner.plan_day(map, DaySpec.for_day(day), RouteTree.for_day(map,
-				day, null))
+		var plan := RegionPlanner.plan_day(Shipped.rows(), map, DaySpec.for_day(day),
+				RouteTree.for_day(map, day, null))
 		var stood := RegionPlan.new()
 		for door in plan.door_segments():
-			RegionPlanner.stand_door(map, door, stood)
+			RegionPlanner.stand_door(Shipped.rows(), map, door, stood)
 		for body in stood.door_plans():
 			bodies += 1
 			var nearest := INF
@@ -161,7 +162,7 @@ func _test_a_door_a_recipe_stands_is_a_point_a_mast_keeps_clear_of(t: TestRunner
 # ------------------------------------------------------------------- field ---
 
 func _test_the_field_is_zero_outside_its_reach_and_falls_off_inside_it(t: TestRunner) -> void:
-	var def := EventCatalogue.by_id("loudspeaker")
+	var def := Shipped.rows().by_id("loudspeaker")
 	t.check(is_zero_approx(def.emission_at_distance(def.heard_within() + 1.0)),
 			"the field is zero just past its own outer radius")
 	var at_inner := def.emission_at_distance(def.core_within())
@@ -180,7 +181,8 @@ func _build_manager(t: TestRunner) -> void:
 	t.add_child(_world)
 	var run := RunState.new()
 	run.start_run(SEED)
-	_manager = EventManager.new(EventSurroundings.new().on(_map).drawn_in(_world))
+	_manager = EventManager.new(Shipped.rows(), EventSurroundings.new()
+			.on(_map).drawn_in(_world))
 	_manager.setup(run)
 	t.add_child(_manager)
 	# No player in this rig, so nothing streams on its own — `EventManager._physics_process()`
@@ -190,7 +192,7 @@ func _build_manager(t: TestRunner) -> void:
 	_manager.stream_within(10.0)
 
 func _sites() -> Array[MastSites.Site]:
-	return MastSites.compute(_map)
+	return MastSites.compute(Shipped.rows(), _map)
 
 ## Lets `seconds` of the game's own clock pass in real physics frames, the engine sped up for the
 ## stretch (each frame then carries `1 / Engine.physics_ticks_per_second * Engine.time_scale`
@@ -336,11 +338,12 @@ func _test_a_queued_mast_is_never_generated_inside_a_lethal_field(t: TestRunner)
 	# planning a day, and so siting a mast in it, is asked over.
 	var run := RunState.new()
 	run.start_run(SEED)
-	var manager := EventManager.new(EventSurroundings.new().in_the_city(_map).drawn_in(_world))
+	var manager := EventManager.new(Shipped.rows(), EventSurroundings.new()
+			.in_the_city(_map).drawn_in(_world))
 	manager.setup(run)
 	t.add_child(manager)
 	var map := _map
-	var lorry_def := EventCatalogue.by_id("reversing_lorry")
+	var lorry_def := Shipped.rows().by_id("reversing_lorry")
 	var walled: Array[Rect2i] = []
 	var lorry_tile := Vector2i(-1, -1)
 	for tile in map.tiles_of_type(GameEnums.TileType.SIDEWALK):

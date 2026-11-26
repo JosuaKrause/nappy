@@ -164,8 +164,8 @@ func measure(t: TestRunner, seed_value: int) -> Dictionary:
 	var director := ResistanceDirector.new()
 	t.add_child(director)
 	director.set_process(false)
-	director.setup(city.map(), run, RunCity.events(city), city.streets(), city.fronts(), city,
-			null, RunCity.spawn_siting(city))
+	director.setup(Shipped.rows(), city.map(), run, RunCity.events(city),
+			city.streets(), city.fronts(), city, null, RunCity.spawn_siting(city))
 	director.start_day(day, _rng(seed_value, day, "resistance"), 300.0)
 	var result := {}
 	var mark := director.current_step()
@@ -178,8 +178,8 @@ func measure(t: TestRunner, seed_value: int) -> Dictionary:
 		# cordon is the happenings' public one and no director tick stands between it and the sweep.
 		var happenings := ResistanceHappenings.new()
 		happenings.use_bus(EventBus)
-		happenings.setup(city.map(), run, RunCity.events(city), city.streets(), city.fronts(),
-				city, library, null, RunCity.spawn_siting(city))
+		happenings.setup(Shipped.rows(), city.map(), run, RunCity.events(city),
+				city.streets(), city.fronts(), city, library, null, RunCity.spawn_siting(city))
 		happenings.start_day(day, false)
 		happenings.take_the_park(ResistanceReads.day_reachability(city)[1])
 		result = await _measure_the_day(city, library, director, happenings, swing)
@@ -224,8 +224,8 @@ func _measure_the_day(city: City, library: AtlasLibrary, director: ResistanceDir
 	result.onto_bodies = standing.onto_bodies
 	result.stalled = standing.stalled
 	cordon.clear()
-	var again := ParkCordon.new(city.map(), city.navigator(), RunCity.events(city), city,
-			library, park, RunCity.spawn_siting(city),
+	var again := ParkCordon.new(Shipped.rows(), city.map(), city.navigator(),
+			RunCity.events(city), city, library, park, RunCity.spawn_siting(city),
 			ResistanceReads.day_reachability(city)[1])
 	again.use_bus(EventBus)
 	her[0] = swing
@@ -253,11 +253,12 @@ func _walk_a_person_out(city: City, library: AtlasLibrary, director: ResistanceD
 	var area := CordonInTheWorld.park_ground(city.map(), park)
 	var line := CordonInTheWorld.tape_line(city.map(), park)
 	var spot: Vector2 = area.position + area.size * (place[0] as Vector2) + (place[1] as Vector2)
-	var busker := RunCity.events(city).spawn_extra(EventCatalogue.by_id("busker"), spot)
+	var busker := RunCity.events(city).spawn_extra(Shipped.rows().by_id("busker"),
+			spot)
 	if not busker:
 		return {"person_placed": false, "place": place[0]}
-	var cordon := ParkCordon.new(city.map(), city.navigator(), RunCity.events(city), city,
-			library, park, RunCity.spawn_siting(city),
+	var cordon := ParkCordon.new(Shipped.rows(), city.map(), city.navigator(),
+			RunCity.events(city), city, library, park, RunCity.spawn_siting(city),
 			ResistanceReads.day_reachability(city)[1])
 	cordon.use_bus(EventBus)
 	var her := [swing]
@@ -388,7 +389,7 @@ func _measure_the_gap(city: City, director: ResistanceDirector, cordon: ParkCord
 ## something he cannot get round.
 func _play(city: City, cordon: ParkCordon, her: Array, shows: Callable, walks: bool,
 		watch_stalls: bool) -> Dictionary:
-	var row := EventCatalogue.by_id(ParkCordon.OFFICER_ROW)
+	var row := Shipped.rows().by_id(ParkCordon.OFFICER_ROW)
 	var line := CordonInTheWorld.tape_line(city.map(), CityGenerator.swing_park(city.map()))
 	var first_seen := -1.0
 	var clock := STEP

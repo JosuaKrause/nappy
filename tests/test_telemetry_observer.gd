@@ -135,7 +135,7 @@ class StandInEvents extends FakeEventManager:
 
 	## A plan of `row` placed at `at`, its instance live there.
 	func place(row: String, at: Vector2) -> EventPlan:
-		var plan := EventPlan.new(EventCatalogue.by_id(row), at)
+		var plan := EventPlan.new(Shipped.rows().by_id(row), at)
 		var instance := EventInstance.new()
 		instance.setup(plan.row(), at)
 		plan.enter_the_world(instance.standing())
@@ -264,7 +264,7 @@ func _on_a_sidewalk(map: CityMap) -> Vector2:
 func _test_the_escape_is_in_the_run_log_as_a_day_is(t: TestRunner) -> void:
 	var start := Vector2(100.0, 100.0)
 	var man := EventInstance.new()
-	man.setup(EventCatalogue.by_id("masked_pursuer"), start + Vector2(0.0, -200.0))
+	man.setup(Shipped.rows().by_id("masked_pursuer"), start + Vector2(0.0, -200.0))
 	var events := StandInSource.new()
 	events.live.append(man)
 	var player := Stroller.new()
@@ -699,8 +699,9 @@ func _test_the_log_names_the_patrol_for_its_mark(t: TestRunner) -> void:
 	var route := PackedVector2Array([lane - along * 150.0, lane + along * 650.0])
 	var where := WhereSheIs.nowhere()
 	var car := EventInstance.new()
-	car.setup(EventCatalogue.by_id("police_patrol"), route[0], route, along,
-			EventSurroundings.new().on(day.map).hearing(where) \
+	car.setup(Shipped.rows().by_id("police_patrol"), route[0], route, along,
+			EventSurroundings.new().reading(Shipped.rows()).on(day.map) \
+			.hearing(where) \
 			.drawing_through(RecordingEventDrawer.new()))
 	t.add_child(car)
 	car.set_process(false)

@@ -99,10 +99,11 @@ var _walk: RouteSource = null
 var _recipe_plan := false
 
 ## Builds the parts, each handed the one world, and connects the doors' intents and crossings.
-## `surroundings` is what its events are set up in, built where the world is (`SimulationBuilder`);
-## none, and they are set up on open ground with every default, as a suite's manager is.
-func _init(surroundings: EventSurroundings = null) -> void:
-	world = EventWorld.new(surroundings)
+## `surroundings` is what its events are set up in, built where the world is
+## (`SimulationBuilder`). `rows` is the run's catalogue, required: the checkpoint reads its door
+## guard from it as it is made, and the world's events look their rows up in it.
+func _init(rows: EventCatalogue, surroundings: EventSurroundings) -> void:
+	world = EventWorld.new(surroundings.reading(rows))
 	_warnings = WarningBoard.new(world)
 	_planner = DayPlanner.new(world)
 	_spawner = EventSpawner.new(world, _warnings)
@@ -110,8 +111,8 @@ func _init(surroundings: EventSurroundings = null) -> void:
 	_ahead = EventsAhead.new(world, _streaming, _spawner, _warnings, _walk_events)
 	_ahead.use_sitings(SitingMaker.new(world, _walk_events))
 	_set_off = SetOffWatch.new(world, _streaming, _warnings, _walk_events)
-	_checkpoints = CheckpointController.new(world, _spawner.spawn, EventCatalogue.door_guard(),
-			EventCatalogue.charger_timing().warning())
+	_checkpoints = CheckpointController.new(world, _spawner.spawn, world.rows().door_guard(),
+			world.rows().charger_timing().warning())
 	_encounters = EncounterWatch.new(world.reports())
 	_sources = EventSources.new(world, _checkpoints)
 	_checkpoints.door_crossed.connect(func(at: Vector2, axis: Vector2, inspected: bool) -> void:
@@ -170,7 +171,7 @@ func setup(run: RunState, streets: DayStreets = null, poster_walls: PosterWalls 
 	world.work_out_mast_sites(map)
 	world.use_plan_builder(PlanBuilder.new(map, EventInstance.mover_for,
 			StreetInvalidation.room_around))
-	var director := EventDirector.new(map, world.navigator())
+	var director := EventDirector.new(world.rows(), map, world.navigator())
 	_spawn_siting = SpawnSiting.new(map, world.navigator(), visible_view,
 			streets.siting_region if streets else Callable())
 	_ahead.use_director(director, _spawn_siting)

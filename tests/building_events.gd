@@ -12,11 +12,12 @@ extends RefCounted
 ## holds them (a manager handed none makes its own on entering the tree).
 static func events_in(parent: Node, scene: InteriorScene,
 		rng: RandomNumberGenerator, run: RunState, atlas: AtlasLibrary = null) -> EventManager:
-	var surroundings := EventSurroundings.new().on(scene.map()).moving_by(scene.navigator()) \
+	var surroundings := EventSurroundings.new().reading(Shipped.rows()) \
+			.on(scene.map()).moving_by(scene.navigator()) \
 			.drawn_in(scene)
 	if atlas != null:
 		surroundings.drawn_from(atlas)
-	var events := EventManager.new(surroundings)
+	var events := EventManager.new(Shipped.rows(), surroundings)
 	events.use_bus(EventBus)
 	events.stream_within(INF)
 	parent.add_child(events)

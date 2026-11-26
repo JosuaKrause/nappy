@@ -8,13 +8,14 @@ const NONE: Array[EventPlan] = []
 
 func run(t: TestRunner) -> void:
 	var map := CityMap.new()
-	var flock := EventCatalogue.by_id("pigeon_flock")
+	var flock := Shipped.rows().by_id("pigeon_flock")
 	var reach := flock.notice_within()
 	var placed: Array[EventPlan] = [EventPlan.new(flock, Vector2(800, 800))]
 	var rule := OneNoticeRule.new(GamePlanBuilder.over(map))
 	var overlapping := EventPlan.new(flock, Vector2(800 + reach, 800))
 	var apart := EventPlan.new(flock, Vector2(800 + 2.0 * reach + 32.0, 800))
-	var cafe := EventPlan.new(EventCatalogue.by_id("cafe_tables"), Vector2(800 + reach, 800))
+	var cafe := EventPlan.new(Shipped.rows().by_id("cafe_tables"),
+			Vector2(800 + reach, 800))
 	t.check(reach > 0.0, "the flock notices her from a distance (%.0fpx)" % reach)
 	t.check(not rule.allows(overlapping, Vector2i.ZERO, placed, placed),
 			"a flock whose notice overlaps another's is refused")

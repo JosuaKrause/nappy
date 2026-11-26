@@ -47,7 +47,8 @@ class MastQueue:
 	func queue_a_mast(offered: Array[Vector2i]) -> EventPlan:
 		if offered.is_empty():
 			return null
-		var plan := EventPlan.new(EventCatalogue.mast(), _map.tile_to_world(offered[0]))
+		var plan := EventPlan.new(Shipped.rows().mast(),
+				_map.tile_to_world(offered[0]))
 		plan.stand_as_a_mast(DawnMasts.added_mast_id(plan.placed_at()))
 		_masts.append(plan)
 		return plan
@@ -89,7 +90,8 @@ func run(t: TestRunner) -> void:
 ## `SceneRecipeRuntime._select_structures()` leaves the day's plan when it selects no gate or barrier.
 ## `Stand.free_all()` frees the director, the events and the world.
 func _day(t: TestRunner, day: int) -> Stand:
-	var built := RecipeCityBuilder.build({"version": 1, "name": "task", "seed": RECIPE_SEED,
+	var built := RecipeCityBuilder.build(Shipped.rows(), {"version": 1,
+			"name": "task", "seed": RECIPE_SEED,
 			"extent": {"scope": "full"}, "city": {"context_seed": CONTEXT}})
 	var errors: Array[String] = built.errors
 	t.check(errors.is_empty(), "the context city builds: %s" % [errors])
@@ -115,7 +117,8 @@ func _day(t: TestRunner, day: int) -> Stand:
 	stand.director = ResistanceDirector.new()
 	t.add_child(stand.director)
 	stand.director.set_process(false)
-	stand.director.setup(stand.map, stand.run, stand.events, streets, null, stand.world)
+	stand.director.setup(Shipped.rows(), stand.map, stand.run, stand.events, streets,
+			null, stand.world)
 	return stand
 
 func _test_a_pinned_mark_is_read_and_its_task_placed_near_it(t: TestRunner) -> void:
@@ -193,9 +196,10 @@ func _test_a_mark_one_tile_in_keeps_its_guard_as_far_as_at_the_mouth(t: TestRunn
 	t.check(errors.is_empty(), "the mark is accepted: %s" % [errors])
 	var guards: Array[Vector2] = []
 	for instance in stand.events.instances():
-		if instance.row_id() == EventCatalogue.mark_guard().id() and not instance.is_gone():
+		if instance.row_id() == Shipped.rows().mark_guard() \
+				.id() and not instance.is_gone():
 			guards.append(instance.global_position)
-	var robbery := EventCatalogue.mark_guard()
+	var robbery := Shipped.rows().mark_guard()
 	var for_the_mouth := AlleyMarks.expected_guard_spot(map, MOUTH, at_mouth,
 			robbery.core_within() + ContactPoint.REACH)
 	t.check(guards.size() == 1 and for_the_mouth != Vector2.INF, "the mark's guard stands in the street")

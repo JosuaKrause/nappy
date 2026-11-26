@@ -14,7 +14,7 @@ func run(t: TestRunner) -> void:
 ## after its telegraph, a burst's length at a time, since `EventDef.peak_through()` is the peak a live
 ## event carries once the phase's damping is one.
 func _test_pulse_envelope(t: TestRunner) -> void:
-	var def := EventCatalogue.by_id("homeless_yeller")
+	var def := Shipped.rows().by_id("homeless_yeller")
 	t.check(def.pulses_every() > 0.0, "the yeller pulses rather than holding")
 	var from := def.telegraphs_for() + 0.05
 
@@ -36,8 +36,8 @@ func _test_pulse_envelope(t: TestRunner) -> void:
 ## against the row the outer half was copied from. 32px is inside the leaf blower's core and 100px
 ## is well outside it, where the two rows are the same numbers and have to answer the same rate.
 func _test_the_leaf_blowers_core_is_in_the_field(t: TestRunner) -> void:
-	var leaf := EventCatalogue.by_id("leaf_blower")
-	var busker := EventCatalogue.by_id("busker")
+	var leaf := Shipped.rows().by_id("leaf_blower")
+	var busker := Shipped.rows().by_id("busker")
 	t.check(leaf.field().core_rate() > 0.0 and leaf.field().core_reach() > 0.0,
 			"the leaf blower carries a core")
 	t.check(busker.field().core_rate() == 0.0,

@@ -183,9 +183,10 @@ func _test_event_parts(t: TestRunner) -> void:
 			var laid := RecordingSceneryDrawer.new()
 			var pictures := RecordingEventDrawer.new(atlas)
 			pictures.scenery_drawer = laid
-			instance.setup(EventCatalogue.by_id(id), Vector2.ZERO, PackedVector2Array(),
-					Vector2.RIGHT,
-					EventSurroundings.new().on(EastWestStreet.new() if vertical else WorldMap.open_ground()) \
+			instance.setup(Shipped.rows().by_id(id), Vector2.ZERO,
+					PackedVector2Array(), Vector2.RIGHT,
+					EventSurroundings.new().reading(Shipped.rows()) \
+					.on(EastWestStreet.new() if vertical else WorldMap.open_ground()) \
 						.drawn_from(atlas) \
 						.drawing_through(pictures))
 			t.add_child(instance)
@@ -199,7 +200,7 @@ func _test_event_parts(t: TestRunner) -> void:
 			# its own: its first ask after nothing was drawn is a draw.
 			var gated := FakeEvent.new()
 			gated.vertical = vertical
-			var gate := gated.look_for(EventCatalogue.by_id(id))
+			var gate := gated.look_for(Shipped.rows().by_id(id))
 			var first_ask := gate.redraw_if_the_picture_changed()
 			# The layers are drawn on the frame after they are made.
 			await t.get_tree().process_frame
@@ -311,8 +312,10 @@ func _test_figure_parts(t: TestRunner) -> void:
 		var laid := RecordingSceneryDrawer.new()
 		var pictures := RecordingEventDrawer.new(atlas)
 		pictures.scenery_drawer = laid
-		instance.setup(EventCatalogue.by_id(id), Vector2.ZERO, PackedVector2Array(), heading,
-				EventSurroundings.new().on(EastWestStreet.new() if vertical else WorldMap.open_ground()) \
+		instance.setup(Shipped.rows().by_id(id), Vector2.ZERO, PackedVector2Array(),
+				heading,
+				EventSurroundings.new().reading(Shipped.rows()) \
+				.on(EastWestStreet.new() if vertical else WorldMap.open_ground()) \
 					.drawn_from(atlas) \
 					.drawing_through(pictures))
 		t.add_child(instance)

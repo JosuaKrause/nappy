@@ -17,9 +17,9 @@ func run(context: DawnContext) -> void:
 	for scar in context.scars():
 		if int(scar["since_day"]) >= day or String(scar["id"]) == DawnMasts.SILENCED_MAST:
 			continue
-		var def := EventCatalogue.by_id(String(scar["id"]))
+		var def := context.rows().by_id(String(scar["id"]))
 		if def:
-			var plan := EventPlan.new(EventCatalogue.heated(def, heat), scar["position"])
+			var plan := EventPlan.new(context.rows().heated(def, heat), scar["position"])
 			plan.make_permanent()
 			if context.keeps_the_routes(plan):
 				events.add(plan)

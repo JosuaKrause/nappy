@@ -60,7 +60,7 @@ static func walk(t: TestRunner, seed_value: int, ahead := AS_IN_PLAY) -> Array[D
 	t.add_child(city)
 	var map := CityGenerator.generate(seed_value)
 	RunCity.build(city, run, map)
-	var route := TutorialRoute.for_city(city.map())
+	var route := TutorialRoute.for_city(Shipped.rows(), city.map())
 	city.use_tutorial_route(route)
 	var state := CityState.new()
 	state.begin_day(city.map().plans_by_block(), DAY)

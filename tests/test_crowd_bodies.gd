@@ -506,7 +506,7 @@ func _test_a_one_piece_row_records_exactly_the_tiles_its_shape_covers(t: TestRun
 	var at := map.tile_to_world(Vector2i(run.x * CityMap.period() + 1, run.y + 3))
 	var checked := 0
 	for id: String in ["cafe_tables", "construction", "delivery_van"]:
-		var def := EventCatalogue.by_id(id)
+		var def := Shipped.rows().by_id(id)
 		if def == null or def.ground_shape() == null or def.obstructs_within() <= 0.0:
 			continue
 		t.check(def.body().pieces().size() == 1, "'%s' is one piece, so it is this test's business" % id)
@@ -514,7 +514,7 @@ func _test_a_one_piece_row_records_exactly_the_tiles_its_shape_covers(t: TestRun
 		# stationary, unpinned body on the middle of its pavement band when it is set up.
 		var sited := EventInstance.new()
 		sited.setup(def, at, PackedVector2Array(), Vector2.RIGHT,
-				EventSurroundings.new().on(map))
+				EventSurroundings.new().reading(Shipped.rows()).on(map))
 		var placed := sited.position
 		sited.free()
 		var axis := BodyStance.of(map, def, at, Vector2.RIGHT).pieces()[0].axis()
@@ -542,7 +542,7 @@ func _test_a_crash_records_its_cars_and_not_the_pavements_beside_them(t: TestRun
 	var run := a_straight_run(map, Tuning.BLOCK_SIZE)
 	if run.x < 0:
 		return
-	var def := SealPlanner.sealed_variant(EventCatalogue.by_id("car_accident"), true)
+	var def := SealPlanner.sealed_variant(Shipped.rows().by_id("car_accident"), true)
 	t.check(def.body().pieces().size() == 2, "a crash is two cars (%d pieces)" % def.body().pieces().size())
 	var base := run.x * CityMap.period()
 	var along := run.y + 3
@@ -589,7 +589,7 @@ func _test_a_walker_passes_a_crash_on_its_pavement(t: TestRunner, crowd: Crowd, 
 	var corridor := run.x
 	var base := corridor * CityMap.period()
 	var body_at := run.y + 5
-	var def := SealPlanner.sealed_variant(EventCatalogue.by_id("car_accident"), true)
+	var def := SealPlanner.sealed_variant(Shipped.rows().by_id("car_accident"), true)
 	var covered := _stand_a_row(map, def,
 			Vector2(float(base) * Tuning.TILE_SIZE + float(Tuning.STREET_WIDTH) * 16.0,
 			(float(body_at) + 0.5) * Tuning.TILE_SIZE))
@@ -664,7 +664,7 @@ func _test_a_row_at_the_kerb_leaves_both_lanes_driving(t: TestRunner, crowd: Cro
 	var corridor := run.x
 	var base := corridor * CityMap.period()
 	var body_at := run.y + CityMap.period() + 2
-	var def := EventCatalogue.by_id("delivery_van")
+	var def := Shipped.rows().by_id("delivery_van")
 	t.check(def != null and def.sidewalk_lane() == EventDef.Pavement.AT_THE_KERB,
 			"'delivery_van' is the kerb-pinned row this test is about")
 	var kerb_lane: int = CrowdLanes.SIDEWALK_OFFSETS[1]
@@ -701,7 +701,7 @@ func _test_a_row_across_the_whole_street_still_turns_a_car(t: TestRunner, crowd:
 	var corridor := run.x
 	var base := corridor * CityMap.period()
 	var body_at := run.y + CityMap.period() + 2
-	var def := SealPlanner.sealed_variant(EventCatalogue.by_id("fallen_tree"), true)
+	var def := SealPlanner.sealed_variant(Shipped.rows().by_id("fallen_tree"), true)
 	# The middle of the street, which is where `SealPlanner._hard_positions` stands the one copy a
 	# 96px reach takes to span a 6-tile street.
 	var covered := _stand_a_row(map, def,

@@ -35,7 +35,7 @@ static func build(parent: Node, def: EventDef, vertical: bool,
 	var ground: WorldMap = map
 	if ground == null:
 		ground = EastWestStreet.new() if vertical else WorldMap.open_ground()
-	var surroundings := EventSurroundings.new().on(ground) \
+	var surroundings := EventSurroundings.new().reading(Shipped.rows()).on(ground) \
 			.drawn_from(atlas) \
 			.drawing_through(recording(instance, RecordingEventDrawer.new(atlas)))
 	if where != null:

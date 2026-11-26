@@ -3,14 +3,17 @@ extends RefCounted
 ## Loads authored stretches directly; constructs other scopes with exact choices and a global witness.
 ## Never searches whole-city seeds and never moves a requested placement after construction.
 
-static func build(data: Dictionary) -> Dictionary:
+## The map, anchors and manifest `data` builds, or its errors. `rows` is the run's catalogue,
+## which the region wall a pinned closure is judged against is planned with
+## (`RegionPlanner.plan_day()`).
+static func build(rows: EventCatalogue, data: Dictionary) -> Dictionary:
 	var errors := SceneRecipe.validate(data)
 	var result := {"map": null, "anchors": {}, "errors": errors, "manifest": {}}
 	if not errors.is_empty():
 		return result
 	var extent: Dictionary = data["extent"]
 	if extent["scope"] == "stretch":
-		return _build_authored(data, errors)
+		return _build_authored(rows, data, errors)
 	var choices: Dictionary = data["city"]
 	var purpose_counts := {}
 	var zones := 0
@@ -86,7 +89,7 @@ static func build(data: Dictionary) -> Dictionary:
 			errors.append("fixture.missing: " + code)
 	if not errors.is_empty():
 		return result
-	_plan_closures(data, map, errors)
+	_plan_closures(rows, data, map, errors)
 	if not errors.is_empty():
 		return result
 	var bounds := Rect2i(Vector2i.ZERO, map.size_in_tiles())
@@ -148,7 +151,8 @@ static func build(data: Dictionary) -> Dictionary:
 
 ## An authored scene has no generation step. Its saved context supplies off-camera topology;
 ## visible tile, lot and tree lists are authoritative and feed the same map every rule reads.
-static func _build_authored(data: Dictionary, errors: Array[String]) -> Dictionary:
+static func _build_authored(rows: EventCatalogue, data: Dictionary,
+		errors: Array[String]) -> Dictionary:
 	var map := RecipeCityContext.restore(data["context"])
 	var result := {"map": null, "anchors": {}, "errors": errors, "manifest": {}}
 	var stretch: Dictionary = data["stretch"]
@@ -216,7 +220,7 @@ static func _build_authored(data: Dictionary, errors: Array[String]) -> Dictiona
 			errors.append("stretch.cracks: placement outside the stretch")
 		map.add_stretch_crack(tile, Vector2i(int(crack[2]), int(crack[3])))
 	map.keep_dawn_ground()
-	_plan_closures(data, map, errors)
+	_plan_closures(rows, data, map, errors)
 	map.show_stretch()
 	for label: String in data.get("anchors", {}):
 		var spec: Variant = data["anchors"][label]
@@ -266,7 +270,8 @@ static func _fronts_the_stretch(map: CityMap, lot: Rect2i) -> bool:
 			return true
 	return false
 
-static func _plan_closures(data: Dictionary, map: CityMap, errors: Array[String]) -> void:
+static func _plan_closures(rows: EventCatalogue, data: Dictionary, map: CityMap,
+		errors: Array[String]) -> void:
 	var city: Dictionary = data["city"]
 	var pins: Array = city.get("closures", [])
 	if pins.is_empty():
@@ -286,7 +291,7 @@ static func _plan_closures(data: Dictionary, map: CityMap, errors: Array[String]
 	# A recipe's city walks no tutorial: an authored scene is not day 1's tutorial unless its recipe
 	# says so, and none does.
 	var tree := RouteTree.for_day(map, day, null)
-	var regions := RegionPlanner.plan_day(map, spec, tree)
+	var regions := RegionPlanner.plan_day(rows, map, spec, tree)
 	var rng := RandomNumberGenerator.new()
 	rng.seed = map.city_seed()
 	var home := ClosurePlanner.home_street(map)

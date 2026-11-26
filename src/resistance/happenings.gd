@@ -47,6 +47,8 @@ const MARKET_DAY := 11
 const COLUMN_DAY := 13
 
 var _map: CityMap
+## The run's catalogue (`setup()`).
+var _rows: EventCatalogue = null
 ## The day's events (`EventManager`): what the neighbor, the raid and the column are spawned through,
 ## and what the market's stalls are taken away from. Null for none, a rig with no events.
 var _events: EventManager
@@ -126,9 +128,11 @@ var _run: RunState
 ## what they send walks by — the director's own, or one over the map (`Navigator.new(map)`) for a rig
 ## that hands none — and the siting the raid is held to (`spawn_siting`), or none, where nothing the
 ## raid puts down or the cordon's officers walk in as is ever held back for being in view.
-func setup(map: CityMap, run: RunState, events: EventManager, streets: DayStreets,
-		fronts: CityFronts, world: WorldContext, atlas: AtlasLibrary, navigator: Navigator = null,
-		spawn_siting: SpawnSiting = null) -> void:
+## `rows` is the run's catalogue, every row it sends, guards a mark with or reads a reach off.
+func setup(rows: EventCatalogue, map: CityMap, run: RunState, events: EventManager,
+		streets: DayStreets, fronts: CityFronts, world: WorldContext, atlas: AtlasLibrary,
+		navigator: Navigator = null, spawn_siting: SpawnSiting = null) -> void:
+	_rows = rows
 	_map = map
 	_run = run
 	_events = events
@@ -232,8 +236,8 @@ func _maybe_raid(her: Vector2) -> void:
 	var door := _map.doorstep_world_position()
 	if her.distance_to(door) < Tuning.OUT_OF_SIGHT:
 		return
-	var van := EventCatalogue.by_id("night_raid")
-	var row := EventCatalogue.by_id("police_patrol")
+	var van := _rows.by_id("night_raid")
+	var row := _rows.by_id("police_patrol")
 	if _spawn_siting:
 		var van_box := _spawn_siting.ask_of_drawing(EventFootprints.footprint_of(van))
 		for at in _raid_vans:
@@ -397,7 +401,8 @@ func take_the_park(blocked: Dictionary = {}) -> bool:
 	if cordon:
 		cordon.clear()
 	var siting := _spawn_siting if _spawn_siting else SpawnSiting.new(_map, _navigator)
-	cordon = ParkCordon.new(_map, _navigator, _events, _world, _atlas, park, siting, blocked)
+	cordon = ParkCordon.new(_rows, _map, _navigator, _events, _world, _atlas, park, siting,
+			blocked)
 	cordon.use_trace(trace)
 	cordon.use_bus(_bus)
 	trace.note("contact", "the park at block %s is being taken: the police are sent to cordon it"
@@ -439,7 +444,7 @@ func _spine_x() -> float:
 ## row. The trucks arrive in the day's events once its telegraph is over
 ## (`_bring_the_column()`).
 func _send_the_column(her: Vector2) -> PendingWarning:
-	var def := EventCatalogue.by_id("military_convoy")
+	var def := _rows.by_id("military_convoy")
 	if not def or _map.main_road_corridor() < 0:
 		return null
 	var going := 1.0 if _rng.randf() < 0.5 else -1.0
@@ -500,7 +505,7 @@ func column_fits_at(place: Vector2, going: float) -> bool:
 ## down the main road, and answers them, front first. `column_fits_at()` says whether the place
 ## holds the whole column.
 func bring_the_column_at(place: Vector2, going: float) -> Array[EventInstance]:
-	return _bring_the_column(EventCatalogue.by_id("military_convoy"), place,
+	return _bring_the_column(_rows.by_id("military_convoy"), place,
 			_column_lane(going), going, _road_top(), _road_bottom())
 
 ## Creates the column's trucks, front first, the front one at `place` and the rest behind it up the
@@ -539,7 +544,7 @@ func _bring_the_column(def: EventDef, place: Vector2, lane_x: float, going: floa
 func _send_the_neighbor_to_work() -> EventInstance:
 	if not _events or not _map or not _builder:
 		return null
-	var def := EventCatalogue.by_id("neighbor")
+	var def := _rows.by_id("neighbor")
 	if not def:
 		return null
 	var door := _map.doorstep_world_position()

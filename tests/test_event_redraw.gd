@@ -85,7 +85,7 @@ func run(t: TestRunner) -> void:
 ## term a picture does not read costs exactly one redraw in an instance's whole life and a term a
 ## picture *does* read and the key does not is a frozen picture.
 func _test_a_standing_seal_holds_one_key_for_its_whole_life(t: TestRunner) -> void:
-	var def := EventCatalogue.by_id("barricade")
+	var def := Shipped.rows().by_id("barricade")
 	var event := FakeEvent.new()
 	event.telegraph_length = def.telegraphs_for()
 	var look := event.look_for(def)
@@ -109,7 +109,7 @@ func _test_a_standing_seal_holds_one_key_for_its_whole_life(t: TestRunner) -> vo
 ## leave a settled event undrawn is read off a real event over real frames, as its drawer sees
 ## it.
 func _test_the_gate_stores_the_key_it_compared(t: TestRunner) -> void:
-	var def := EventCatalogue.by_id("loose_dog")
+	var def := Shipped.rows().by_id("loose_dog")
 	var fresh := FakeEvent.new()
 	var look := fresh.look_for(def)
 	t.check(_asks(look),
@@ -132,7 +132,7 @@ func _test_the_gate_stores_the_key_it_compared(t: TestRunner) -> void:
 ## reach the screen, so every one of them has to move the key.
 func _test_a_striding_event_moves_its_key(t: TestRunner) -> void:
 	var event := _walker("dog_walker")
-	var look := event.look_for(EventCatalogue.by_id("dog_walker"))
+	var look := event.look_for(Shipped.rows().by_id("dog_walker"))
 	var stepping_changed_the_key := true
 	var was_stepping := look.gait_is_stepping()
 	_asks(look)
@@ -156,7 +156,7 @@ func _test_a_striding_event_moves_its_key(t: TestRunner) -> void:
 ## thing left that could have moved the key is the lift.
 func _test_a_bobbing_event_moves_its_key(t: TestRunner) -> void:
 	var event := _walker("dog_walker")
-	var look := event.look_for(EventCatalogue.by_id("dog_walker"))
+	var look := event.look_for(Shipped.rows().by_id("dog_walker"))
 	_walk_to(event, WALK[1])
 	var moved_on_bob_alone := false
 	var was_stepping := look.gait_is_stepping()
@@ -190,7 +190,7 @@ func _test_a_bobbing_event_moves_its_key(t: TestRunner) -> void:
 ## dog, walked to the same two places and drawn over real frames, is told to stand.
 func _test_the_normal_dogs_opposite_step_moves_its_key(t: TestRunner) -> void:
 	for id: String in ["dog_walker", "loose_dog", "charging_dog"]:
-		var def := EventCatalogue.by_id(id)
+		var def := Shipped.rows().by_id(id)
 		var event := _walker(id)
 		var look := event.look_for(def)
 		_asks(look)
@@ -227,7 +227,8 @@ func _test_the_normal_dogs_opposite_step_is_another_picture(t: TestRunner) -> vo
 	var to_the_top_of_the_bob := PI / EventPictures.BOB_PER_PX * 0.5
 	var half_a_turn := PI / EventInstance.GAIT_RATE
 	for id: String in ["dog_walker", "loose_dog", "charging_dog"]:
-		var instance: EventInstance = await DrawnEvent.stand(t, EventCatalogue.by_id(id), false)
+		var instance: EventInstance = await DrawnEvent.stand(t,
+				Shipped.rows().by_id(id), false)
 		var drawn := [0]
 		instance.draw.connect(func() -> void: drawn[0] += 1)
 		instance.leave_for_a_completed_task()
@@ -265,7 +266,7 @@ func _the_dog_drawn(instance: EventInstance) -> Array[String]:
 ## The crouch *is* the telegraph (`_draw_cat` swaps the whole family at `is_telegraphing()`), so the
 ## tick the dash starts has to move the key even though nothing about the cat has moved yet.
 func _test_a_telegraphing_cat_moves_its_key_when_the_crouch_ends(t: TestRunner) -> void:
-	var def := EventCatalogue.by_id("cat_dash")
+	var def := Shipped.rows().by_id("cat_dash")
 	var event := _walker("cat_dash")
 	event.telegraph_length = def.telegraphs_for()
 	event.telegraphing = true
@@ -291,7 +292,7 @@ func _test_a_telegraphing_cat_moves_its_key_when_the_crouch_ends(t: TestRunner) 
 ## the gate's own asks are what is counted, one tick at a time. The same cyclist carrying no
 ## caret is asked for on none of them.
 func _test_the_marks_flash_is_in_the_key(t: TestRunner) -> void:
-	var def := EventCatalogue.by_id("cyclist")
+	var def := Shipped.rows().by_id("cyclist")
 	var marked := _walker("cyclist")
 	marked.telegraph_length = def.telegraphs_for()
 	marked.telegraphing = true
@@ -326,7 +327,7 @@ func _test_the_marks_flash_is_in_the_key(t: TestRunner) -> void:
 ## look in the same state reads three different keys for the three strengths: each change of the
 ## strength is drawn on the next ask, and a strength that is the same as the last one is not.
 func _test_the_caret_strength_is_in_the_key(t: TestRunner) -> void:
-	var def := EventCatalogue.by_id("loose_dog")
+	var def := Shipped.rows().by_id("loose_dog")
 	var event := _walker("loose_dog")
 	var look := event.look_for(def)
 	_asks(look)
@@ -357,7 +358,7 @@ func _test_separated_details_keep_the_owner_key_stable(t: TestRunner) -> void:
 	for id: String in periods:
 		var period: float = periods[id]
 		var event := FakeEvent.new()
-		var look := event.look_for(EventCatalogue.by_id(id))
+		var look := event.look_for(Shipped.rows().by_id(id))
 		event.tick(STEP, 0.0)
 		var was := look.idle_is_stepping(period)
 		_asks(look)
@@ -398,7 +399,7 @@ func _test_separated_details_keep_the_owner_key_stable(t: TestRunner) -> void:
 func _test_a_waiting_robber_turning_to_face_her_moves_the_key(t: TestRunner) -> void:
 	var event := FakeEvent.new()
 	event.waiting = true
-	var look := event.look_for(EventCatalogue.by_id("alley_robbery"))
+	var look := event.look_for(Shipped.rows().by_id("alley_robbery"))
 	# He waits, and the line to her is turned half a turn from one tick to the next.
 	event.line_to_her = Vector2(9000.0, 0.0)
 	event.tick(STEP, 0.0)
@@ -413,7 +414,7 @@ func _test_a_waiting_robber_turning_to_face_her_moves_the_key(t: TestRunner) -> 
 ## telegraph that mechanic has, so it must move the key from inside the frozen branch.
 func _test_a_chatting_mother_moves_her_key_while_frozen(t: TestRunner) -> void:
 	var event := _walker("chatting_mother")
-	var look := event.look_for(EventCatalogue.by_id("chatting_mother"))
+	var look := event.look_for(Shipped.rows().by_id("chatting_mother"))
 	# On a resting beat of her stride, which a stop leaves resting too, so the posture is all
 	# that changes.
 	_walk_to(event, WALK[3])
@@ -431,7 +432,7 @@ func _test_a_chatting_mother_moves_her_key_while_frozen(t: TestRunner) -> void:
 func _test_a_raised_boom_moves_the_gates_key(t: TestRunner) -> void:
 	var event := FakeEvent.new()
 	event.heading = Vector2.DOWN
-	var look := event.look_for(EventCatalogue.by_id("checkpoint_gate"))
+	var look := event.look_for(Shipped.rows().by_id("checkpoint_gate"))
 	event.tick(STEP, 0.0)
 	_asks(look)
 	event.raised = true
@@ -444,7 +445,7 @@ func _test_a_raised_boom_moves_the_gates_key(t: TestRunner) -> void:
 ## last frame the event was still an event.
 func _test_a_leaving_event_moves_its_key(t: TestRunner) -> void:
 	var event := _walker("loose_dog")
-	var look := event.look_for(EventCatalogue.by_id("loose_dog"))
+	var look := event.look_for(Shipped.rows().by_id("loose_dog"))
 	event.tick(STEP, 0.0)
 	_asks(look)
 	event.on_its_way_out = true
@@ -460,25 +461,25 @@ func _test_a_leaving_event_moves_its_key(t: TestRunner) -> void:
 func _test_the_flock_and_the_drawn_flames_are_never_gated(t: TestRunner) -> void:
 	var flock := FakeEvent.new()
 	flock.flock.append(EventFlock.Bird.new())
-	var flock_look := flock.look_for(EventCatalogue.by_id("pigeon_flock"))
+	var flock_look := flock.look_for(Shipped.rows().by_id("pigeon_flock"))
 	t.check(_never_settles(flock_look),
 			"a flock is never gated — every bird moves every tick")
 	flock.free()
 
 	var fire := FakeEvent.new()
 	fire.map = WorldMap.open_ground()
-	t.check(_never_settles(fire.look_for(EventCatalogue.by_id("burning_building"))),
+	t.check(_never_settles(fire.look_for(Shipped.rows().by_id("burning_building"))),
 			"a burning building's flames are never gated")
 	fire.free()
 
 	var firefight := FakeEvent.new()
 	firefight.map = WorldMap.open_ground()
-	t.check(not _never_settles(firefight.look_for(EventCatalogue.by_id("firefight"))),
+	t.check(not _never_settles(firefight.look_for(Shipped.rows().by_id("firefight"))),
 			"a firefight's gunmen are gated: its muzzle flashes are drawn apart from them")
 	firefight.free()
 
 	var stall := FakeEvent.new()
-	t.check(not _never_settles(stall.look_for(EventCatalogue.by_id("market_stall"))),
+	t.check(not _never_settles(stall.look_for(Shipped.rows().by_id("market_stall"))),
 			"and a market stall is gated like any other scenery")
 	stall.free()
 
@@ -495,8 +496,10 @@ func _test_a_firefights_flashes_move_without_its_gunmen(t: TestRunner) -> void:
 	holder.name = "Holder"
 	t.add_child(holder)
 	var instance := EventInstance.new()
-	instance.setup(EventCatalogue.by_id("firefight"), Vector2.ZERO, PackedVector2Array(),
-			Vector2.RIGHT, EventSurroundings.new().on(WorldMap.open_ground()) \
+	instance.setup(Shipped.rows().by_id("firefight"), Vector2.ZERO,
+			PackedVector2Array(),
+			Vector2.RIGHT, EventSurroundings.new().reading(Shipped.rows()) \
+			.on(WorldMap.open_ground()) \
 				.drawn_from(atlas) \
 				.drawing_through(EventDrawer.new(atlas)))
 	instance.set_physics_process(false)
@@ -548,7 +551,7 @@ func _test_a_firefights_flashes_move_without_its_gunmen(t: TestRunner) -> void:
 ## frame of the walk would stay on the screen with nobody in it.
 func _test_a_van_mid_take_is_never_gated_and_says_so_afterwards(t: TestRunner) -> void:
 	var event := FakeEvent.new()
-	var look := event.look_for(EventCatalogue.by_id("abduction"))
+	var look := event.look_for(Shipped.rows().by_id("abduction"))
 	t.check(not _never_settles(look), "an idle van is gated like any other vehicle")
 	event.taking_a_victim = true
 	event.tick(STEP, 0.0)
@@ -566,7 +569,7 @@ func _test_a_van_mid_take_is_never_gated_and_says_so_afterwards(t: TestRunner) -
 ## re-runs `draw_body()` a dozen times per frame of its own.
 func _test_the_key_is_stable_within_a_tick(t: TestRunner) -> void:
 	var event := _walker("dog_walker")
-	var look := event.look_for(EventCatalogue.by_id("dog_walker"))
+	var look := event.look_for(Shipped.rows().by_id("dog_walker"))
 	for i in WALK.size():
 		_walk_to(event, WALK[i])
 		_asks(look)
@@ -583,7 +586,7 @@ func _test_the_key_is_stable_within_a_tick(t: TestRunner) -> void:
 ## once-at-creation `is_telegraphing()` has gone false, and silencing flips a flag without moving
 ## anything. A key without them keeps the arcs on a mast day 11's task has just silenced.
 func _test_a_masts_lamp_and_its_silence_move_its_key(t: TestRunner) -> void:
-	var def := EventCatalogue.by_id("loudspeaker")
+	var def := Shipped.rows().by_id("loudspeaker")
 	var event := FakeEvent.new()
 	event.pulse_length = def.pulses_every()
 	event.telegraph_length = def.telegraphs_for()
@@ -603,7 +606,7 @@ func _test_a_masts_lamp_and_its_silence_move_its_key(t: TestRunner) -> void:
 ## own route at the row's own pace: what the real one answers once it has set off. A check walks
 ## it with `_walk_to()`.
 func _walker(id: String) -> FakeEvent:
-	var def := EventCatalogue.by_id(id)
+	var def := Shipped.rows().by_id(id)
 	var event := FakeEvent.new()
 	event.travels = true
 	event.approaching_at = def.approach_speed()

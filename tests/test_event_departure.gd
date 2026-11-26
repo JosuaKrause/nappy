@@ -44,10 +44,11 @@ func run(t: TestRunner) -> void:
 ## The convoy the director sends (120px/s, faster than her walk), on a two-tile route east, live past
 ## its telegraph.
 static func _convoy(where: WhereSheIs, way_on: WayOn) -> EventInstance:
-	var def := EventCatalogue.by_id("military_convoy").as_sent_ahead()
+	var def := Shipped.rows().by_id("military_convoy").as_sent_ahead()
 	var instance := EventInstance.new()
 	var path := PackedVector2Array([Vector2.ZERO, Vector2(2.0 * TILE, 0.0)])
-	instance.setup(def, path[0], path, Vector2.RIGHT, EventSurroundings.new().hearing(where))
+	instance.setup(def, path[0], path, Vector2.RIGHT,
+			EventSurroundings.new().reading(Shipped.rows()).hearing(where))
 	instance.restore(EventSave.new(maxf(def.telegraphs_for(), 0.01) + 0.05, 0.0))
 	if way_on:
 		instance.go_on_by(way_on)
@@ -138,9 +139,9 @@ func _test_a_pacing_yeller_leaves_away_from_her_on_either_half_of_its_beat(t: Te
 	for on_the_second_half: bool in [false, true]:
 		var where := WhereSheIs.nowhere()
 		var instance := EventInstance.new()
-		instance.setup(EventCatalogue.by_id("homeless_yeller"), Vector2.ZERO,
+		instance.setup(Shipped.rows().by_id("homeless_yeller"), Vector2.ZERO,
 				PackedVector2Array([Vector2.ZERO, Vector2(200.0, 0.0)]), Vector2.RIGHT,
-				EventSurroundings.new().hearing(where))
+				EventSurroundings.new().reading(Shipped.rows()).hearing(where))
 		t.add_child(instance)
 		instance.set_process(false)
 
@@ -173,9 +174,9 @@ func _test_a_pacing_yeller_leaves_away_from_her_on_either_half_of_its_beat(t: Te
 func _test_a_completed_tasks_rider_does_not_vanish_while_she_is_watching(t: TestRunner) -> void:
 	var where := WhereSheIs.nowhere()
 	var instance := EventInstance.new()
-	instance.setup(EventCatalogue.by_id("homeless_yeller"), Vector2.ZERO,
+	instance.setup(Shipped.rows().by_id("homeless_yeller"), Vector2.ZERO,
 			PackedVector2Array([Vector2.ZERO, Vector2(200.0, 0.0)]), Vector2.RIGHT,
-			EventSurroundings.new().hearing(where))
+			EventSurroundings.new().reading(Shipped.rows()).hearing(where))
 	t.add_child(instance)
 	instance.set_process(false)
 	# She stands still for the whole test — the case that used to pop him out of existence
@@ -212,9 +213,9 @@ func _test_a_completed_tasks_rider_does_not_vanish_while_she_is_watching(t: Test
 func _test_an_ordinary_departure_still_gives_up_at_six_seconds(t: TestRunner) -> void:
 	var where := WhereSheIs.nowhere()
 	var instance := EventInstance.new()
-	instance.setup(EventCatalogue.by_id("homeless_yeller"), Vector2.ZERO, PackedVector2Array(),
-			Vector2.RIGHT,
-			EventSurroundings.new().hearing(where))
+	instance.setup(Shipped.rows().by_id("homeless_yeller"), Vector2.ZERO,
+			PackedVector2Array(), Vector2.RIGHT,
+			EventSurroundings.new().reading(Shipped.rows()).hearing(where))
 	t.add_child(instance)
 	instance.set_process(false)
 	where.tell(Vector2(20.0, 0.0))

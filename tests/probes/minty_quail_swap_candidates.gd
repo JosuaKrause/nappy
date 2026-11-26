@@ -53,7 +53,7 @@ func run(t: TestRunner) -> void:
 		print("SC_ROWS seed %d | %s" % [seed_value, ids])
 		var route := _route_tiles(map, corridor)
 		for id: String in ["barricade", "roadblock"]:
-			var beat := EventCatalogue.by_id(id)
+			var beat := Shipped.rows().by_id(id)
 			var width := EventPlan.new(beat, Vector2.ZERO).blocking_radius()
 			var fits: Array[EventPlan] = []
 			var spine := 0
@@ -88,7 +88,7 @@ func run(t: TestRunner) -> void:
 		_scar_discs(city, seed_value)
 		city.free()
 	for id: String in ["barricade", "roadblock"]:
-		var def := EventCatalogue.by_id(id)
+		var def := Shipped.rows().by_id(id)
 		var plan := EventPlan.new(def, Vector2.ZERO)
 		print("SC_BEAT %s | blocking radius %.1f | obstructs %.1f | hard fail %s"
 				% [id, plan.blocking_radius(), def.obstructs_within(), def.ends_the_day()])
@@ -142,7 +142,7 @@ func _start(t: TestRunner, seed_value: int) -> City:
 func _bodies(city: City, seed_value: int) -> void:
 	var map := city.map()
 	for id: String in ["barricade", "roadblock"]:
-		var def := EventCatalogue.by_id(id)
+		var def := Shipped.rows().by_id(id)
 		var sites := 0
 		var shut := 0
 		var types := {}
@@ -204,7 +204,7 @@ func _scar_discs(city: City, seed_value: int) -> void:
 	if map.main_road_corridor() < 0:
 		return
 	var grid := ReachabilityGrid.build(map)
-	var def := EventCatalogue.by_id("barricade")
+	var def := Shipped.rows().by_id("barricade")
 	var sites := 0
 	var through := 0
 	for going: float in [1.0, -1.0]:

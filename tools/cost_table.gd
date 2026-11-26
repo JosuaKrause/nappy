@@ -98,7 +98,7 @@ func _ready() -> void:
 ## real edge like any other row's — see `docs/EVENTS.md`, "No row is `city_wide`".
 func _included_rows() -> Array[EventDef]:
 	var out: Array[EventDef] = []
-	for def in EventCatalogue.all():
+	for def in EventCatalogue.new(EventCatalogue.shipped_charger_timing()).all():
 		out.append(def)
 	return out
 

@@ -122,7 +122,7 @@ func _test_an_assigned_section_is_taken_for_the_day(t: TestRunner) -> void:
 	var locations := DayLocations.lay_out(CityMap.new(), _views())
 	var sections := _sections_of(locations, PlacementView.View.ROUTE_ADJACENT, BESIDE)
 	var middle := sections[1]
-	var roadblock := EventPlan.new(EventCatalogue.by_id("roadblock"), middle.centre())
+	var roadblock := EventPlan.new(Shipped.rows().by_id("roadblock"), middle.centre())
 	locations.assign(middle, roadblock)
 	var left := _sections_of(locations, PlacementView.View.ROUTE_ADJACENT, BESIDE)
 	t.check(middle.is_taken() and not left.has(middle),
@@ -144,7 +144,7 @@ func _test_a_section_taken_takes_its_two_sidewalk_locations(t: TestRunner) -> vo
 		t.check(on_a_band and middle.tiles().intersects(sidewalk.tiles()) == sidewalk.shares_a_section_with(middle),
 				"each sidewalk location lies on one sidewalk inside its own section (%s)"
 				% sidewalk.tiles())
-	street.take_section(middle, EventPlan.new(EventCatalogue.by_id("roadblock"),
+	street.take_section(middle, EventPlan.new(Shipped.rows().by_id("roadblock"),
 			middle.centre()))
 	var taken: Array[bool] = []
 	for sidewalk in sidewalks:
@@ -181,7 +181,7 @@ func _test_the_nearest_section_along_her_paths(t: TestRunner) -> void:
 			always) == sections[2], "and so is one reached only from ground she may not touch it from")
 	t.check(locations.nearest_section_in(PlacementView.View.OFF_THE_ROUTE, paths, always, always)
 			== null, "a view her paths reach no section of offers none")
-	locations.assign(sections[1], EventPlan.new(EventCatalogue.by_id("roadblock"),
+	locations.assign(sections[1], EventPlan.new(Shipped.rows().by_id("roadblock"),
 			sections[1].centre()))
 	t.check(locations.nearest_section_in(PlacementView.View.ROUTE_ADJACENT, paths, always, always)
 			== sections[2], "a section already taken is passed over")
@@ -248,7 +248,7 @@ func _test_a_carriageway_event_drawn_takes_its_section(t: TestRunner) -> void:
 	var locations := DayLocations.lay_out(CityMap.new(), _views())
 	var sections := _sections_of(locations, PlacementView.View.ROUTE_ADJACENT, BESIDE)
 	var middle := sections[1]
-	locations.record(middle, EventPlan.new(EventCatalogue.by_id("roadblock"),
+	locations.record(middle, EventPlan.new(Shipped.rows().by_id("roadblock"),
 			middle.centre()))
 	var sidewalks: Array[Location] = []
 	for location in locations.all():
@@ -264,7 +264,7 @@ func _test_a_carriageway_event_drawn_takes_its_section(t: TestRunner) -> void:
 	var first := sidewalks[0]
 	if first.shares_a_section_with(middle):
 		first = sidewalks[sidewalks.size() - 1]
-	locations.record(first, EventPlan.new(EventCatalogue.by_id("cafe_tables"),
+	locations.record(first, EventPlan.new(Shipped.rows().by_id("cafe_tables"),
 			first.centre()))
 	var others_taken := 0
 	for sidewalk in sidewalks:
@@ -292,7 +292,7 @@ func _test_a_sidewalk_holding_an_event_closes_its_section(t: TestRunner) -> void
 			held = location
 		else:
 			other = location
-	var cafe := EventCatalogue.by_id("cafe_tables")
+	var cafe := Shipped.rows().by_id("cafe_tables")
 	locations.assign_to(held, EventPlan.new(cafe, held.centre()))
 	t.check(sections[0].is_drawn() and not sections[0].is_taken(),
 			"a section whose sidewalk is assigned a cafe is closed to a draw and holds nothing")
@@ -354,7 +354,7 @@ func _test_a_fixed_part_holds_its_location(t: TestRunner) -> void:
 	var open_before := locations.open_locations().size()
 	var tile := square.position + Vector2i.ONE
 	var cell := locations.holding(tile, GameEnums.TileType.SQUARE)
-	var mast := EventPlan.new(EventCatalogue.mast(), map.tile_to_world(tile))
+	var mast := EventPlan.new(Shipped.rows().mast(), map.tile_to_world(tile))
 	locations.hold_fixed_part(mast, tile, GameEnums.TileType.SQUARE)
 	t.check(cell.is_taken(), "the location holding a fixed part is taken for the day")
 	t.check(not cell in locations.open_locations()
@@ -372,8 +372,8 @@ func _test_every_location_is_answered_once(t: TestRunner) -> void:
 	var locations := DayLocations.lay_out(map, _views())
 	var segment := _segment(BESIDE)
 	var held := locations.holding(segment.tile_rect().get_center(), GameEnums.TileType.ROAD)
-	locations.hold_fixed_part(EventPlan.new(EventCatalogue.by_id("cafe_tables"), held.centre()),
-			segment.tile_rect().get_center(), GameEnums.TileType.ROAD)
+	locations.hold_fixed_part(EventPlan.new(Shipped.rows().by_id("cafe_tables"),
+			held.centre()), segment.tile_rect().get_center(), GameEnums.TileType.ROAD)
 	var all := locations.all()
 	var once := {}
 	for location in all:
@@ -455,8 +455,8 @@ func _test_a_location_is_open_while_nothing_holds_it(t: TestRunner) -> void:
 	var locations := DayLocations.lay_out(map, _views())
 	var sidewalks := _sidewalks_of(locations, BESIDE)
 	t.check(sidewalks[0].is_open() and sidewalks[1].is_open(), "an untouched sidewalk location is open")
-	locations.assign_to(sidewalks[0], EventPlan.new(EventCatalogue.by_id("cafe_tables"),
-			sidewalks[0].centre()))
+	locations.assign_to(sidewalks[0],
+			EventPlan.new(Shipped.rows().by_id("cafe_tables"), sidewalks[0].centre()))
 	locations.record(sidewalks[1], null)
 	t.check(not sidewalks[0].is_open(), "one a dawn phase filled is not")
 	t.check(not sidewalks[1].is_open(), "nor one a draw left empty")
@@ -471,7 +471,7 @@ func _test_a_beat_takes_a_location_and_gives_it_back(t: TestRunner) -> void:
 	var locations := DayLocations.lay_out(map, _views())
 	var sidewalks := _sidewalks_of(locations, BESIDE)
 	var section_open_before := _sections_of(locations, PlacementView.View.OFF_THE_ROUTE, BESIDE).size()
-	var beat := EventPlan.new(EventCatalogue.mast(), sidewalks[0].centre())
+	var beat := EventPlan.new(Shipped.rows().mast(), sidewalks[0].centre())
 	locations.take_for_her_walk(sidewalks[0], beat)
 	t.check(sidewalks[0].is_taken() and not sidewalks[0].is_open(),
 			"a location a beat took is taken for the day, so no draw fills it")
@@ -487,7 +487,8 @@ func _test_a_beat_takes_a_location_and_gives_it_back(t: TestRunner) -> void:
 	locations.give_back(drawn, beat)
 	t.check(drawn.is_drawn() and not drawn.is_taken() and not drawn.is_open(),
 			"one whose unit had drawn reads drawn with nothing on it")
-	var other := EventPlan.new(EventCatalogue.by_id("cafe_tables"), sidewalks[0].centre())
+	var other := EventPlan.new(Shipped.rows().by_id("cafe_tables"),
+			sidewalks[0].centre())
 	locations.assign_to(sidewalks[0], other)
 	locations.give_back(sidewalks[0], beat)
 	t.check(sidewalks[0].is_taken(), "a beat that does not stand there gives back nothing of another plan's")

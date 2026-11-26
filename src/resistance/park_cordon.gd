@@ -240,7 +240,7 @@ var _officer_walks := Mover.on_foot()
 ## How far an officer's body reaches round his feet, for his move
 ## (`MoveProposal.body_radius()`): the policeman's own figure, as he walks when he is an event
 ## (`EventInstance.mover_for()` of `OFFICER_ROW`), though his own walks go at no reach.
-var _officer_reach := EventInstance.mover_for(EventCatalogue.by_id(OFFICER_ROW)).body_reach()
+var _officer_reach := 0.0
 ## The day's obstruction as the director's reachability answer has it (`EventScheduler.
 ## blocked_by()`: today's closures plus every body's disc), which the last gap is checked under.
 var _blocked: Dictionary
@@ -302,11 +302,15 @@ func use_bus(bus: _BUS) -> void:
 ## day's, or null for none; `world` where its pieces are drawn, from `atlas`, or null to draw
 ## nothing; `siting` is the one the officers are placed by: the ground they may stand on and the
 ## camera's whole view.
-func _init(map: CityMap, navigator: Navigator, events: EventManager, world: WorldContext,
-		atlas: AtlasLibrary, block: Vector2i, siting: SpawnSiting, blocked: Dictionary = {}) -> void:
+## `rows` is the run's catalogue, which the officer's row is read from.
+func _init(rows: EventCatalogue, map: CityMap, navigator: Navigator, events: EventManager,
+		world: WorldContext, atlas: AtlasLibrary, block: Vector2i, siting: SpawnSiting,
+		blocked: Dictionary = {}) -> void:
+	var officer := rows.by_id(OFFICER_ROW)
+	_officer_reach = EventInstance.mover_for(officer).body_reach()
 	_map = map
 	_siting = siting
-	_drawn = siting.ask_of_drawing(EventFootprints.footprint_of(EventCatalogue.by_id(OFFICER_ROW)))
+	_drawn = siting.ask_of_drawing(EventFootprints.footprint_of(officer))
 	_stands_on = siting.ask_of_ground(Rect2(), _officer_walks)
 	_navigator = navigator
 	_events = events

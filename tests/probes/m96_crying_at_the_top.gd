@@ -230,7 +230,7 @@ func _two_bumps_at_the_top(t: TestRunner) -> Dictionary:
 ## Walking a straight line past a stationary row's own field, lateral to its centre by one lane's
 ## width, starting already at the cap.
 func _walk_past_row(t: TestRunner, id: String) -> Dictionary:
-	var def := EventCatalogue.by_id(id)
+	var def := Shipped.rows().by_id(id)
 	var instance := EventInstance.new()
 	instance.setup(def, Vector2.ZERO, PackedVector2Array([Vector2.ZERO, Vector2.ZERO]))
 	# Past the telegraph, the same warm-up `M174Pass._pass_net()` gives a row met on the map.
@@ -266,7 +266,7 @@ func _walk_past_row(t: TestRunner, id: String) -> Dictionary:
 ## body costs is a route decision the fairness contract already prices elsewhere — the question
 ## here is only what standing inside the field itself does to the mass.
 func _stand_in_row(t: TestRunner, id: String, seconds: float) -> Dictionary:
-	var def := EventCatalogue.by_id(id)
+	var def := Shipped.rows().by_id(id)
 	var instance := EventInstance.new()
 	instance.setup(def, Vector2.ZERO, PackedVector2Array([Vector2.ZERO, Vector2.ZERO]))
 	var warm_steps := int(ceil((def.telegraphs_for() + 0.05) / STEP))

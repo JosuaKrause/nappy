@@ -28,8 +28,8 @@ func make(day: int, tree: RouteTree, ground: RowGround) -> WalkSiting:
 		fronts = _world.poster_walls().fronts()
 	var streets := _world.streets()
 	var left_open := streets.tutorial_walk_left_open() if streets else null
-	return _assemble(day, _world.city_map(), tree, _walk, _world.plan_builder(), ground, fronts,
-			_world.day_stream(day, "siting").seed, left_open)
+	return _assemble(_world.rows(), day, _world.city_map(), tree, _walk, _world.plan_builder(),
+			ground, fronts, _world.day_stream(day, "siting").seed, left_open)
 
 ## **A siting from pieces** (`make()` hands it the world's). `base` seeds the streams its judge
 ## builds candidates on. Builds, in order: the corridor made of the day's tree, which its caller
@@ -45,7 +45,8 @@ func make(day: int, tree: RouteTree, ground: RowGround) -> WalkSiting:
 ## (empty for a walk with no city). `left_open` is day 1's walk on the day that leaves it open
 ## (`DayStreets.tutorial_walk_left_open()`), else null: the rules keep one sidewalk of each of its
 ## streets open, as the dawn's do (`DawnContext.use_the_walk_left_open()`).
-static func _assemble(day: int, map: CityMap, tree: RouteTree, walk: WalkEvents,
+static func _assemble(rows: EventCatalogue, day: int, map: CityMap, tree: RouteTree,
+		walk: WalkEvents,
 		builder: PlanBuilder, ground: RowGround, fronts: Dictionary, base: int,
 		left_open: TutorialRoute = null) -> WalkSiting:
 	var corridor := Corridor.of(tree)
@@ -62,4 +63,4 @@ static func _assemble(day: int, map: CityMap, tree: RouteTree, walk: WalkEvents,
 	if not locations:
 		locations = DayLocations.lay_out(map, corridor)
 	return WalkSiting.new(map, tree, walk, locations, judge,
-			SitedGround.new(map, ground, fronts))
+			SitedGround.new(rows, map, ground, fronts))

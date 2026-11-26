@@ -135,7 +135,7 @@ static func _spoil_one_park(context: DawnContext, rng: RandomNumberGenerator,
 		return
 
 	var ground := calm.ground_of(block)
-	var pool := _things_to_put_in_a_park(context.day(), ground, context.heat())
+	var pool := _things_to_put_in_a_park(context.rows(), context.day(), ground, context.heat())
 	if pool.is_empty():
 		return
 
@@ -303,11 +303,12 @@ static func _nearest_of(tiles: Array[Vector2i], to: Vector2i) -> Vector2i:
 ## (`EventDef.is_handed_to_her_walk()`, the sidewalk `poster_crew`) stands where her walk sites it,
 ## never where the dawn would put it, so a park it was meant to spoil would stand empty, against
 ## PLAYTEST-140 8 (a used park is shut by the events placed in it). None is offered.
-static func _things_to_put_in_a_park(day: int, ground: Rect2, heat: int = 0) -> Array[EventDef]:
+static func _things_to_put_in_a_park(rows: EventCatalogue, day: int, ground: Rect2,
+		heat: int = 0) -> Array[EventDef]:
 	var allowed := maxf(OBSTRUCTION_A_PARK_CAN_HOLD,
 			minf(ground.size.x, ground.size.y) / 16.0)
 	var suitable: Array[EventDef] = []
-	for def in EventCatalogue.of_kind(GameEnums.EventKind.RECURRING, day, heat):
+	for def in rows.of_kind(GameEnums.EventKind.RECURRING, day, heat):
 		if def.ends_the_day() or def.moves():
 			continue
 		if def.obstructs_within() > allowed:

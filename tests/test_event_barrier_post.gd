@@ -14,7 +14,8 @@ func run(t: TestRunner) -> void:
 	_test_a_barrier_restored_spent_stands_unmanned(t)
 
 func _row() -> EventDef:
-	return EventCatalogue.heated(EventCatalogue.by_id("roadblock"), EventDef.HEAT_HUNTS_LEVEL)
+	return Shipped.rows().heated(Shipped.rows().by_id("roadblock"),
+			EventDef.HEAT_HUNTS_LEVEL)
 
 ## The band and her, standing south of it inside his notice: the guard on her side is the south one.
 func _stand(t: TestRunner, where: WhereSheIs) -> RoadblockParts:

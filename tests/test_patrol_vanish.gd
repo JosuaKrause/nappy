@@ -123,7 +123,7 @@ func _removed(car: EventInstance) -> bool:
 ## The ordinary patrol: it drives its route to the end and leaves the way it was going, with her
 ## beside the street. It is removed only once it is out of her view.
 func _test_a_car_that_runs_out_of_route_leaves_out_of_her_sight(t: TestRunner) -> void:
-	var rig := _lane_rig(t, EventCatalogue.by_id("police_patrol"))
+	var rig := _lane_rig(t, Shipped.rows().by_id("police_patrol"))
 	var city: City = rig[0]
 	var her: Node2D = rig[1]
 	var plan: EventPlan = rig[2]
@@ -144,7 +144,8 @@ func _test_a_car_that_runs_out_of_route_leaves_out_of_her_sight(t: TestRunner) -
 ## The investigating car: it stops, lets its man out, takes him back in and drives on; every
 ## removal of it is out of her view.
 func _test_an_investigating_car_leaves_out_of_her_sight(t: TestRunner) -> void:
-	var hot := EventCatalogue.heated(EventCatalogue.by_id("police_patrol"), Tuning.RESISTANCE_GOAL)
+	var hot := Shipped.rows().heated(Shipped.rows().by_id("police_patrol"),
+			Tuning.RESISTANCE_GOAL)
 	var rig := _lane_rig(t, hot)
 	var city: City = rig[0]
 	var her: Node2D = rig[1]
@@ -175,7 +176,8 @@ func _test_an_investigating_car_leaves_out_of_her_sight(t: TestRunner) -> void:
 ## The same car, its man shaken off instead: she runs, he gives up the chase and walks back to the
 ## car, which drives on once he is in. Every removal of the car is out of her view.
 func _test_an_investigating_car_whose_man_is_shaken_off_leaves_out_of_her_sight(t: TestRunner) -> void:
-	var hot := EventCatalogue.heated(EventCatalogue.by_id("police_patrol"), Tuning.RESISTANCE_GOAL)
+	var hot := Shipped.rows().heated(Shipped.rows().by_id("police_patrol"),
+			Tuning.RESISTANCE_GOAL)
 	var rig := _lane_rig(t, hot)
 	var city: City = rig[0]
 	var her: Node2D = rig[1]
@@ -211,7 +213,7 @@ func _test_an_investigating_car_whose_man_is_shaken_off_leaves_out_of_her_sight(
 ## follows it 120px behind for far longer than that, and it must still be in the world; stopping,
 ## she lets it go, and it is removed only out of her view.
 func _test_a_car_she_follows_out_of_its_street_is_not_streamed_out(t: TestRunner) -> void:
-	var rig := _lane_rig(t, EventCatalogue.by_id("police_patrol"))
+	var rig := _lane_rig(t, Shipped.rows().by_id("police_patrol"))
 	var city: City = rig[0]
 	var her: Node2D = rig[1]
 	var plan: EventPlan = rig[2]
@@ -250,7 +252,7 @@ func _test_a_car_she_follows_out_of_its_street_is_not_streamed_out(t: TestRunner
 ## the car is rebuilt out of her view and finishes at once. So this holds the bookkeeping, and the
 ## second half walks her back and holds that nothing is ever inside her view.
 func _test_a_leaving_car_streamed_out_does_not_come_back(t: TestRunner) -> void:
-	var rig := _lane_rig(t, EventCatalogue.by_id("police_patrol"))
+	var rig := _lane_rig(t, Shipped.rows().by_id("police_patrol"))
 	var city: City = rig[0]
 	var her: Node2D = rig[1]
 	var plan: EventPlan = rig[2]

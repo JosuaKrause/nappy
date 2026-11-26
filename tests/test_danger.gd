@@ -201,7 +201,7 @@ func _test_the_edge_badges_only_what_the_row_announces(t: TestRunner) -> void:
 	edge.setup(manager, standing)
 	t.add_child(edge)
 
-	var def := EventCatalogue.by_id("cat_dash")
+	var def := Shipped.rows().by_id("cat_dash")
 	t.check(not def.announces_its_coming(Tuning.WALK_SPEED),
 			"the cat's row does not announce its coming, so the check below is about the edge")
 	var cat := manager.spawn_warned(def, PackedVector2Array([Vector2(700.0, 0.0), Vector2.ZERO]))
@@ -231,7 +231,7 @@ func _test_a_live_instance_keeps_its_badge_and_a_gone_one_loses_it(t: TestRunner
 	edge.setup(manager, standing)
 	t.add_child(edge)
 
-	var def := EventCatalogue.by_id("fire_truck")
+	var def := Shipped.rows().by_id("fire_truck")
 	var engine := manager.spawn_warned(def, PackedVector2Array([Vector2(700.0, 0.0), Vector2.ZERO]))
 	var driven := 0.0
 	while driven < 1.0:

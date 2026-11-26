@@ -237,7 +237,7 @@ func _measure() -> void:
 					single_culprit_bands += 1
 					var solo: Body = culprits[0]
 					if solo.source == Source.CANDIDATE_LOOP:
-						var def := EventCatalogue.by_id(solo.id)
+						var def := Shipped.rows().by_id(solo.id)
 						if def and EventScheduler.leaves_no_line_along_a_sidewalk(def):
 							rule_scope_singles += 1
 				for culprit: Body in culprits:
@@ -277,8 +277,9 @@ func _rng(map: CityMap, day: int, stream: String) -> RandomNumberGenerator:
 ## `EventScheduler.role_for()` and the rest — so each phase's own output can be told apart, which `build_day`'s
 ## single merged return cannot.
 func _gather_bodies(map: CityMap, day: int, tree: RouteTree) -> Dictionary:
-	var region_plan := RegionPlanner.plan_day(map, DaySpec.for_day(day), tree)
-	var closures := ClosurePlanner.plan_day(map, DaySpec.for_day(day),
+	var region_plan := RegionPlanner.plan_day(Shipped.rows(), map,
+			DaySpec.for_day(day), tree)
+	var closures := ClosurePlanner.plan_day(Shipped.rows(), map, DaySpec.for_day(day),
 			_rng(map, day, "closures"), tree, region_plan)
 	map.close_streets(closures)
 
@@ -303,8 +304,8 @@ func _gather_bodies(map: CityMap, day: int, tree: RouteTree) -> Dictionary:
 	for rect: Rect2i in region_plan.door_alleys():
 		boundary[rect.position] = true
 
-	var seals := SealPlanner.plan_day(map, DaySpec.for_day(day), tree, _rng(map, day, "seals"), boundary,
-			map.held_streets())
+	var seals := SealPlanner.plan_day(Shipped.rows(), map, DaySpec.for_day(day), tree,
+			_rng(map, day, "seals"), boundary, map.held_streets())
 
 	var dawn := GameDawn.of(DaySpec.for_day(day), _rng(map, day, "events"), map) \
 			.masts([] as Array[MastSites.Site]).on(tree).context()

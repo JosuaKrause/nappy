@@ -40,12 +40,12 @@ static func _set_of(tiles: Array[Vector2i]) -> Dictionary:
 
 ## A crew stands in front of a blank wall: of the tiles its lane offers, the ones that are fronts.
 func _test_a_crew_is_offered_only_the_fronts_of_its_lane(t: TestRunner) -> void:
-	var crew := EventCatalogue.by_id("poster_crew")
+	var crew := Shipped.rows().by_id("poster_crew")
 	var lane: Array[Vector2i] = [Vector2i(10, 10), Vector2i(11, 10), Vector2i(12, 10), Vector2i(13, 10)]
 	var ground := _Ground.new()
 	ground.answers["%s:%d" % [crew.id(), EventDef.Pavement.AT_THE_FRONT]] = _set_of(lane)
 	var fronts := {Vector2i(11, 10): true, Vector2i(13, 10): true, Vector2i(40, 40): true}
-	var sited := SitedGround.new(null, ground, fronts)
+	var sited := SitedGround.new(Shipped.rows(), null, ground, fronts)
 	var offered := sited.tiles_of(crew)
 	t.check(crew.stands_at_a_front() and offered.size() == 2 and offered.has(Vector2i(11, 10))
 			and offered.has(Vector2i(13, 10)),
@@ -54,14 +54,14 @@ func _test_a_crew_is_offered_only_the_fronts_of_its_lane(t: TestRunner) -> void:
 			"a tile of the lane that is no front is refused, a front accepted")
 	t.check(not sited.takes(crew, Vector2i(40, 40)),
 			"and a front outside the lane is no tile of its ground")
-	var none := SitedGround.new(null, ground, {})
+	var none := SitedGround.new(Shipped.rows(), null, ground, {})
 	t.check(none.tiles_of(crew).is_empty(), "with no fronts handed over a crew is offered nowhere")
 
 ## A mast is offered a tile of its ground only where `MastSites.is_eligible()` says a mast site may
 ## be: every tile the narrowing accepts is one, and the ground holds tiles it refuses.
 func _test_a_mast_is_offered_only_what_a_mast_site_may_be(t: TestRunner) -> void:
 	var map := CityGenerator.generate(SEED)
-	var mast := EventCatalogue.mast()
+	var mast := Shipped.rows().mast()
 	var sidewalks: Array[Vector2i] = []
 	var every := 0
 	for tile in map.tiles_of_type(GameEnums.TileType.SIDEWALK):
@@ -70,13 +70,14 @@ func _test_a_mast_is_offered_only_what_a_mast_site_may_be(t: TestRunner) -> void
 			sidewalks.append(tile)
 	var ground := _Ground.new()
 	ground.answers["%s:%d" % [mast.id(), -1]] = _set_of(sidewalks)
-	var sited := SitedGround.new(map, ground, {})
+	var sited := SitedGround.new(Shipped.rows(), map, ground, {})
 	var doors := MastSites.possible_door_points(map)
 	var accepted := 0
 	var refused := 0
 	var disagreed := 0
 	for tile in sidewalks:
-		var may := MastSites.is_eligible(map.tile_to_world(tile), map, doors)
+		var may := MastSites.is_eligible(Shipped.rows(), map.tile_to_world(tile), map,
+				doors)
 		if sited.takes(mast, tile) != may:
 			disagreed += 1
 		if may:
@@ -90,10 +91,10 @@ func _test_a_mast_is_offered_only_what_a_mast_site_may_be(t: TestRunner) -> void
 
 ## Any other row is offered its ground as the walk gives it.
 func _test_any_other_row_is_offered_what_the_ground_offers(t: TestRunner) -> void:
-	var tables := EventCatalogue.by_id("cafe_tables")
+	var tables := Shipped.rows().by_id("cafe_tables")
 	var ground := _Ground.new()
 	ground.answers["%s:%d" % [tables.id(), -1]] = _set_of([Vector2i(3, 4), Vector2i(5, 6)] as Array[Vector2i])
-	var sited := SitedGround.new(null, ground, {Vector2i(3, 4): true})
+	var sited := SitedGround.new(Shipped.rows(), null, ground, {Vector2i(3, 4): true})
 	t.check(sited.takes(tables, Vector2i(3, 4)) and sited.takes(tables, Vector2i(5, 6))
 			and not sited.takes(tables, Vector2i(7, 7)),
 			"a row that is neither a crew nor a mast takes exactly what its ground offers, fronts or no")
@@ -101,10 +102,10 @@ func _test_any_other_row_is_offered_what_the_ground_offers(t: TestRunner) -> voi
 ## `prepare()` does the row's one scan now; every later ask, of the set or of a tile, reaches the
 ## ground no more.
 func _test_prepare_asks_the_ground_once_and_a_later_ask_asks_no_more(t: TestRunner) -> void:
-	var tables := EventCatalogue.by_id("cafe_tables")
+	var tables := Shipped.rows().by_id("cafe_tables")
 	var ground := _Ground.new()
 	ground.answers["%s:%d" % [tables.id(), -1]] = _set_of([Vector2i(3, 4)] as Array[Vector2i])
-	var sited := SitedGround.new(null, ground, {})
+	var sited := SitedGround.new(Shipped.rows(), null, ground, {})
 	sited.prepare(tables)
 	var after_prepare := ground.asks
 	sited.takes(tables, Vector2i(3, 4))

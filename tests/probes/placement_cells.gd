@@ -40,7 +40,7 @@ func run(t: TestRunner) -> void:
 		for i in SEEDS:
 			var map := CityGenerator.generate(BASE + i * STEP)
 			# The run's mast sites, worked out once on the city as built, as the game does.
-			var sites := MastSites.compute(map)
+			var sites := MastSites.compute(Shipped.rows(), map)
 			var state := CityState.new()
 			state.begin_day(map.plans_by_block(), day)
 			map.repaint(state)
@@ -49,10 +49,11 @@ func run(t: TestRunner) -> void:
 			# The day's own closures, holds, region wall and seals, planned as the game plans them
 			# (`City.start_day()`, `DayPlanner._plan_a_day()`), so the seals and the wall's bodies
 			# stand as the day's standing and hold their locations.
-			var region_plan := RegionPlanner.plan_day(map, spec, tree)
+			var region_plan := RegionPlanner.plan_day(Shipped.rows(), map, spec, tree)
 			var closure_rng := RandomNumberGenerator.new()
 			closure_rng.seed = hash("placement_rows closures:%d:%d" % [i, day])
-			var closures := ClosurePlanner.plan_day(map, spec, closure_rng, tree, region_plan)
+			var closures := ClosurePlanner.plan_day(Shipped.rows(), map, spec,
+					closure_rng, tree, region_plan)
 			map.close_streets(closures)
 			map.clear_day_holds()
 			for closure: RoadClosure in closures:
@@ -75,8 +76,8 @@ func run(t: TestRunner) -> void:
 				boundary[rect.position] = true
 			var seal_rng := RandomNumberGenerator.new()
 			seal_rng.seed = hash("placement_rows seals:%d:%d" % [i, day])
-			var seals := SealPlanner.plan_day(map, spec, tree, seal_rng, boundary,
-					map.held_streets())
+			var seals := SealPlanner.plan_day(Shipped.rows(), map, spec, tree,
+					seal_rng, boundary, map.held_streets())
 			for seal in seals:
 				seal.stand_as_a_seal()
 			var doors := PackedVector2Array()
@@ -94,7 +95,8 @@ func run(t: TestRunner) -> void:
 			var consumed: Array[String] = []
 			var dawn: DawnContext = GameDawn.of(spec, rng, map).masts(sites).spent(consumed) \
 					.on(tree).doors(doors).standing(standing) \
-					.roadblock(EventCatalogue.by_id(guarded) if guarded != "" else null) \
+					.roadblock(Shipped.rows()
+					.by_id(guarded) if guarded != "" else null) \
 					.undrawn().planned()
 			var draw := dawn.unit_draw()
 			var units := draw.units().undrawn_within(Vector2.ZERO, INF)

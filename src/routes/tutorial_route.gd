@@ -489,8 +489,9 @@ func _park_side(segment: StreetNetwork.Segment) -> int:
 const LESSON_STREETS := 5
 
 ## Day 1's tutorial route on `map`, or null where no route keeps every rule. See the class doc.
-static func for_city(map: CityMap) -> TutorialRoute:
-	var chooser := _Chooser.new(map)
+## `rows` is the run's catalogue, whose seal rows decide where a side street's mouth is walled.
+static func for_city(rows: EventCatalogue, map: CityMap) -> TutorialRoute:
+	var chooser := _Chooser.new(rows, map)
 	for length: int in [LESSON_STREETS, LESSON_STREETS + 1]:
 		var found := chooser.choose(length)
 		if found:
@@ -500,6 +501,7 @@ static func for_city(map: CityMap) -> TutorialRoute:
 ## The search `for_city()` runs, with what it has learned about each street and junction kept so
 ## a street is judged once however many candidates reach it.
 class _Chooser extends RefCounted:
+	var _rows: EventCatalogue
 	var _map: CityMap
 	var _areas: Array[ClosurePlanner.CalmArea] = []
 	var _area_of := {}
@@ -511,7 +513,8 @@ class _Chooser extends RefCounted:
 	## The street trees' footprint, which a seal at a side street's mouth steps past.
 	var _trees := {}
 
-	func _init(map: CityMap) -> void:
+	func _init(rows: EventCatalogue, map: CityMap) -> void:
+		_rows = rows
 		_map = map
 		_trees = StreetTrees.footprint_tiles(map)
 		_areas = ClosurePlanner.calm_areas(map)
@@ -718,7 +721,8 @@ class _Chooser extends RefCounted:
 		for mouth in route.side_street_mouths():
 			var segment: StreetNetwork.Segment = mouth[0]
 			var at_a: bool = mouth[1]
-			var border := _border_of(SealPlanner.tutorial_mouth_stub(_map, segment, at_a, _trees))
+			var border := _border_of(SealPlanner.tutorial_mouth_stub(_rows, _map, segment, at_a,
+					_trees))
 			if bool(border["open"]):
 				return false
 			var areas: Dictionary = border["areas"]

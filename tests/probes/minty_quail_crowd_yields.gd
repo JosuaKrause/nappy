@@ -124,8 +124,8 @@ func _a_day(t: TestRunner, city: City, run: RunState, library: AtlasLibrary, see
 	var director := ResistanceDirector.new()
 	t.add_child(director)
 	director.set_process(false)
-	director.setup(city.map(), run, RunCity.events(city), city.streets(), city.fronts(), city,
-			null, RunCity.spawn_siting(city))
+	director.setup(Shipped.rows(), city.map(), run, RunCity.events(city),
+			city.streets(), city.fronts(), city, null, RunCity.spawn_siting(city))
 	director.use_player(player)
 	director.set_sight(RunCity.events(city).visible_view())
 	director.start_day(day, _rng(seed_value, day, "resistance"), 300.0)
@@ -133,9 +133,9 @@ func _a_day(t: TestRunner, city: City, run: RunState, library: AtlasLibrary, see
 	if day == 3:
 		var spots := _spots(city)
 		for id in ROWS:
-			var def := EventCatalogue.by_id(id)
+			var def := Shipped.rows().by_id(id)
 			if id == "police_patrol":
-				def = EventCatalogue.heated(def, EventCatalogue.heat_levels() - 1)
+				def = Shipped.rows().heated(def, EventCatalogue.heat_levels() - 1)
 			for i in spots.size():
 				_a_row(city, player, def, spots[i], label.merged({"run": "%s spot %d" % [id, i]}))
 	var offered := director.current_step()
@@ -194,8 +194,8 @@ func _the_cordon(city: City, library: AtlasLibrary, director: ResistanceDirector
 	var before := RunCity.events(city).instances().duplicate()
 	var meeting := Meeting.new(self, city, label)
 	meeting.start_the_crowd(player)
-	var cordon := ParkCordon.new(city.map(), city.navigator(), RunCity.events(city), city,
-			library, park, RunCity.spawn_siting(city),
+	var cordon := ParkCordon.new(Shipped.rows(), city.map(), city.navigator(),
+			RunCity.events(city), city, library, park, RunCity.spawn_siting(city),
 			RunCity.events(city).walk_events().reach().shut())
 	for tick in CORDON_TICKS:
 		_tick_events(city)
