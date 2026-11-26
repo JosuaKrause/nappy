@@ -94,6 +94,14 @@ var _traffic: TrafficIndex
 ## than about anybody standing on it — see `CrowdPockets`.
 var _pockets: CrowdPockets = null
 
+## Whether the crowd holds new cars (`CarEntryHold`), shared with the rest of the crowd. Null for an
+## agent built by hand in a test, which then re-enters as it always did.
+var _entry_hold: CarEntryHold = null
+
+## Whether this car met the hold when it would have been recycled and waits for the crowd to park
+## it (`Crowd._park_the_held_cars()`).
+var _held_back := false
+
 ## Somebody standing in front of this car, or `Vector2.INF` for nobody. Written once per
 ## physics frame by `Crowd` for the cars near the player and read here: an agent has no
 ## business knowing who the player is, but it does have to decide whether to stop.
@@ -490,6 +498,25 @@ func use_crowd_parts(day_traffic: TrafficIndex, day_pockets: CrowdPockets, scree
 	_view = screen
 	frame_timing = charge_to
 	_hand_the_strategy_its_parts()
+
+## Hands the mover the crowd's hold on new cars, which a recycle asks of it.
+func use_entry_hold(hold: CarEntryHold) -> void:
+	_entry_hold = hold
+
+## Whether this car was recycled while the crowd held new cars, so it stands where it left the
+## crowd's box and is to be parked.
+func is_held_back() -> bool:
+	return _held_back
+
+## Whether nobody can see this agent now: what a car is parked on (`Crowd.hold_new_cars()`).
+func is_out_of_sight() -> bool:
+	return _out_of_view()
+
+## Re-enters this car at the edge of the crowd's box, out of view, once it is back in the world:
+## the recycle that parking put off.
+func re_enter() -> void:
+	_held_back = false
+	_recycle()
 
 ## Hands the strategy the collaborators its lane work uses every frame and that never change under it
 ## (the map, the crowd's field, the day's traffic and pockets, its own random stream and held move),
@@ -1310,6 +1337,12 @@ const ENTRY_SPREAD := 420.0
 ## whole of *"or never spawn in the first place"*; `is_in_a_pocket()` is the question and
 ## `CrowdPockets` is what answers it without a search per roll.
 func _recycle() -> void:
+	# While the crowd holds new cars a car does not come back in: it stays where it left the box
+	# until the crowd parks it, which is out of everybody's view (the box's edge).
+	if _kind == Kind.CAR and _entry_hold != null and _entry_hold.holds() \
+			and not _field.has_stretch():
+		_held_back = true
+		return
 	# The look-ahead is a cached answer about where this agent was standing, and a recycle puts it
 	# somewhere else; then the kind's own fresh start (a walker's stride, door and answer).
 	_scan_at = Vector2i(-9999, -9999)

@@ -24,6 +24,7 @@ func run(t: TestRunner) -> void:
 	_test_a_zone_block_of_the_park(t)
 	_test_the_lessons_count_back_from_the_parks_street(t, map)
 	_test_the_line_crosses_lesson_fours_street_and_keeps_the_park_side(t, map)
+	_test_the_ground_past_the_crossing_with_no_cars(t, map)
 	_test_a_route_of_six_lesson_streets_leaves_its_first_empty(t, map)
 
 func _arm(map: CityMap, junction: Vector2i, toward: Vector2i) -> StreetNetwork.Segment:
@@ -200,6 +201,36 @@ func _test_the_line_crosses_lesson_fours_street_and_keeps_the_park_side(t: TestR
 		for tile in map.rect_tiles(route.far_sidewalk(segment)):
 			far_left = far_left and not ground.has(tile)
 	t.check(line_held and far_left, "the line's ground is the line's sidewalks, not the far ones")
+
+## **The ground past the crossing with no cars starts on the sidewalk the line leaves lesson (4)'s
+## junction on**: the sidewalk she arrives toward, which the van shuts just past the box, and the
+## street's carriageway are not past it; the streets after it and the boxes past the junction are.
+func _test_the_ground_past_the_crossing_with_no_cars(t: TestRunner, map: CityMap) -> void:
+	var route := _lesson_route(map)
+	var streets := route.lesson_streets()
+	var past := route.ground_past_the_crossing_with_no_cars()
+	var line_in := true
+	for tile in map.rect_tiles(route.line_sidewalk(streets[2])):
+		line_in = line_in and _in_any(past, tile)
+	var far_out := true
+	for tile in map.rect_tiles(route.far_sidewalk(streets[2])):
+		far_out = far_out and not _in_any(past, tile)
+	t.check(line_in, "the sidewalk the line leaves lesson (4)'s junction on is past the crossing")
+	t.check(far_out, "the sidewalk she arrives toward, before the van, is not")
+	t.check(not _in_any(past, streets[2].tile_rect().get_center()),
+			"nor is lesson (4)'s carriageway")
+	t.check(not _in_any(past, _box(FAR).position) and not _in_any(past, streets[1].tile_rect().get_center()),
+			"nor the junction she crosses at, or the street before it")
+	t.check(_in_any(past, streets[3].tile_rect().get_center())
+			and _in_any(past, streets[4].tile_rect().get_center())
+			and _in_any(past, _box(Vector2i(4, 3)).position),
+			"the streets after it and lesson (5)'s box are")
+
+static func _in_any(rects: Array[Rect2i], tile: Vector2i) -> bool:
+	for rect in rects:
+		if rect.has_point(tile):
+			return true
+	return false
 
 ## **A route of six lesson streets leaves its first one empty**: the lessons still count back from
 ## the park's street.

@@ -67,6 +67,8 @@ var spend: AttemptSpendState
 ## developer's start flags decide, and those (`--spawn`, `--meters`) only a walk from her doorstep.
 ## Handed in by `use_first_day()`.
 var _first_day := false
+## Whether a title stands in front of this walk. Handed in by `use_a_title_in_front()`.
+var _title_in_front := false
 ## False for a scene recipe, whose won last day reloads the authored scene instead of the escape.
 ## Handed in by `use_escape_follows()`.
 var _escape_follows := true
@@ -148,6 +150,12 @@ func use_the_spec(the_spec: DaySpec) -> void:
 ## decide: `main` hands its own answer to every director it builds.
 func use_first_day(first: bool) -> void:
 	_first_day = first
+
+## Hands the director whether a title stands in front of this walk, which keeps its crowd's density
+## until play begins: `main` hands its answer to every director it builds, true only for the boot's
+## first walk when neither a checkpoint's carry-on nor a rig's `--no-title` skips the title.
+func use_a_title_in_front(stands: bool) -> void:
+	_title_in_front = stands
 
 ## Hands the director whether a won last day hands over to the escape: false for a scene recipe,
 ## whose won day reloads the authored scene. `main` hands the run flow's answer.
@@ -346,8 +354,25 @@ func _start_the_crowd(at: Vector2, today: int) -> void:
 	if share <= 0.0:
 		_crowd.clear()
 		return
+	_start_the_car_free_start()
 	_crowd.start_day(today, calendar.day_rng(today, "crowd"), at, true, false, false,
 			share, share)
+
+## Day 1's car-free start (`CarFreeStart`) when the spec walks the tutorial route, and the end of the
+## last day's, for every other. **Before the morning is populated**, so a start with no title in
+## front of it (a retry, a checkpoint carried on, a rig with no title) populates its cars parked; a
+## walk with a title in front is held on the first tick of play instead, so the title keeps the
+## traffic it has today.
+func _start_the_car_free_start() -> void:
+	_crowd.let_cars_in()
+	var route: TutorialRoute = _streets.tutorial_route() if _streets else null
+	if not _spec.walks_the_tutorial() or route == null:
+		_crowd.use_car_free_start(null)
+		return
+	var start := CarFreeStart.for_route(route, _crowd.hold_new_cars, _crowd.let_cars_in)
+	_crowd.use_car_free_start(start)
+	if not _title_in_front:
+		start.hold_now()
 
 ## **The one place a day ends, the escape's sections included**: the won last night's fire, what
 ## ended it, the charges still running closed, `day_ended` with its cause — which the run log and the

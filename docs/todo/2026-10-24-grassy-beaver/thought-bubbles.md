@@ -25,7 +25,7 @@ size, anchor and the place in the frame its icon and arrow go; which set the mec
 question on the Nappy board's main tab, and the mechanics draw whichever the player keeps.
 
 **Two bubbles asked for since:** the zebra-crossing bubble on day 1, shown when she steps onto the
-road away from a crossing (minty-dolphin #834, #867; `car-free-start.md`), and one for the chalk
+road away from a crossing (minty-dolphin #834, #867; the car-free start, `docs/MECHANICS.md`), and one for the chalk
 mark: "also a thought bubble should hint on going into the alley to get the mark"
 (minty-dolphin #868). The chalk mark is the resistance's first encounter, a mark drawn in an alley that she walks in
 to touch, with the alley's robber at its far end; day 6's brief names the rumor of chalk and the task

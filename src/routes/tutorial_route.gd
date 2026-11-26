@@ -225,6 +225,25 @@ func crossing_with_no_cars() -> Vector2i:
 	var index := _index_of(Lesson.CROSSING_WITH_NO_CARS)
 	return _junctions[index] if index >= 0 else NO_JUNCTION
 
+## **The ground past the crossing with no cars**, as tile rects: the sidewalk the line leaves lesson
+## (4)'s junction on (`line_sidewalk()` of its street), every lesson street after it, and every
+## junction box past that junction, lesson (5)'s at the street's far end first. The sidewalk she
+## arrives toward, which the van shuts just past the box, is not on it, nor is the street's
+## carriageway: she has not crossed yet. It is where the car-free start lets the cars in
+## (`CarFreeStart`), so the lesson and the release read one answer. Empty on a route too short for
+## lesson (4).
+func ground_past_the_crossing_with_no_cars() -> Array[Rect2i]:
+	var rects: Array[Rect2i] = []
+	var index := _index_of(Lesson.CROSSING_WITH_NO_CARS)
+	if index < 0:
+		return rects
+	rects.append(line_sidewalk(_streets[index]))
+	for i in range(index + 1, _streets.size()):
+		rects.append(_streets[i].tile_rect())
+	for i in range(index + 1, _junctions.size()):
+		rects.append(_box(_junctions[i]))
+	return rects
+
 ## **The junction where she comes onto `segment`**, a lesson street: its end nearer the doorstep
 ## along the route. `NO_JUNCTION` for a street the route does not run down.
 func arrives_at(segment: StreetNetwork.Segment) -> Vector2i:

@@ -1,0 +1,138 @@
+{
+	"context": "asked for an animation burst at (80,84) | exc 0, sleep 0 | playing",
+	"duration_seconds": 3.038343,
+	"frames": [
+		{
+			"elapsed_seconds": 0.006184,
+			"file": "frame-0001.png"
+		},
+		{
+			"elapsed_seconds": 0.120421,
+			"file": "frame-0002.png"
+		},
+		{
+			"elapsed_seconds": 0.221044,
+			"file": "frame-0003.png"
+		},
+		{
+			"elapsed_seconds": 0.322902,
+			"file": "frame-0004.png"
+		},
+		{
+			"elapsed_seconds": 0.410713,
+			"file": "frame-0005.png"
+		},
+		{
+			"elapsed_seconds": 0.50835,
+			"file": "frame-0006.png"
+		},
+		{
+			"elapsed_seconds": 0.604533,
+			"file": "frame-0007.png"
+		},
+		{
+			"elapsed_seconds": 0.692414,
+			"file": "frame-0008.png"
+		},
+		{
+			"elapsed_seconds": 0.790302,
+			"file": "frame-0009.png"
+		},
+		{
+			"elapsed_seconds": 0.885618,
+			"file": "frame-0010.png"
+		},
+		{
+			"elapsed_seconds": 0.981736,
+			"file": "frame-0011.png"
+		},
+		{
+			"elapsed_seconds": 1.079854,
+			"file": "frame-0012.png"
+		},
+		{
+			"elapsed_seconds": 1.175785,
+			"file": "frame-0013.png"
+		},
+		{
+			"elapsed_seconds": 1.272238,
+			"file": "frame-0014.png"
+		},
+		{
+			"elapsed_seconds": 1.369778,
+			"file": "frame-0015.png"
+		},
+		{
+			"elapsed_seconds": 1.456801,
+			"file": "frame-0016.png"
+		},
+		{
+			"elapsed_seconds": 1.553119,
+			"file": "frame-0017.png"
+		},
+		{
+			"elapsed_seconds": 1.649599,
+			"file": "frame-0018.png"
+		},
+		{
+			"elapsed_seconds": 1.744426,
+			"file": "frame-0019.png"
+		},
+		{
+			"elapsed_seconds": 1.839392,
+			"file": "frame-0020.png"
+		},
+		{
+			"elapsed_seconds": 1.937127,
+			"file": "frame-0021.png"
+		},
+		{
+			"elapsed_seconds": 2.024079,
+			"file": "frame-0022.png"
+		},
+		{
+			"elapsed_seconds": 2.119546,
+			"file": "frame-0023.png"
+		},
+		{
+			"elapsed_seconds": 2.216139,
+			"file": "frame-0024.png"
+		},
+		{
+			"elapsed_seconds": 2.311851,
+			"file": "frame-0025.png"
+		},
+		{
+			"elapsed_seconds": 2.407767,
+			"file": "frame-0026.png"
+		},
+		{
+			"elapsed_seconds": 2.50519,
+			"file": "frame-0027.png"
+		},
+		{
+			"elapsed_seconds": 2.600518,
+			"file": "frame-0028.png"
+		},
+		{
+			"elapsed_seconds": 2.688541,
+			"file": "frame-0029.png"
+		},
+		{
+			"elapsed_seconds": 2.785345,
+			"file": "frame-0030.png"
+		},
+		{
+			"elapsed_seconds": 2.880215,
+			"file": "frame-0031.png"
+		},
+		{
+			"elapsed_seconds": 2.974914,
+			"file": "frame-0032.png"
+		}
+	],
+	"reason": "duration",
+	"schema_version": 1,
+	"status": "complete",
+	"target_fps": 12
+}

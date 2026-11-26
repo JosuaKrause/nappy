@@ -25,6 +25,14 @@ last, minty-dolphin #834).
   `walked_ground()`, the whole route past the first block as a set, goes: nothing in the game read
   it once the tree grew on the line, and `runs_over()`, which the director asks on each of her
   steps on day 1, reads the route's rects instead of building that set every time.
+- **The car-free start asks the route where the crossing is past** (merged from main, where the
+  start let the cars in on the whole fourth street, `lesson_streets()` index 2):
+  `TutorialRoute.ground_past_the_crossing_with_no_cars()` is the sidewalk the line leaves lesson
+  (4)'s zebra on, every lesson street after it and the boxes past the zebra, and
+  `CarFreeStart.for_route()` lets the cars in there. So the near sidewalk she arrives on, before the
+  delivery van, holds the cars, and on a route of six lesson streets the release follows the
+  lesson to its street rather than a fixed index. `crossing_with_cars()`, which nothing in the game
+  read, goes; lesson (5)'s crossing is the line's (`_lay_the_line()`).
 - **`DawnTutorial`** (`src/events/model/dawn_phases/`, model), after the fixed parts and day 13's
   roadblocks, before the scripted rows: each lesson's row offered its slot tile by tile on its own
   ground for the day (`RowGround.offers_for()`) and judged by the day's rules

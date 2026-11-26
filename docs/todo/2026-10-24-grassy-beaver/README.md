@@ -50,7 +50,7 @@ curly-moose #819); a first-day line of text about the tinted sidewalks.
 make the intro a slog. we want to start right into the action" (curly-moose #819); the thought
 bubbles (`thought-bubbles.md`) "might even make the text obsolete".
 
-**Items:** `car-free-start.md`, `thought-bubbles.md`, `opening-shot.md` (an experiment); day 1
+**Items:** `thought-bubbles.md`, `opening-shot.md` (an experiment); day 1
 hand-crafted with a park close by is built (the records grassy-beaver-silky-wombat and
 grassy-beaver-golden-puffin). The
 GoatCounter events measuring day one are their own entry, filed ahead of this one so a window
