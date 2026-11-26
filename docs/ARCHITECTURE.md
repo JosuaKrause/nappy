@@ -114,6 +114,8 @@ src/
 	traffic_signals.gd    which arm of a signalled junction is let through, and when
 	traffic_light.gd      one signal head on a junction corner, facing the arm it controls
 	traffic_light_drawer.gd  what a signal head draws itself through; the city hands it in
+	park_sign.gd          one park sign on a junction corner, its arrow pointing the way to a park
+	park_sign_drawer.gd   what a park sign draws itself through; the city hands it in
   routes/
 	street_network.gd     the lattice as a graph: junctions, streets, distinct-route counts;
 	                      an instance per city map, read through the map it is handed
@@ -128,6 +130,8 @@ src/
 	route_tree.gd         the day's corridor: one branch per calm area, grown on the grid
 	tutorial_route.gd     day 1's tutorial route, worked out once from the city: its lesson
 	                      streets, the side streets and alley mouths off it, the ground it keeps
+	park_signs.gd         where the run's park signs stand and which way each points, worked out
+	                      once from the city and the tutorial route
 	corridor.gd           the tree translated to a tile question: inside, rim, away, how deep;
 	                      and the view a whole street is in: on the route, route-adjacent, off it
 	seal_planner.gd       seals every street off the day's route tree (a share of them from the

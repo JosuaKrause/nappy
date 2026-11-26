@@ -63,6 +63,18 @@ func _init(map: CityMap, home: StreetNetwork.Segment, streets: Array[StreetNetwo
 func park_block() -> Vector2i:
 	return _park_block
 
+## The doorstep's street: the first block, which the route starts in.
+func doorstep_street() -> StreetNetwork.Segment:
+	return _home
+
+## The junction where the route leaves the doorstep's street.
+func turning_junction() -> Vector2i:
+	return _junctions[0]
+
+## The lesson street the route leaves the doorstep's street along, at `turning_junction()`.
+func first_lesson_street() -> StreetNetwork.Segment:
+	return _streets[0]
+
 ## Every tile of the route past the doorstep's street, as a set: the junction it leaves that street
 ## at, the lesson streets, and the junction boxes between and after them. `RouteTree` grows the
 ## park's branch on this ground alone.
