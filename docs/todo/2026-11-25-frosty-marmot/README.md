@@ -13,8 +13,8 @@ against the bags they have yet to choose between.
 lilac-marten-striped-stork`). Tunnel, trucks a walk and walks with none, bag A to D: 2.92 and 3, 0.83
 and 7, 0.33 and 9, 1.25 and 5. Bridge: 0.83 and 9, 1.08 and 7, 0.08 and 11, 1.08 and 7. On the bridge the
 lanes ahead of her hold craters a truck cannot pass and the cross streets are sealed, so trucks barely
-reach the walk (0.08 to 1.08 a walk in every bag); more truck marbles in the bag did not fix it. Even bag A,
-which gives trucks the most marbles, meets 2.92 trucks a tunnel walk against 3.1 explosions.
+reach the walk (0.08 to 1.08 a walk in every bag); more truck marbles in the bag did not fix it. Even bag A
+meets only 2.92 trucks a tunnel walk against 3.1 explosions.
 
 **Read as:** the escape's walks should show trucks as the most frequent sight, as the player ordered,
 and the bag's marble counts alone cannot deliver that in either place.
