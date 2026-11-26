@@ -467,3 +467,46 @@ func _closed_set(closures: Array[RoadClosure]) -> Dictionary:
 	for closure in closures:
 		closed[closure.street_key()] = true
 	return closed
+
+## How many closure streams a map tries for one that closes day 1's walk when the walk is not
+## handed in: day 2 closes one street, a lesson street off its tree now and then.
+const _STREAMS_TO_TRY := 60
+
+## **Day 1's walk left open is never closed** (`ClosurePlanner.plan_day()`'s `left_open`): on day
+## 2, none of the tutorial route's lesson streets is closed on a stream that closes one of them
+## when the walk is not handed in. Each map tries streams until one does, so the check is asked of a
+## plan that would have closed the walk.
+func case_the_walk_left_open_is_never_closed(t: TestRunner) -> void:
+	var day := 2
+	var spec := DaySpec.for_day(day)
+	var asked := 0
+	for map in _maps:
+		var route := _tutorial_for(map, 1)
+		if route == null:
+			continue
+		var walk := {}
+		for segment in route.lesson_streets():
+			walk[segment.key()] = true
+		var tree := _todays_tree(map, day)
+		for stream in _STREAMS_TO_TRY:
+			if not _closes_any(ClosurePlanner.plan_day(map, spec, _stream(map, stream), tree), walk):
+				continue
+			asked += 1
+			var left_open := ClosurePlanner.plan_day(map, spec, _stream(map, stream), tree, null,
+					null, route)
+			t.check(not _closes_any(left_open, walk),
+					"seed %d stream %d: no closure stands on day 1's walk left open"
+					% [map.city_seed(), stream])
+			break
+	t.check(asked > 0, "there were plans that closed the walk to ask (%d)" % asked)
+
+func _stream(map: CityMap, stream: int) -> RandomNumberGenerator:
+	var rng := RandomNumberGenerator.new()
+	rng.seed = hash("closures:%d:%d" % [map.city_seed(), stream])
+	return rng
+
+func _closes_any(closures: Array[RoadClosure], streets: Dictionary) -> bool:
+	for closure in closures:
+		if streets.has(closure.street_key()):
+			return true
+	return false

@@ -578,6 +578,25 @@ walks there without a route pointing the way.
   is, the one the spoilers pass over joins the ground nothing may reach
   (`DawnCalmKeptClean`). The player has to find out which.
 
+**On day 2, day 1's walk to the tutorial park stays open**, where she settled in that park on day 1
+(`DaySpec.leaves_the_tutorial_walk_open()`; `City` asks the run's calendar at dawn and hands the
+answer in the day's `DayStreets`, `tutorial_walk_left_open()`). The park is spoiled and off day 2's
+tree like any used area, and the tutorial route's lesson streets carry no seal (`SealPlanner`) and
+no closure (`ClosurePlanner`), so walking the same way again leads her to the park and shows it
+spoiled. *(minty-dolphin #834: "spoiled actually teaches the lesson. there should be a path that
+touches the first day's park so the player learns this lesson (since they are free to go to it
+again)".)* It is a path, not a route: the tree grows no branch along it, so it carries no kerb tint,
+the off-route placement may stand rows on it as on any street off the tree, and its side streets are
+sealed like every other. Where she settled anywhere else on day 1, nothing is left open. Leaving a
+street unsealed and unclosed only adds ground she can reach, so no guarantee rests on it.
+
+**The dead end she meets early on day 2 is a sealed side street at her doorstep's junctions**: a
+street sealed across both sidewalks is a dead end for her, the entry grassy-beaver's lesson (c), turn
+around at a dead end, in the orchestrator's reading (curly-moose #819 lists the lesson and does not
+define the word). Every street off the tree is sealed, and day 2's tree leaves at least one side
+street at the doorstep's two junctions off it on every city the probe
+`tests/probes/grassy_beaver_day_two.gd` measures, so nothing builds one on purpose.
+
 ## Road closures
 
 Every morning a few streets are shut. This is the one thing in the game that changes **where the

@@ -16,12 +16,12 @@ her door when the camera comes back. No cars spawn in until the stretch ends (be
 zebra-crossing thought bubble (`thought-bubbles.md`) shows when she steps onto the road away from a
 zebra crossing. Once the stretch ends, cars spawn as normal.
 
-**Collides with `day-two.md`**, whose traffic paragraph said traffic stays on every day and read
+**Collides with day two's traffic reading** (the record grassy-beaver-rosy-trout), which said traffic stays on every day and read
 day 1's car losses as players running across the street, "not a change to traffic", from the
 player's earlier "the issue comes from players who just run across the street" (curly-moose #832).
 This later word changes traffic for day 1's opening only, and gives the player's own guess at the
 commonest day-1 mistake, "(I think)", as "figuring out the controls and getting hit by a car";
-`day-two.md` now says so. **Read as:** the car-free start lets a new player learn the controls before
+that record says so. **Read as:** the car-free start lets a new player learn the controls before
 any car can reach her, and the crossing bubble teaches the crossings meanwhile.
 
 **What ends it.** Sketching day 1's tutorial route (`hand-crafted-day-one.md`), the player first

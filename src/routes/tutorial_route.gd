@@ -63,6 +63,20 @@ func _init(map: CityMap, home: StreetNetwork.Segment, streets: Array[StreetNetwo
 func park_block() -> Vector2i:
 	return _park_block
 
+## Whether one of `blocks` lies in the tutorial park: the blocks she settled in, each named by the
+## block she stood in (`CityMap.block_at()`), which in a calm zone may be any of its blocks.
+func has_its_park_among(blocks: Array[Vector2i]) -> bool:
+	for block in blocks:
+		if _map.anchor_of(block) == _park_block:
+			return true
+	return false
+
+## The lesson streets, in the order she walks them, the first leaving the doorstep's street: the
+## streets a day that leaves day 1's walk open keeps unsealed and unclosed (`SealPlanner`,
+## `ClosurePlanner`).
+func lesson_streets() -> Array[StreetNetwork.Segment]:
+	return _streets.duplicate()
+
 ## Every tile of the route past the doorstep's street, as a set: the junction it leaves that street
 ## at, the lesson streets, and the junction boxes between and after them. `RouteTree` grows the
 ## park's branch on this ground alone.
