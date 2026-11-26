@@ -1,0 +1,14 @@
+<!-- Use the crosswalk, just the crosswalk: a patch of asphalt with the broad beige bars
+     running with the traffic as crossing_v.svg draws them. No sidewalks. Three bars rather than
+     the tile's two, since two upright bars on a dark square read as a pause sign.
+     hint_arrow.svg beside it points at the nearest one.
+     A thought-bubble icon: 24x20, centre anchor (12,10), drawn into the bubble's icon box
+     (thought_bubble.svg). The simple set beside the first one, kept for comparison. -->
+<svg xmlns="http://www.w3.org/2000/svg" width="24" height="20" viewBox="0 0 24 20" shape-rendering="geometricPrecision" stroke="#221f28" stroke-width="0.9" stroke-linejoin="round" stroke-linecap="round">
+  <rect x="2.5" y="0.8" width="19" height="18.4" fill="#46464f"/>
+  <g fill="#cfc7ae" stroke="none">
+    <rect x="4.3" y="1.25" width="3.4" height="17.5"/>
+    <rect x="10.3" y="1.25" width="3.4" height="17.5"/>
+    <rect x="16.3" y="1.25" width="3.4" height="17.5"/>
+  </g>
+</svg>

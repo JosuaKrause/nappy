@@ -15,11 +15,14 @@ what decides that a hint applies and where it points, and the node that draws th
 
 **The pictures the mechanics draw** are the frame `art/ui/thought_bubble.svg`,
 the pointing arrow `art/ui/hint_arrow.svg` (drawn pointing east and turned toward the way to go),
-and one icon per hint, `art/ui/hint_park.svg`, `hint_back_to_route.svg`, `hint_crosswalk.svg`,
+and one icon per hint in each of two sets, all on the `ui` atlas page: the first set, a small
+scene per hint (`art/ui/hint_park.svg`, `hint_back_to_route.svg`, `hint_crosswalk.svg`,
 `hint_cross_street.svg`, `hint_turn_back.svg`, `hint_noise.svg`, `hint_chalk.svg` and
-`hint_hut.svg`, all on the `ui` atlas page. `docs/GRAPHICS.md` gives each one's size, anchor and
-the place in the frame its icon and arrow go; whether the player keeps them is a question on the
-Nappy board's main tab.
+`hint_hut.svg`), and the simple set beside it, just each hint's thing (`hint_<hint>_simple.svg`
+for the same eight). The player asked for the simpler pictures and to "keep both versions for
+comparison" (inbox #1771, #1772 and #1773 in spry-wombat). `docs/GRAPHICS.md` gives each one's
+size, anchor and the place in the frame its icon and arrow go; which set the mechanics draw is a
+question on the Nappy board's main tab, and the mechanics draw whichever the player keeps.
 
 **Two bubbles asked for since:** the zebra-crossing bubble on day 1, shown when she steps onto the
 road away from a crossing (minty-dolphin #834, #867; `car-free-start.md`), and one for the chalk

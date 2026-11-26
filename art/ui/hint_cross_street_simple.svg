@@ -1,0 +1,14 @@
+<!-- Cross the street, just the street: a carriageway from above in the game's asphalt,
+     its pale curbs at both edges and its centre dashes in road_line's colour. No barrier, no
+     crosswalk. hint_arrow.svg beside it points at the nearest crosswalk.
+     A thought-bubble icon: 24x20, centre anchor (12,10), drawn into the bubble's icon box
+     (thought_bubble.svg). The simple set beside the first one, kept for comparison. -->
+<svg xmlns="http://www.w3.org/2000/svg" width="24" height="20" viewBox="0 0 24 20" shape-rendering="geometricPrecision" stroke="#221f28" stroke-width="0.9" stroke-linejoin="round" stroke-linecap="round">
+  <rect x="4.5" y="0.5" width="15" height="19" fill="#46464f"/>
+  <path d="M5.4 0.5 V19.5 M18.6 0.5 V19.5" stroke="#a59d8e" stroke-width="1.4"/>
+  <path d="M4.5 0.5 V19.5 M19.5 0.5 V19.5" stroke-width="0.9"/>
+  <g fill="#b9b087" stroke="none">
+    <rect x="11.1" y="1.5" width="1.8" height="5"/>
+    <rect x="11.1" y="13.5" width="1.8" height="5"/>
+  </g>
+</svg>

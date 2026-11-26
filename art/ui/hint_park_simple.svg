@@ -1,0 +1,10 @@
+<!-- The way to the park, just a park tree: tree_a.svg's crown and trunk in its own greens
+     and brown. No mound, no second tree. hint_arrow.svg beside it says which way.
+     A thought-bubble icon: 24x20, centre anchor (12,10), drawn into the bubble's icon box
+     (thought_bubble.svg). The simple set beside the first one, kept for comparison. -->
+<svg xmlns="http://www.w3.org/2000/svg" width="24" height="20" viewBox="0 0 24 20" shape-rendering="geometricPrecision" stroke="#221f28" stroke-width="0.9" stroke-linejoin="round" stroke-linecap="round">
+  <rect x="10.8" y="11" width="2.6" height="8.4" fill="#5b4433"/>
+  <circle cx="12" cy="8.4" r="7.6" fill="#4f7a44"/>
+  <circle cx="9.5" cy="5.9" r="3.9" fill="#649256" stroke="none"/>
+  <circle cx="15" cy="10.6" r="2.5" fill="#456b3b" stroke="none"/>
+</svg>
