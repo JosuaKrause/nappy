@@ -331,6 +331,30 @@ assert_exit "check.sh --bogus"        nonzero ./tools/check.sh --bogus
 assert_exit "lint.sh --bogus-flag"    nonzero ./tools/lint.sh --bogus-flag
 assert_exit "pycheck.sh --bogus"      nonzero ./tools/pycheck.sh --bogus
 assert_exit "export-web.sh --bogus"   nonzero ./tools/export-web.sh --bogus
+# export-web.sh asks tools/release-tags.py whether RELEASE_TAG names a release candidate before
+# any work, and refuses rather than guess "no" when it cannot ask: a stand-in uv that fails, and
+# one that answers a word that is no kind. Neither may reach Godot.
+ew_bin="$work_dir/export-web-uv"
+mkdir -p "$ew_bin"
+for ew_case in fails garbage; do
+    if [[ "$ew_case" == fails ]]; then
+        printf '#!/usr/bin/env bash\necho "uv: cannot fetch Python" >&2\nexit 2\n' > "$ew_bin/uv"
+    else
+        printf '#!/usr/bin/env bash\necho maybe\n' > "$ew_bin/uv"
+    fi
+    chmod +x "$ew_bin/uv"
+    checks=$(( checks + 1 ))
+    rm -f "$GODOT_MARKER"
+    ew_out="$(PATH="$ew_bin:$PATH" RELEASE_TAG=v1.3.0-rc.1 ./tools/export-web.sh debug 2>&1)"
+    ew_status=$?
+    if [[ "$ew_status" -eq 0 ]] || [[ -f "$GODOT_MARKER" ]] || ! grep -q "release candidate\|no kind" <<<"$ew_out"; then
+        echo "FAIL export-web.sh refuses when uv $ew_case (exit $ew_status)" >&2
+        printf '%s\n' "$ew_out" | sed 's/^/    /' >&2
+        failures=$(( failures + 1 ))
+    else
+        echo "ok   export-web.sh refuses when uv $ew_case"
+    fi
+done
 assert_exit "serve-web.sh --bogus"    nonzero ./tools/serve-web.sh --bogus
 assert_exit "sound-lab.sh --bogus"    nonzero ./tools/sound-lab.sh --bogus
 assert_exit "sound-lab.sh --pass (there is one pass; the flag is gone)" nonzero ./tools/sound-lab.sh --pass pass-4

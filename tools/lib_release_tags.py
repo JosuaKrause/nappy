@@ -69,7 +69,7 @@ def candidate_name(candidate: Candidate) -> str:
 
 
 def kind(name: str) -> str | None:
-    """`release`, `candidate`, or None for a name that is neither."""
+    """`release`, `candidate`, or None for a name that is neither (`dev`, a check's name)."""
     if parse_release(name) is not None:
         return "release"
     if parse_candidate(name) is not None:
@@ -145,11 +145,18 @@ def tag_names(cwd: Path) -> list[str]:
     return [line.strip() for line in result.stdout.splitlines() if line.strip()]
 
 
-def git_is_ancestor(cwd: Path) -> IsAncestor:
-    """`git merge-base --is-ancestor` on two tags' commits, which answers yes for one commit too."""
+def git_is_ancestor(cwd: Path, pinned: dict[str, str] | None = None) -> IsAncestor:
+    """`git merge-base --is-ancestor` on two tags' commits, which answers yes for one commit too.
+
+    `pinned` names tags that do not exist yet with the commit each would point at, so a tag about
+    to be cut (`tools/release.sh rc`) can be asked about before it is made."""
+    commits = pinned or {}
+
+    def resolve(name: str) -> str:
+        return f"{commits.get(name, name)}^{{commit}}"
 
     def answer(first: str, second: str) -> bool:
-        result = run_git(["merge-base", "--is-ancestor", f"{first}^{{commit}}", f"{second}^{{commit}}"], cwd=cwd)
+        result = run_git(["merge-base", "--is-ancestor", resolve(first), resolve(second)], cwd=cwd)
         if result.returncode not in (0, 1):
             raise TagError(f"git merge-base --is-ancestor {first} {second} failed: {result.stderr.strip()}")
         return result.returncode == 0

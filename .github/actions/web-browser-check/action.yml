@@ -1,6 +1,6 @@
 # The release Web export, booted in a real Chrome: the one recipe `ci.yml`'s `browser` job,
-# `deploy.yml`'s `build` job and `web-template.yml` all run, so the commit CI passes is exported and
-# exercised exactly the way the deploy will export and exercise it. The caller checks out the tree
+# `deploy.yml`'s `build-release` and `build-candidate` jobs and `web-template.yml` all run, so the
+# commit CI passes is exported and exercised exactly the way the deploy will export and exercise it. The caller checks out the tree
 # first and keeps the evidence afterwards (an `upload-artifact` step reading
 # `${{ runner.temp }}/browser-result`, under `if: always()` so a failure leaves its screenshots and
 # result.json behind); everything between is here.
@@ -16,7 +16,9 @@ inputs:
   release-tag:
     description: >-
       RELEASE_TAG for tools/export-web.sh -- the build/web/<tag>/ directory and the version baked
-      into the export. The deploy passes the pushed tag; a check passes a name that says it is one.
+      into the export. The deploy passes the tag of the build it exports (the newest release's, or
+      the candidate's), which may be other than the pushed tag; a check passes a name that says it
+      is one.
     required: true
 
 outputs:

@@ -4,7 +4,8 @@ The detail behind **committing**'s "Releasing": what CI and the deploy check, ho
 generated, what `tools/release.sh` refuses, and why a browser fetches a release whole. Read it
 before cutting a release or answering whether a commit is live.
 
-**A push is a check and a tag is a release.** `https://nappy.josuakrause.com/` serves the game.
+**A push is a check and a tag is a release.** `https://nappy.josuakrause.com/` serves the newest
+release tag's build, never a candidate's, which is served at `/rc/` (below).
 `.github/workflows/ci.yml` runs lint, check, the full suite, sharded, and the browser check — the
 release Web export, built and played in Chrome exactly as the deploy builds and plays it — on
 every push to `main` and every pull request but a docs-only one, which gets the consistency checks
@@ -33,8 +34,10 @@ the same notes before anything is tagged.
 `https://nappy.josuakrause.com/rc/`** (inbox #1777 in tiny-newt, inbox #1781 in tiny-newt), so
 a new feature can be played online before it is a release. It is a tag `vX.Y.Z-rc.N`, the release
 it is a candidate for with a counter, cut by `tools/release.sh rc <major|minor|patch>` with the same
-refusals and the same wait for `test`, plus one: a commit already carrying a version tag is
-refused, since a candidate there publishes nothing new. **Pages keeps nothing between deploys, so
+refusals and the same wait for `test`, plus two: a commit already carrying a version tag is
+refused, since a candidate there publishes nothing new, and so is a candidate `/rc/` would never
+serve because a higher one is out (`rc patch` beside a minor candidate), which `tools/release-tags.py
+site --as-if` answers before anything is tagged. **Pages keeps nothing between deploys, so
 every deploy publishes the whole site**: the newest release at the root and, when one is out, the
 newest candidate under `rc/`, each exported and played in Chrome from its own tag's commit with that
 commit's own recipe, and laid out by `tools/assemble-site.py`. Which two is
@@ -44,17 +47,23 @@ release removes every candidate cut before it**, whatever its number (inbox #178
 root page forwards `?rc=1` to `rc/`, and with no candidate out `rc/` forwards to the root. **A
 candidate counts nothing** (inbox #1777 in tiny-newt): its page carries no `count.js` and the game
 refuses to send its events (`docs/TELEMETRY.md`, "The page counts visits"); it keeps a save of its
-own (`docs/MECHANICS.md`, "Saving and resuming"); and the title screen's version line names it
-(`vX.Y.Z-rc.N`). Its GitHub Release is a prerelease whose notes run since the last release, never
-since the last candidate, so the release that follows its candidates has the notes it would have had
-without them. The `version tags` ruleset targets `refs/tags/v*`, so a candidate's tag needs the
+own (the filer's proposal, lilac-alpaca; `docs/MECHANICS.md`, "Saving and resuming"); and the title
+screen's version line names it (`vX.Y.Z-rc.N`). Its GitHub Release is a prerelease with the notes
+its target release would have, since the previous release for a patch candidate and since the
+previous `.0` for a minor or major one, never since the last candidate, so the release that follows
+its candidates has the notes it would have had without them. **A candidate whose build fails never
+holds a release back**: on a release's deploy the release is published alone, `rc/` forwarding to
+the root as when no candidate is out, and the `assemble` job's summary says so, though the run
+shows the candidate's job red; on a candidate's deploy nothing new is published and the live site
+stays as it was. The `version tags` ruleset targets `refs/tags/v*`, so a candidate's tag needs the
 same green `test` and can be neither moved nor deleted, only superseded by the next one.
 
 **Publishing is a separate, deliberate act, and it needs its own go-ahead from the player in the
 current session**; the standing merge permission is not release permission. **Cutting a candidate
-needs none** (the filer's proposal, lilac-alpaca): a candidate changes nothing at the root, which
-keeps serving the release, and counts nothing, so a wrong one is online only at an address linked
-from nowhere until the next candidate replaces it. Completed work may be
+needs none** (the filer's proposal, lilac-alpaca): the root plays the same release, and a candidate
+counts nothing, so a wrong one is online only at an address linked from nowhere until the next
+candidate replaces it. The root is not left untouched, though: every candidate's deploy rebuilds it
+from the release's own tag, plays it in Chrome again and gives its page the `?rc=1` forward. Completed work may be
 pushed without asking, since pushing `main` publishes nothing.
 
 **Cut a release with `tools/release.sh <major|minor|patch>`**, which reads the latest release tag

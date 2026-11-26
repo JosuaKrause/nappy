@@ -64,6 +64,15 @@ static func version_text() -> String:
 	var from_git := source_version()
 	if from_git != "unknown":
 		return from_git
+	return exported_version()
+
+## The version the build was exported as, never asked of `git`: `application/config/version`, which
+## `tools/export-web.sh` bakes into an export (the tag on a deploy), and on a working tree the
+## placeholder `project.godot` carries, which names no release. **Whether the build is a release
+## candidate is read from this, not from `version_text()`**: a developer's checkout sitting exactly
+## on a candidate's tag describes as that tag, and must still keep the release's save; only an
+## exported candidate is one (`GameSave.player_path()`, `GoatCounterPlatform.of_the_engine()`).
+static func exported_version() -> String:
 	return ProjectSettings.get_setting("application/config/version", "unknown")
 
 ## The commit on its own, by the same two steps: `source_commit()` where there is a repository,
@@ -78,9 +87,10 @@ static func _commit_text() -> String:
 ## Whether `version` names a release candidate: exactly `vX.Y.Z-rc.N`, the tag a candidate's export
 ## bakes as its version (`tools/export-web.sh`; `tools/lib_release_tags.py` holds the same grammar
 ## for the tools). A candidate is served beside the release, at the site's `/rc/`, and is told apart
-## by this alone: it counts nothing (`GoatCounterOutbox.may_ever_send()`) and keeps a save of its
-## own (`GameSave.player_path()`). A working tree's `git describe` past a candidate's tag
-## (`v0.31.0-rc.1-3-gab12cd3`, or one ending `-dirty`) is not one: that is a developer's tree.
+## by this alone, asked of `exported_version()`: it counts nothing
+## (`GoatCounterOutbox.may_ever_send()`) and keeps a save of its own (`GameSave.player_path()`).
+## `git describe` past a candidate's tag (`v0.31.0-rc.1-3-gab12cd3`, or one ending `-dirty`) is
+## not one either, should a local export bake it: that is a developer's tree.
 static func names_a_release_candidate(version: String) -> bool:
 	return RegEx.create_from_string("^v\\d+\\.\\d+\\.\\d+-rc\\.\\d+$").search(version) != null
 

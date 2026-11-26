@@ -2038,7 +2038,9 @@ served at the site's `/rc/` beside the release) shares the release's `user://`, 
 is one IndexedDB for the whole site, so `GameSave.player_path()` gives it a file of its own:
 trying a new feature never overwrites the day a player reached on the release, and a save a newer
 build wrote never reaches the release's resume. A person who tries a candidate starts it from day
-1, and the next candidate resumes the last one's day.
+1, and the next candidate resumes the last one's day. Which build is a candidate is read from the
+version an export baked (`BuildInfo.exported_version()`), never from `git describe`, so a
+developer's checkout sitting on a candidate's tag keeps the release's save.
 
 **Written `day_under_way: false` the instant a resumed run's own retry exists but has not yet been
 handed to the player, when opening the save charged a nerve** — `main._write_dawn_for_a_resumed_run()`,

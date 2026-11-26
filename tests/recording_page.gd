@@ -25,9 +25,12 @@ func names() -> Array[String]:
 func outbox() -> GoatCounterOutbox:
 	return GoatCounterOutbox.new(_evaluate)
 
+## A release's version, the build every visitor of the site's root gets.
+const RELEASE_VERSION := "v0.30.0"
+
 ## The answers of a released web page whose `count.js` has loaded.
 static func platform() -> GoatCounterPlatform:
-	return GoatCounterPlatform.new(true, false, func() -> bool: return true)
+	return GoatCounterPlatform.new(true, false, func() -> bool: return true, RELEASE_VERSION)
 
 ## The options `script` hands `count()`, parsed back out of the line, or empty where the line is
 ## not the one call `GoatCounterOutbox` writes.

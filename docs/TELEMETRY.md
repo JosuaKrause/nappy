@@ -322,7 +322,8 @@ things holds: the build is running on the web (the engine's `OS.get_name() == "W
 through `GoatCounterPlatform.is_on_the_web()`), it is not a debug build
 (`GoatCounterPlatform.is_a_debug_build()`, in the game the engine's `OS.is_debug_build()`), its
 version names no release candidate (`GoatCounterPlatform.build_version()`, in the game
-`BuildInfo.version_text()`, read by `BuildInfo.names_a_release_candidate()`: exactly
+`BuildInfo.exported_version()`, the version the export baked, read by
+`BuildInfo.names_a_release_candidate()`: exactly
 `vX.Y.Z-rc.N`, the tag a candidate's export bakes), the page was not asked for `?debug=1`
 (`RunConfig.asks_for_the_readout()`, from the run's configuration `main` hands the counter at
 boot — nothing is sent before then), and `window.goatcounter.count` actually exists as a callable —

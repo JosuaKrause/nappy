@@ -206,9 +206,9 @@ func _init(file_path: String) -> void:
 func _path() -> String:
 	return _file_path
 
-## The player's own save for the build `version` names (`BuildInfo.version_text()`, which `main`
-## hands here): `_DEFAULT_PATH`, or `_CANDIDATE_PATH` for a release candidate
-## (`BuildInfo.names_a_release_candidate()`). A candidate is served beside the release on the same
+## The player's own save for the build `version` names (`BuildInfo.exported_version()`, which `main`
+## hands here, so a developer's checkout on a candidate's tag keeps the release's): `_DEFAULT_PATH`,
+## or `_CANDIDATE_PATH` for a release candidate (`BuildInfo.names_a_release_candidate()`). A candidate is served beside the release on the same
 ## site, where `user://` is one IndexedDB for both pages, so a file of its own keeps a try of a new
 ## feature from overwriting the day a player reached on the release, and keeps a save a newer build
 ## wrote from ever reaching the release's resume. A person who tries a candidate starts it from day

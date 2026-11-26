@@ -131,7 +131,7 @@ func _test_should_send_truth_table(t: TestRunner) -> void:
 		counter.configure(RunConfig.parse(PackedStringArray(),
 				"?debug=1" if debug_requested else "", false), run)
 		counter.send_through(page.outbox(), GoatCounterPlatform.new(web, debug_build,
-				func() -> bool: return present))
+				func() -> bool: return present, RecordingPage.RELEASE_VERSION))
 		var bus: EVENT_BUS_SCRIPT = EVENT_BUS_SCRIPT.new()
 		counter.listen(bus)
 		bus.controls_chosen.emit(true, false)
@@ -325,7 +325,8 @@ func _test_listening_touches_no_gameplay_state(t: TestRunner) -> void:
 	var scripts: Array[String] = []
 	counter.send_through(
 			GoatCounterOutbox.new(func(script: String) -> void: scripts.append(script)),
-			GoatCounterPlatform.new(false, false, func() -> bool: return false))
+			GoatCounterPlatform.new(false, false, func() -> bool: return false,
+					RecordingPage.RELEASE_VERSION))
 	counter.listen(bus)
 	counter.listen_to_the_flow(flow)
 	flow.day_started.emit(RecordingCounter.spec_of(1))
@@ -636,7 +637,8 @@ func _test_send_event_never_queues_when_it_may_never_send(t: TestRunner) -> void
 	run.start_run(1)
 	counter.configure(RunConfig.parse(PackedStringArray(), "", false), run)
 	counter.send_through(outbox,
-			GoatCounterPlatform.new(false, false, func() -> bool: return false))
+			GoatCounterPlatform.new(false, false, func() -> bool: return false,
+					RecordingPage.RELEASE_VERSION))
 	counter.listen(bus)
 	var flow := RunFlow.new()
 	counter.listen_to_the_flow(flow)

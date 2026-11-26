@@ -16,7 +16,7 @@
 # counting nothing (`.claude/skills/committing/references/releasing.md`). The arithmetic and the
 # grammar of both kinds of tag are `tools/release-tags.py`'s (`tools/lib_release_tags.py`), the one
 # reader every tool shares, so the latest *release* is what a part bumps and a candidate is never
-# taken for one.
+# taken for one. A candidate the deploy would never serve, because a higher one is out, is refused.
 #
 # Semver, with `major` reserved for a change that breaks or fundamentally alters the game -- the
 # argument nobody reaches for casually.
@@ -60,7 +60,8 @@ instead: vX.Y.Z-rc.N, the release the part names with a counter one above the la
 it, which the deploy serves at /rc/ beside the release and which counts nothing. Add the literal
 word "push" to actually tag and push, once every refusal (dirty tree, wrong branch, main not
 level with origin/main, no gh or uv, a commit already released -- for a candidate, a commit
-already carrying any version tag -- checks not green) passes. The push form waits for the `test`
+already carrying any version tag, or a candidate /rc/ would never serve because a higher one is
+out -- checks not green) passes. The push form waits for the `test`
 check on main's commit -- CI's last job, so it registers only after the others finish -- and tags
 nothing until that check is read as green; a check that cannot be read is retried, not trusted.
 Ctrl-C while it waits is safe.
@@ -194,6 +195,23 @@ fi
 if [[ -z "$NEXT" ]]; then
     echo "refusing: could not work out the next tag" >&2
     exit 1
+fi
+
+# A candidate /rc/ would never serve publishes nothing: the deploy serves the highest candidate
+# still out (tools/lib_release_tags.py), so `rc patch` cut while a minor or major candidate is out
+# would only rebuild that one. Asked of `site` as if NEXT were already on TARGET_SHA, so the answer
+# is the deploy's own, and refused in the dry run as well.
+if [[ "$KIND" == candidate ]]; then
+    if ! SITE="$("${TAGS[@]}" site --as-if "$NEXT@$TARGET_SHA")"; then
+        echo "refusing: could not work out which candidate /rc/ would serve" >&2
+        exit 1
+    fi
+    SERVED="$(sed -n 's/^candidate=//p' <<<"$SITE")"
+    if [[ "$SERVED" != "$NEXT" ]]; then
+        echo "refusing: /rc/ would go on serving ${SERVED:-no candidate}, never $NEXT" >&2
+        echo "a higher candidate is out; cut the candidate for its release, or a higher one, instead" >&2
+        exit 1
+    fi
 fi
 
 echo "current: $CURRENT"

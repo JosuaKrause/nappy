@@ -22,6 +22,14 @@ at the root may be a build of a commit from before they existed:
   says which build it is) and the two forwards can never send a page back and forth.
 
 The social card the root page's `og:image` names is copied beside it (`export_presets.cfg`).
+
+**A candidate whose build failed never holds a release back.** The deploy hands in what its
+candidate build came to (`--candidate-build`) and what the pushed tag is (`--pushed`). On a
+release's deploy the site is laid out with no candidate, `rc/` forwarding to the root as when none
+is out, and the notice printed says so (the deploy puts it in the job's summary); the release is
+what needs the player's go-ahead, and a candidate needs none, so the candidate is the one that
+waits. On a candidate's deploy the assembly refuses, so nothing new is published and the live site
+stays as it was.
 """
 
 from __future__ import annotations
@@ -58,6 +66,10 @@ location.replace('../' + (rest ? '?' + rest : '') + location.hash)</script>
 
 HEAD_RE = re.compile(r"<head(\s[^>]*)?>", re.IGNORECASE)
 
+# What a GitHub Actions job's result can be (`needs.<job>.result`); only the first is a build.
+BUILD_RESULTS = ("success", "failure", "cancelled", "skipped")
+PUSHED_KINDS = ("release", "candidate")
+
 
 class AssembleError(RuntimeError):
     """A refusal that should print a message and exit non-zero rather than a traceback."""
@@ -75,6 +87,22 @@ def add_root_forward(page: Path) -> None:
         raise AssembleError(f"expected exactly one <head> in {page}, found {len(heads)}")
     html = HEAD_RE.sub(lambda match: match.group(0) + ROOT_FORWARD, html, count=1)
     page.write_text(html, encoding="utf-8")
+
+
+def candidate_to_lay_out(candidate: Path | None, build: str, pushed: str) -> tuple[Path | None, str | None]:
+    """The candidate export to lay out under `rc/` and a notice for the deploy's summary, given what
+    the candidate's build came to and what the pushed tag is (the module's docstring says why)."""
+    if candidate is None or build == "success":
+        return candidate, None
+    if pushed == "release":
+        return None, (
+            f"The candidate's build came to '{build}', so the release is published at the root with no"
+            f" candidate: {CANDIDATE_DIR}/ forwards to the root until a candidate builds."
+        )
+    raise AssembleError(
+        f"the candidate's build came to '{build}'; a candidate's deploy publishes nothing new, so the live"
+        " site stays as it was"
+    )
 
 
 def assemble(release: Path, candidate: Path | None, social_card: Path, out: Path) -> None:
@@ -109,6 +137,8 @@ def parse_args(argv: list[str]) -> argparse.Namespace:
         epilog=(
             "  tools/assemble-site.py --release build/release --candidate build/candidate \\\n"
             "      --social-card art/social-card.png --out build/site\n"
+            "  tools/assemble-site.py --release build/release --candidate build/candidate \\\n"
+            "      --candidate-build failure --pushed release --social-card art/social-card.png --out build/site\n"
         ),
         formatter_class=argparse.RawDescriptionHelpFormatter,
     )
@@ -118,20 +148,33 @@ def parse_args(argv: list[str]) -> argparse.Namespace:
         "--social-card", required=True, type=Path, metavar="PNG", help="the image the root page's og:image names"
     )
     parser.add_argument("--out", required=True, type=Path, metavar="DIR", help="where the site goes (empty or new)")
+    parser.add_argument(
+        "--candidate-build",
+        choices=BUILD_RESULTS,
+        default="success",
+        help="what the candidate's build came to (default: success); anything else lays out no candidate",
+    )
+    parser.add_argument(
+        "--pushed",
+        choices=PUSHED_KINDS,
+        default="release",
+        help="what the deploy's tag is (default: release); a candidate's deploy refuses a failed candidate",
+    )
     return parser.parse_args(argv)
 
 
 def main(argv: list[str]) -> int:
     args = parse_args(argv)
     try:
-        assemble(args.release, args.candidate, args.social_card, args.out)
+        candidate, notice = candidate_to_lay_out(args.candidate, args.candidate_build, args.pushed)
+        assemble(args.release, candidate, args.social_card, args.out)
     except AssembleError as error:
         print(f"refusing: {error}", file=sys.stderr)
         return 1
-    published = (
-        f"{args.candidate} under {CANDIDATE_DIR}/" if args.candidate else f"no candidate ({CANDIDATE_DIR}/ forwards)"
-    )
+    published = f"{candidate} under {CANDIDATE_DIR}/" if candidate else f"no candidate ({CANDIDATE_DIR}/ forwards)"
     print(f"assembled {args.out}: {args.release} at the root, {published}")
+    if notice:
+        print(notice)
     return 0
 
 

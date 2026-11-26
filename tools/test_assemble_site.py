@@ -99,6 +99,44 @@ class AssembleSiteTests(unittest.TestCase):
         with self.assertRaises(site.AssembleError):
             site.assemble(release, None, self.card, self.root / "site")
 
+    def test_a_release_deploy_whose_candidate_failed_publishes_the_release_alone_and_says_so(self) -> None:
+        """The deploy hands in the candidate's directory whether or not it built; a failed build has
+        none to download, so the release is laid out with rc/ forwarding to the root."""
+        out = self.root / "site"
+        result = self.run_tool(
+            "--release", str(self.export("v0.30.1")),
+            "--candidate", str(self.root / "never-downloaded"),
+            "--candidate-build", "failure",
+            "--pushed", "release",
+            "--social-card", str(self.card),
+            "--out", str(out),
+        )  # fmt: skip
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertEqual((out / "v0.30.1" / "index.pck").read_text(), "v0.30.1")
+        self.assertIn("query.delete('rc')", (out / "rc" / "index.html").read_text(), "rc/ forwards to the root")
+        self.assertIn("with no candidate", result.stdout, "the notice the deploy's summary carries")
+
+    def test_a_candidate_deploy_whose_candidate_failed_publishes_nothing(self) -> None:
+        out = self.root / "site"
+        for build in ("failure", "cancelled", "skipped"):
+            result = self.run_tool(
+                "--release", str(self.export(f"v0.30.1-{build}")),
+                "--candidate", str(self.root / "never-downloaded"),
+                "--candidate-build", build,
+                "--pushed", "candidate",
+                "--social-card", str(self.card),
+                "--out", str(out),
+            )  # fmt: skip
+            self.assertEqual(result.returncode, 1, build)
+            self.assertIn("publishes nothing new", result.stderr, build)
+            self.assertFalse(out.exists(), f"{build}: nothing is laid out to upload")
+
+    def test_a_candidate_that_built_is_laid_out_whatever_was_pushed(self) -> None:
+        for pushed in ("release", "candidate"):
+            candidate = self.root / pushed
+            self.assertEqual(site.candidate_to_lay_out(candidate, "success", pushed), (candidate, None))
+            self.assertEqual(site.candidate_to_lay_out(None, "skipped", pushed), (None, None), "none was planned")
+
     def test_a_refusal_exits_non_zero_with_its_reason(self) -> None:
         result = self.run_tool(
             "--release", str(self.root / "nothing"), "--social-card", str(self.card), "--out", str(self.root / "s")

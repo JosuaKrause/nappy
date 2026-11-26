@@ -12,6 +12,9 @@
 # minor or major release removes every candidate cut before it); `tools/assemble-site.py` lays
 # them out, with the root page forwarding `?rc=1` to `/rc/` and, with no candidate out, a `/rc/`
 # page forwarding to the root. A candidate's export carries no `count.js` (`tools/export-web.sh`).
+# **A candidate whose build fails never holds a release back**: a release's deploy then publishes
+# the release alone, `/rc/` forwarding to the root, and says so in the `assemble` job's summary,
+# while a candidate's deploy publishes nothing new and the live site stays as it was.
 #
 # The Godot binary, the custom Web template, the export and the browser check come from
 # .github/actions/web-browser-check, the one recipe ci.yml's `browser` job and web-template.yml
@@ -85,6 +88,12 @@ jobs:
   # (`tools/release-tags.py site`), and whether the pushed tag is a release or a candidate. Full
   # history and every tag, since a minor release's removal of the candidates before it is asked of
   # the history (`git merge-base --is-ancestor`).
+  #
+  # **The step fails rather than hand on an empty release name.** An empty `ref` would check out
+  # the pushed tag for the root, on a candidate's push the candidate itself with `count.js` on its
+  # page. So the step runs under `pipefail`, the script refuses rather than print an empty name, its
+  # answer goes to a file that is checked line by line before anything reaches `$GITHUB_OUTPUT`,
+  # and `build-release` refuses an empty name again on its own side.
   plan:
     needs: verify
     runs-on: ubuntu-latest
@@ -107,10 +116,20 @@ jobs:
 
       - name: Read what the site publishes
         id: site
+        shell: bash
         run: |
-          uv run --quiet python tools/release-tags.py site | tee -a "$GITHUB_OUTPUT"
-          echo "pushed=$(uv run --quiet python tools/release-tags.py kind "$GITHUB_REF_NAME")" \
-            | tee -a "$GITHUB_OUTPUT"
+          set -euo pipefail
+          answer="$RUNNER_TEMP/site.txt"
+          uv run --quiet python tools/release-tags.py site --pushed "$GITHUB_REF_NAME" > "$answer"
+          cat "$answer"
+          for line in 'release=v[0-9]+\.[0-9]+\.[0-9]+' \
+              'candidate=(v[0-9]+\.[0-9]+\.[0-9]+-rc\.[0-9]+)?' 'pushed=(release|candidate)'; do
+            if ! grep -Eqx "$line" "$answer"; then
+              echo "refusing: the plan's answer has no line matching $line" >&2
+              exit 1
+            fi
+          done
+          cat "$answer" >> "$GITHUB_OUTPUT"
 
   # The newest release, exported and played in Chrome from its own tag's commit -- the pushed tag on
   # a release, an earlier one beside a candidate -- with that commit's own recipe
@@ -132,6 +151,16 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 180
     steps:
+      # An empty ref would check out the pushed tag, which on a candidate's push is not a release.
+      - name: Refuse an empty release name
+        env:
+          RELEASE: ${{ needs.plan.outputs.release }}
+        run: |
+          if [[ -z "$RELEASE" ]]; then
+            echo "refusing: the plan named no release for the root" >&2
+            exit 1
+          fi
+
       # Same partial clone and sparse checkout as ci.yml's `shards` job: the boot check and the
       # Web export read nothing under docs/evidence/ (docs/ carries a .gdignore, so the import
       # pass never sees it either). docs/DECISIONS.md, M201, a CI job does not download the evidence.
@@ -204,7 +233,9 @@ jobs:
 
   # One Pages artifact: the release at the root, the candidate under rc/ or a page there that
   # forwards to the root (tools/assemble-site.py, whose dry run tools/test_assemble_site.py is).
-  # It runs when the release built and the candidate either built or was not wanted.
+  # It runs whenever the release built, and the script decides what a failed candidate build means
+  # (`--candidate-build`, `--pushed`): on a release's deploy, the release alone, said in this job's
+  # summary; on a candidate's, a refusal, so nothing is published.
   #
   # og:image/twitter:image in export_presets.cfg's html/head_include point at social-card.png
   # beside index.html, and the assembly is what puts it there — art/social-card.png, a copy of the
@@ -215,9 +246,7 @@ jobs:
   # the .pck and could not be served out of one anyway.
   assemble:
     needs: [plan, build-release, build-candidate]
-    if: >-
-      ${{ !cancelled() && needs.build-release.result == 'success'
-      && (needs.build-candidate.result == 'success' || needs.build-candidate.result == 'skipped') }}
+    if: ${{ !cancelled() && needs.build-release.result == 'success' }}
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
@@ -241,29 +270,39 @@ jobs:
           path: build/release
 
       - name: Fetch the candidate's export
-        if: needs.plan.outputs.candidate != ''
+        if: needs.build-candidate.result == 'success'
         uses: actions/download-artifact@v8
         with:
           name: site-candidate
           path: build/candidate
 
       - name: Lay out the site
+        shell: bash
         env:
           CANDIDATE: ${{ needs.plan.outputs.candidate }}
+          CANDIDATE_BUILD: ${{ needs.build-candidate.result }}
+          PUSHED: ${{ needs.plan.outputs.pushed }}
         run: |
-          args=(--release build/release --social-card art/social-card.png --out build/site)
+          set -euo pipefail
+          args=(--release build/release --social-card art/social-card.png --out build/site
+            --pushed "$PUSHED")
           if [[ -n "$CANDIDATE" ]]; then
-            args+=(--candidate build/candidate)
+            args+=(--candidate build/candidate --candidate-build "$CANDIDATE_BUILD")
           fi
-          uv run --quiet python tools/assemble-site.py "${args[@]}"
+          uv run --quiet python tools/assemble-site.py "${args[@]}" | tee -a "$GITHUB_STEP_SUMMARY"
 
       - name: Upload the Pages artifact
         uses: actions/upload-pages-artifact@v5
         with:
           path: build/site
 
+  # **The explicit `if:` is load-bearing.** With none, the implicit `success()` also looks past
+  # `assemble` to the jobs it needs, so a skipped `build-candidate` (every deploy with no candidate
+  # out) would skip this job and `release` after it, and the run would still look green
+  # (actions/runner#2205). Nothing here can be tried before a real tag is pushed.
   deploy:
     needs: assemble
+    if: ${{ !cancelled() && needs.assemble.result == 'success' }}
     runs-on: ubuntu-latest
     permissions:
       pages: write
@@ -278,11 +317,14 @@ jobs:
 
   # The native form of a release: a GitHub Release on the tag, published only once the site
   # itself is live, from `tools/release-notes.py` -- deterministic from git alone, no model and
-  # no network call to compute. A candidate's is marked a prerelease, its notes the commits since
-  # the last release. `contents: write` is scoped to this job alone; the workflow-level
-  # permissions above stay exactly as narrow as they were before this job existed.
+  # no network call to compute. A candidate's is marked a prerelease, its notes the ones its
+  # target release would have (since the previous release for a patch candidate, since the
+  # previous `.0` for a minor or major one). `contents: write` is scoped to this job alone; the
+  # workflow-level permissions above stay exactly as narrow as they were before this job existed.
+  # Its `if:` is `deploy`'s, for the same reason.
   release:
     needs: [plan, deploy]
+    if: ${{ !cancelled() && needs.deploy.result == 'success' }}
     runs-on: ubuntu-latest
     timeout-minutes: 10
     permissions:

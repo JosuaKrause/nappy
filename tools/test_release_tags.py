@@ -4,7 +4,8 @@
 The grammar and the arithmetic are pure functions of a list of tag names, checked on lists; which
 candidate a deploy publishes also asks the history whether one tag's commit is an ancestor of
 another's, checked with a stand-in answer and then once on a throwaway git repository in $TMPDIR,
-through the command line `tools/release.sh` and `.github/workflows/deploy.yml` read.
+through the command line `tools/release.sh`, `tools/export-web.sh` and `.github/workflows/deploy.yml`
+read.
 """
 
 from __future__ import annotations
@@ -156,11 +157,57 @@ class CommandLineTests(unittest.TestCase):
         self.assertEqual(self.cli("next", "patch").stdout, "v0.29.4\n")
         self.assertEqual(self.cli("next", "minor", "--rc").stdout, "v0.30.0-rc.2\n")
 
-    def test_kind_refuses_a_name_that_is_neither(self) -> None:
+    def test_kind_answers_none_for_a_name_that_is_neither_and_exits_zero(self) -> None:
+        """`tools/export-web.sh` refuses on a non-zero exit, so "no tag at all" must not be one."""
         self.assertEqual(self.cli("kind", "v0.30.0-rc.1").stdout, "candidate\n")
-        refused = self.cli("kind", "ci-abc")
-        self.assertEqual(refused.returncode, 1)
-        self.assertIn("refusing", refused.stderr)
+        self.assertEqual(self.cli("kind", "v0.30.0").stdout, "release\n")
+        for name in ("dev", "ci-abc", "template-check"):
+            answered = self.cli("kind", name)
+            self.assertEqual((answered.returncode, answered.stdout), (0, "none\n"), name)
+
+    def test_site_names_what_the_pushed_tag_is_and_refuses_one_that_is_neither(self) -> None:
+        for name in ("v0.10.0", "v0.11.0-rc.1"):
+            self.commit_and_tag(name)
+        self.assertEqual(
+            self.cli("site", "--pushed", "v0.11.0-rc.1").stdout,
+            "release=v0.10.0\ncandidate=v0.11.0-rc.1\npushed=candidate\n",
+        )
+        self.assertTrue(self.cli("site", "--pushed", "v0.10.0").stdout.endswith("pushed=release\n"))
+        refused = self.cli("site", "--pushed", "main")
+        self.assertEqual((refused.returncode, refused.stdout), (1, ""), "nothing for $GITHUB_OUTPUT")
+
+    def test_site_as_if_a_lower_candidate_were_cut_still_serves_the_higher_one(self) -> None:
+        """What `tools/release.sh rc patch` asks before it tags: a patch candidate cut while a minor
+        candidate is out would never be served, so the script refuses it."""
+        for name in ("v0.10.0", "v0.11.0-rc.1"):
+            self.commit_and_tag(name)
+        (self.repo / "f.txt").write_text("next\n")
+        self.git("commit", "-q", "-am", "next")
+        head = self.git("rev-parse", "HEAD").strip()
+        self.assertEqual(
+            self.cli("site", "--as-if", f"v0.10.1-rc.1@{head}").stdout, "release=v0.10.0\ncandidate=v0.11.0-rc.1\n"
+        )
+        self.assertEqual(
+            self.cli("site", "--as-if", f"v0.11.0-rc.2@{head}").stdout, "release=v0.10.0\ncandidate=v0.11.0-rc.2\n"
+        )
+
+    def test_site_as_if_asks_the_history_with_the_commit_it_was_given(self) -> None:
+        """The minor release's rule on a candidate not yet cut: one on the release's own commit or
+        before it is not served, one after it is."""
+        self.commit_and_tag("v0.10.0")
+        before = self.git("rev-parse", "HEAD").strip()
+        self.commit_and_tag("v0.11.0")
+        self.assertEqual(self.cli("site", "--as-if", f"v1.0.0-rc.1@{before}").stdout, "release=v0.11.0\ncandidate=\n")
+        (self.repo / "f.txt").write_text("after\n")
+        self.git("commit", "-q", "-am", "after")
+        self.assertEqual(
+            self.cli("site", "--as-if", "v1.0.0-rc.1@HEAD").stdout, "release=v0.11.0\ncandidate=v1.0.0-rc.1\n"
+        )
+
+    def test_site_as_if_refuses_a_malformed_or_existing_tag(self) -> None:
+        self.commit_and_tag("v0.10.0")
+        for value in ("v0.10.1-rc.1", "@HEAD", "main@HEAD", "v0.10.0@HEAD"):
+            self.assertEqual(self.cli("site", "--as-if", value).returncode, 1, value)
 
     def test_site_asks_the_history_whether_a_minor_release_came_after_the_candidate(self) -> None:
         for name in ("v0.10.0", "v1.0.0-rc.1", "v0.11.0"):
@@ -171,9 +218,10 @@ class CommandLineTests(unittest.TestCase):
         self.commit_and_tag("v0.11.1")
         self.assertEqual(self.cli("site").stdout, "release=v0.11.1\ncandidate=v0.12.0-rc.1\n")
 
-    def test_site_refuses_a_history_with_no_release(self) -> None:
+    def test_site_refuses_a_history_with_no_release_rather_than_print_an_empty_one(self) -> None:
         self.commit_and_tag("v0.1.0-rc.1")
-        self.assertEqual(self.cli("site").returncode, 1)
+        refused = self.cli("site")
+        self.assertEqual((refused.returncode, refused.stdout), (1, ""))
 
 
 if __name__ == "__main__":

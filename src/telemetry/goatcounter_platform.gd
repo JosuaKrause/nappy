@@ -14,24 +14,24 @@ var _debug_build: bool
 ## Answers whether `window.goatcounter.count` is callable on the page right now; it answers
 ## differently a moment later, since `count.js` loads asynchronously.
 var _present: Callable
-## The build's version, as the build says (`BuildInfo.version_text()`).
+## The build's version, as it was exported (`BuildInfo.exported_version()`).
 var _version: String
 
 ## A platform that answers `on_web`, `debug_build` and `version` as given and asks `present` (a
-## Callable returning a bool) whether the page's counter exists. `version` defaults to a release's
-## shape, the build every visitor of the site's root gets.
-func _init(on_web: bool, debug_build: bool, present: Callable, version := "v0.0.0") -> void:
+## Callable returning a bool) whether the page's counter exists. `version` has no default, since a
+## release's shape there would count.
+func _init(on_web: bool, debug_build: bool, present: Callable, version: String) -> void:
 	_on_web = on_web
 	_debug_build = debug_build
 	_present = present
 	_version = version
 
 ## The engine's own answers: the web when the engine's name for the platform is `Web`, a debug
-## build when the engine says so, the version the build names, and the page asked through
-## `JavaScriptBridge`.
+## build when the engine says so, the version the build was exported as
+## (`BuildInfo.exported_version()`), and the page asked through `JavaScriptBridge`.
 static func of_the_engine() -> GoatCounterPlatform:
 	return GoatCounterPlatform.new(OS.get_name() == "Web", OS.is_debug_build(),
-			_page_has_the_counter, BuildInfo.version_text())
+			_page_has_the_counter, BuildInfo.exported_version())
 
 ## Whether this runs on the web.
 func is_on_the_web() -> bool:
