@@ -228,7 +228,7 @@ dawn with every row it sites that day — recurring, available, `AHEAD_OF_PLAYER
 or sent ahead of her (the dog walker, the patrol and the convoy, below) —
 `EventDirector.ROUTE_BAG_MARBLES_PER_WEIGHT` marbles per unit of weight, so over any stretch the length of a
 bag in which nothing waits for room the mix she meets is the rows' own rather than a roll's
-streaks. A row sent ahead of her that has no room waits (below) and comes after the marbles handed
+streaks. A row sent ahead of her or a cyclist that has no room waits (below) and comes after the marbles handed
 out meanwhile, which can carry it past its bag's end, so where one waits the mix is the bag's over
 the stretch that holds them all, not over the bag's length. A row `EventDirector.ROUTE_BAG_SHARE_OF` names has the share of the bag it sets instead,
 as near as whole marbles come: day 3's `charging_dog` is two marbles in sixteen (inbox #566 in [feathery-stork](playtests/2026-10-04-feathery-stork.md): "I'd say we could do 2 dogs -- we don't need the charging dog
@@ -251,7 +251,7 @@ the rest. `EventDirector.rig_her_route()` moves that many of the owed events to 
 list, so the ensured marble is one of the next `x` events handed out on her route. A moment's marble
 is met as it is handed out; a place's is handed to her walk, and the place is met once her walk
 finds it a site, which can be after an event behind it, or never; and a row sent ahead of her
-that has no room when its marble is drawn waits for a later turn that has some (below), so it too
+or a cyclist that has no room when its marble is drawn waits for a later turn that has some (below), so it too
 can be met after an event behind it, or never. **Where a place is laid is a setting of the rig**
 (`EventManager.rig_her_route()`, `just_ahead`): past the streaming band on her branch
 (`WalkSiting.lay_ahead()`), or, for the man shouting and the van, on her path just ahead of her and
@@ -441,7 +441,15 @@ its first leg runs through a region door's clear ground, where it starts within
 field a plan keeps clear (`EventPlan.keeps_its_field_clear()`): nothing else happens inside a lethal
 event's field, for a row sent ahead of her as for any placement. The same is asked again of the leg
 a row is created on (`EventDirector.clear_to_send()`), since she has walked on since it was sited.
-**A marble with no room never holds the route** (calm-pelican-6): its slot and its marble are spent,
+**A cyclist has no room where a placed plan stands inside his own field** anywhere along his route,
+her side of him and behind her alike (`EventPlan.gap_to()` against `EventPlan.field_reach()`, the
+measure every placement is held to), the other direction of the same rule. He is created on the
+route down her line from wherever she is once his badge has run, so as he is sited the routes he
+could arrive on, for her walked or run either way along her line for the badge's time and a tile,
+are asked too, and a placed plan in the field of any of them refuses him: a badge is never raised
+for a thing that cannot come (minty-dolphin #852). The route he is created on is asked again.
+**A marble of a row sent ahead of her, or of the cyclist, with no room never holds the route**
+(calm-pelican-6): its slot and its marble are spent,
 and it waits on the director's list until it has room. It does not spend the clock's turn, since
 nothing was sent on it: the turn is asked again a second later (`EventDirector.SENT_RETRY`), of the
 next marble, so a row that waits costs her nothing she would meet on her walk, and the marbles behind
@@ -3021,15 +3029,21 @@ So the rule the scheduler enforces at placement is: **nothing else happens insid
 event's field.** A lethal event keeps its whole outer radius clear of every other event,
 and it is the one spacing rule with no fallback — an abduction that cannot find room is simply
 not placed. `tests/test_masts.gd` holds one case of it (a queued mast is never generated inside a
-planned lethal field) and `tests/test_events_costs.gd` holds who is exempt. **No suite walks a
-planned day for the rule, because a walk would find no field to ask.** `EventScheduler.role_for()`
+planned lethal field) and `tests/test_events_costs.gd` holds who is exempt. `EventScheduler.role_for()`
 gives a lethal row placed on a tile the `WALL` role unless the row is a one-shot, a scenery row or
 an ambient one (the last two keep the role `NONE`, as does a plan built without `give_role()`),
 a wall is exempt (below), and the catalogue's one one-shot, the burning building, is not lethal;
 the one lethal row in a day's plan outside a wall and pursuit is the cyclist, which the director
-sends at her and no dawn or unit places. A row a dawn phase or a unit places whose plan keeps its
-field clear (`EventPlan.keeps_its_field_clear()`: it ends the day, is not a wall and does not
-pursue) adds the walk, in `tests/test_events_scheduler.gd`, which holds the planned days.
+sends at her and no dawn or unit places. **So the director asks the rule the other way round**: it
+sends a cyclist only where no placed plan stands inside his field along his whole route, on the
+route he is sited on and every route he could arrive on while his badge is up
+(`EventDirector.clear_to_send()`; "The dog walker, the patrol and the convoy are sent ahead of
+her"), and `tests/test_events_scheduler.gd` walks the planned days for it: a director handed the
+day's plan sends no cyclist with a placed plan inside his field, on days where a director handed no
+plan sends such cyclists. What a unit draws while a cyclist is out is judged among the walk's
+plans, not his live field. A row a dawn phase or a unit places whose plan keeps its field clear
+(`EventPlan.keeps_its_field_clear()`: it ends the day, is not a wall and does not pursue) is held
+by `room_around()` at placement and adds its own walk of the planned days to that suite.
 
 Two cases are exempt, and both are about the field having no fixed place to keep clear of
 anything. **Off the day's corridor**, where the whole point of the ground is that she should not
