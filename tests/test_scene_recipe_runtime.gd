@@ -134,7 +134,8 @@ func _ready() -> void:
 	var runtime := SceneRecipeRuntime.new()
 	var data := {"name": "failed observation", "playback": {"duration": 1.0 / 60.0,
 		"observations": [{"tick": 1, "subject": "missing", "condition": "moving"}]}}
-	runtime.configure({"data": data, "anchors": {}, "manifest": {}}, _scripted(), _run)
+	runtime.configure(Shipped.rows(), {"data": data, "anchors": {}, "manifest": {}}, _scripted(),
+			_run)
 	add_child(runtime)
 	var watcher := Watcher.new()
 	watcher.manifest_path = _manifest_path()
@@ -146,8 +147,8 @@ func _ready() -> void:
 ## scene is installed into a world of stand-ins (`Pixel` is her, on a map the recipe builder makes) and
 ## its observations name her as `player`.
 func _probe_the_boundary() -> void:
-	var built := RecipeCityBuilder.build({"version": 1, "name": "one tick input", "seed": 1,
-			"extent": {"scope": "full"}, "city": {"context_seed": 1917501}})
+	var built := RecipeCityBuilder.build(Shipped.rows(), {"version": 1, "name": "one tick input",
+			"seed": 1, "extent": {"scope": "full"}, "city": {"context_seed": 1917501}})
 	var map: CityMap = built.map
 	var start := map.doorstep_world_position()
 	var seconds := 1.0 / Engine.physics_ticks_per_second
@@ -157,7 +158,8 @@ func _probe_the_boundary() -> void:
 		{"tick": 1, "subject": "player", "condition": "near", "at": pressed, "distance": 0},
 		{"tick": 2, "subject": "player", "condition": "near", "at": pressed, "distance": 0}]}}
 	var runtime := SceneRecipeRuntime.new()
-	runtime.configure({"data": data, "anchors": {}, "manifest": {}, "map": map}, _scripted(), _run)
+	runtime.configure(Shipped.rows(), {"data": data, "anchors": {}, "manifest": {}, "map": map},
+			_scripted(), _run)
 	var her := Pixel.new()
 	her.name = "Stroller"
 	var baby := Baby.new()
@@ -183,8 +185,8 @@ func _probe_the_boundary() -> void:
 ## capture holds the moment the zoom out stops and the picture stays where it is while idle frames
 ## pass.
 func _probe_the_camera() -> void:
-	var loaded := SceneRecipeRuntime.load_recipe("res://scene-recipes/power-station-hall.json",
-			PackedStringArray())
+	var loaded := SceneRecipeRuntime.load_recipe(Shipped.rows(),
+			"res://scene-recipes/power-station-hall.json", PackedStringArray())
 	loaded.data.playback = {"duration": 5, "walk": "5p", "settled_camera": true,
 		"camera": {"fixed": true, "fixed_offset": [200, 0], "zoom_out": 4, "zoom_delay": 0}}
 	var city_scene: PackedScene = load("res://scenes/world/city.tscn")
@@ -199,7 +201,7 @@ func _probe_the_camera() -> void:
 	add_child(player)
 	RunCity.show_her_to_the_walls_and_the_blackout(city, player)
 	var runtime := SceneRecipeRuntime.new()
-	runtime.configure(loaded, _scripted(), _run)
+	runtime.configure(Shipped.rows(), loaded, _scripted(), _run)
 	add_child(runtime)
 	var errors := runtime.install(RunCity.world_of(city, player),
 			DaySpec.for_day(1, Tuning.DAY_LENGTH_SECONDS))
