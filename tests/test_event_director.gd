@@ -83,6 +83,7 @@ func run(t: TestRunner) -> void:
 		_test_the_convoy_comes_in_the_lane_beside_her_toward_her(t, vertical)
 	_test_a_convoy_is_sited_only_where_the_ground_holds_while_its_badge_is_up(t)
 	_test_the_convoys_leg_crosses_the_box_behind_her_from_short_of_it(t)
+	_test_the_convoy_sets_off_further_up_its_lane_where_its_place_cannot_be_driven(t)
 	_test_the_convoy_comes_down_the_crossing_street_where_her_lane_has_no_room(t)
 	_test_the_convoy_turns_round_the_corner_toward_her(t)
 	_test_the_convoy_never_comes_down_the_crossing_street_behind_her(t)
@@ -265,9 +266,11 @@ func _test_the_convoy_comes_in_the_lane_beside_her_toward_her(t: TestRunner,
 ## has been up** (`EventDirector._holds_while_its_badge_is_up()`): its badge is up alone for
 ## `warned_for()` and the thing is created just out of sight of the camera then, a place that
 ## has moved along the road with her, so a start that is ground now and a break in the
-## carriageway a second of her running on would take the badge down with nothing behind it. A
+## carriageway a second of her running on would take the badge down with nothing behind it. It
+## may set off up to `EventDirector.SETS_OFF_BACK` tiles further up its lane than that place. A
 ## way on that lets a car start only up to a cutoff down the road sites the convoy when the
-## cutoff is further than she can run in that time and refuses it when it is nearer.
+## cutoff is further than she can run in that time, less those tiles, and refuses it when it is
+## nearer.
 func _test_a_convoy_is_sited_only_where_the_ground_holds_while_its_badge_is_up(
 		t: TestRunner) -> void:
 	var map := _street()
@@ -278,12 +281,13 @@ func _test_a_convoy_is_sited_only_where_the_ground_holds_while_its_badge_is_up(
 	var wanted := (plain[1] as PackedVector2Array)[0]
 	var def := plain[0] as EventDef
 	var reach := Tuning.RUN_SPEED * def.warned_for() + TILE
+	var back := float(EventDirector.SETS_OFF_BACK * TILE)
 	for margin: float in [-TILE * 0.25, TILE * 0.5]:
-		var way := _StartsAboveWayOn.new(wanted.y + reach + margin)
+		var way := _StartsAboveWayOn.new(wanted.y + reach + margin - back)
 		var sited := _due(_director(map, "military_convoy", _no_plans(), 1, way)).size() >= 2
 		t.check(sited == (margin > 0.0),
 				("with ground to set off from %.0fpx %s than she runs in the badge's time, "
-				+ "the convoy is %s")
+				+ "less the tiles it may set off further up, the convoy is %s")
 				% [absf(margin), "further" if margin > 0.0 else "nearer",
 				"sited" if margin > 0.0 else "refused"])
 
@@ -314,6 +318,33 @@ func _test_the_convoys_leg_crosses_the_box_behind_her_from_short_of_it(t: TestRu
 		t.check(not leg.is_empty() and from.is_equal_approx(Vector2(place.x, float(case[1]))),
 				"with her on tile row %d, the leg out of the box is asked from y %.0f (%s)"
 				% [int(case[0]), float(case[1]), from])
+
+## **The convoy sets off further up its lane where its leg from its place cannot be driven**
+## (`EventDirector.leg_in_the_lane()`): an explosion's crater at the place, or within a tile of
+## it, leaves a truck no room to pull out round it, so its leg starts a tile further up, or two
+## (`EventDirector.SETS_OFF_BACK`), still in her street driving at her; with nothing to drive
+## from even there, it has no leg.
+func _test_the_convoy_sets_off_further_up_its_lane_where_its_place_cannot_be_driven(
+		t: TestRunner) -> void:
+	var map := _street()
+	var plain := _due(_director(map, "military_convoy", _no_plans()))
+	if plain.size() < 2:
+		t.check(false, "the convoy is sited on the plain street")
+		return
+	var def := plain[0] as EventDef
+	var place := (plain[1] as PackedVector2Array)[0]
+	for tiles: int in [1, EventDirector.SETS_OFF_BACK, EventDirector.SETS_OFF_BACK + 1]:
+		var way := _StartsAboveWayOn.new(place.y - float(tiles * TILE))
+		var director := _director(map, "military_convoy", _no_plans(), 1, way)
+		var leg := director.leg_in_the_lane(def, place, _her(), Vector2.DOWN, _her())
+		if tiles > EventDirector.SETS_OFF_BACK:
+			t.check(leg.is_empty(), "with no ground to set off from within %d tiles up its lane, "
+					% EventDirector.SETS_OFF_BACK + "the convoy has no leg")
+			continue
+		t.check(not leg.is_empty()
+				and leg[0].is_equal_approx(place + Vector2.UP * float(tiles * TILE)),
+				"with ground to set off from only %d tile(s) up its lane, its leg starts there (%s)"
+				% [tiles, leg[0] if not leg.is_empty() else "none"])
 
 ## A way on that lets a car start only at or north of `cutoff` (up the road, away from her) and
 ## drive from there, as on a plain street.

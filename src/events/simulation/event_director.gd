@@ -107,6 +107,13 @@ const ROUTE_BAG_MARBLES_PER_WEIGHT := 2.0
 ## sooner (`crossing_ahead_of()`).
 const CROSSING_REACH_TILES := Tuning.STREET_WIDTH
 
+## **How many tiles further up its lane the convoy may set off than just out of sight**, where its
+## leg from there cannot be driven (`_past_her_through_the_next_box()`): an explosion's crater a lane
+## wide at the place, or within a tile of it, leaves the truck no room to pull out round it
+## (`WayOn.SWERVE`), and from a tile or two further up it has. It is still out of sight, and still
+## in her street ahead of her, driving at her.
+const SETS_OFF_BACK := 2
+
 var _map: CityMap
 ## What every run this director sites is cut to (`Navigator.trim()`), so a cat, a bike or a car sent
 ## at her never runs through a building, a barrier or a body.
@@ -1546,7 +1553,8 @@ func _holds_while_its_badge_is_up(def: EventDef, place: Vector2, at: Vector2,
 ##
 ## **It runs down the lane past her.** A row warned of first in its lane (the convoy, 120px/s) runs
 ## to the point of the lane level with her and on through the next junction box the way the day's
-## `WayOn` leaves it (`_past_her_through_the_next_box()`). **In a lane that crosses her street
+## `WayOn` leaves it (`_past_her_through_the_next_box()`), setting off up to `SETS_OFF_BACK` tiles
+## further up the lane than `place` where the leg from `place` cannot be driven. **In a lane that crosses her street
 ## (`_crosses_her_street()`) it turns at the box ahead of her into her street, toward where she was
 ## sited** (`_round_the_corner_toward()`), and on past her through the next box, **and goes no other
 ## way**: a leg straight across that box would go on into the crossing street's far arm, where her
@@ -1634,8 +1642,11 @@ func _round_the_corner_toward(def: EventDef, place: Vector2, going: Vector2, sit
 ## the way the day's `WayOn` leaves it, straight on or round the corner, so it follows a walk that
 ## turns there (a walk that came round that corner has nothing straight on but the street it left).
 ## Where `level` lies in or past the box her street meets behind her, `sited_at` being where she was
-## when it was sited, it crosses that box instead (`_short_of_her_box()`). Empty where it could not
-## drive that, or go on from where it leaves the box.
+## when it was sited, it crosses that box instead (`_short_of_her_box()`). **Where that cannot be
+## driven from `place`, it sets off a tile further up its lane, or two** (`SETS_OFF_BACK`): an
+## explosion's crater at the place or within a tile of it leaves a truck no room to pull out round
+## it there. Empty where it could not drive that from any of them, or go on from where it leaves the
+## box.
 func _past_her_through_the_next_box(def: EventDef, place: Vector2, level: Vector2,
 		going: Vector2, her: Vector2, sited_at: Vector2) -> PackedVector2Array:
 	if (level - place).dot(going) <= 0.0:
@@ -1644,9 +1655,13 @@ func _past_her_through_the_next_box(def: EventDef, place: Vector2, level: Vector
 	var through := way.next_leg(def, _short_of_her_box(level, going, sited_at), going, her)
 	if through.size() < 2:
 		return PackedVector2Array()
-	var laid := PackedVector2Array([place])
-	laid.append_array(through)
-	return _driven_and_going_on(def, laid, her)
+	for back in SETS_OFF_BACK + 1:
+		var laid := PackedVector2Array([place - going * float(back * Tuning.TILE_SIZE)])
+		laid.append_array(through)
+		var leg := _driven_and_going_on(def, laid, her)
+		if not leg.is_empty():
+			return leg
+	return PackedVector2Array()
 
 ## **Where the convoy's leg past her sets off through a junction box from**: `level`, the point of
 ## its lane level with her, or, where that lies in or past the box her street meets behind her (seen

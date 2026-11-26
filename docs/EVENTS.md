@@ -363,7 +363,10 @@ dog walker at a tile.
   level with her along the road and just out of sight up it (`PendingWarning.in_its_lane()`), then
   created there with its telegraph spent, driving down the lane past her and through the next
   junction box by the first way out of it that goes on, crossing that box from just short of it
-  where she stands in it or has walked back past it (`EventDirector._short_of_her_box()`). Standing
+  where she stands in it or has walked back past it (`EventDirector._short_of_her_box()`), and
+  setting off a tile or two further up its lane (`EventDirector.SETS_OFF_BACK`) where its leg
+  cannot be driven from that place, an explosion's crater at it or within a tile of it leaving the
+  truck no room to pull out round the hole. Standing
   in a junction box, on a corner or a crossing, her lane is the street along her heading. **Where
   that lane has no room**, a crater or a seal in her street, it comes down the crossing street at the
   first box wholly ahead of her, within her view (`EventDirector._across_the_next_box()`), and turns
@@ -2533,8 +2536,10 @@ unmet. The pace sets how many she meets; where one can come is the convoy's siti
 lane beside her, or down the crossing street at the box ahead of her and round the corner toward
 her, past an explosion's crater by the street's other lane, since the crater is one lane wide
 (`lane_crater`), and through the box behind her by the way out that goes on, never into a sealed
-street. **So her walk meets more trucks than explosions heard**, the player's frequency order of
-what she meets in the escape: trucks, then explosions, then vans, then barriers (minty-lemur #785).
+street. **So under the default bag her walk meets more trucks than explosions heard**, the
+player's frequency order of what she meets in the escape: trucks, then explosions, then vans, then
+barriers (minty-lemur #785); under another bag still on the Review tab the two can come about
+level on a walk (the record frosty-marmot measures each bag).
 The trucks' noise is what that order costs: with more trucks a walk is louder, more walks end in
 crying and fewer get out (the record frosty-marmot measures it). Every other danger the escape
 holds is placed before she sets off.
