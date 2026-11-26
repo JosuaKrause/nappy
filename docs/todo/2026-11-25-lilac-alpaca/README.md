@@ -8,9 +8,12 @@ but new features are for a release candidate with a different URL ?rc=1 or somet
 count goatcounter etc" (inbox #1777 in tiny-newt). **What it is for:** "that way I can try out the
 new tutorial without it being a proper release yet" (inbox #1778 in tiny-newt), the tutorial being
 the queue entry grassy-beaver, "A day one that teaches". **When:** "implement that before releasing
-the patch if still possible" (inbox #1779 in tiny-newt).
+the patch if still possible" (inbox #1779 in tiny-newt). **How it is served:** "how would the rc
+process look like? how would we serve the two images? I guess a proper path allows to serve a
+completely different binary" (inbox #1781 in tiny-newt).
 
-**Read as:** `https://nappy.josuakrause.com/` keeps serving the newest release, and a release
+**Read as:** the player leans to a proper path for the RC that serves a completely different
+build, which is the `/rc/` below; `https://nappy.josuakrause.com/` keeps serving the newest release, and a release
 candidate (RC) is a second build, online beside it, that a person reaches by a different address and
 that counts nothing; "etc" is read as every counting the page does, not GoatCounter alone.
 
@@ -38,8 +41,10 @@ cost, and the items below build them; none is a reading of the player's words):
   (`git tag -l 'v[0-9]*'`), `release-notes.py`'s tag pattern and `deploy.yml`'s `v*` trigger all
   have to learn that `-rc` is not a release; gain: the same `test` check gate, the ruleset and the
   build stamp apply unchanged.
-- **Its build is served at a path beside the release, `/rc/`, and the root page forwards `?rc=1`
-  there**, so both the player's `?rc=1` and a stable address work. Plainer: the path alone (cheap,
+- **Its build is served at a path beside the release, `/rc/`**: the player's lean (inbox #1781 in
+  tiny-newt), a path serving a completely different build. **The root page forwards `?rc=1` there**
+  is the filer's proposal, so the parameter the player gave as an example (inbox #1777 in
+  tiny-newt) also works. Plainer: the path alone (cheap,
   the root page unchanged) or the parameter alone (the root page must pick between two builds in the
   browser before booting, and the forward is the only way to do that with Pages). Cost: the export
   and its page assume the site root today (`tools/export-web.sh` writes relative names, the
@@ -63,29 +68,18 @@ cost, and the items below build them; none is a reading of the player's words):
   Cost: a person who tries the RC starts from day 1 there, never from their release day.
 - **The page says it is an RC**: the title screen's version text already shows the baked tag
   (`vX.Y.Z-rc.N`), so no new wording is needed. Plainer: a banner; cost: a cue to draw and review.
-- **The notes and the go-ahead.** An RC's GitHub Release is marked a prerelease, its notes the
-  commits since the last release (not since the last RC), so the final release's notes are
-  unchanged. **Cutting an RC needs the player's word in the session** (a request to put something
-  online as an RC is that word) but no separate go-ahead beyond it, since it is served on an address
-  nobody is sent to and counts nothing; **a release still needs its own go-ahead, as today.**
-  Plainer: the release rule unchanged for an RC; cost: a second question for a build only the
-  player opens.
-
-**The unpublished v0.29.3** (its deploy was cancelled before it published, the site still serves
-v0.29.2, and the tag exists). Both ways are the filer's proposal:
-
-- **Publish it later by re-running its deploy once RCs exist.** The deploy workflow builds from the
-  tag's own commit but runs the workflow file of the commit the re-run uses, which is the tag's, so
-  the re-run would deploy with the old workflow and no `/rc/`; the RC mechanism has to land and a
-  release deploy of the newest tag run after, or the re-run publishes v0.29.3 alone and the site
-  loses nothing but gains no RC until the next tag. Cost: the patch waits for this entry.
-- **Supersede it with the next patch** (v0.29.4, cut with the new workflow, covering v0.29.3's
-  commits as a patch's notes do since the previous tag). Cost: a tag that never published stays in
-  the history, and `tools/release.sh`'s patch bump skips a number.
-
-The filer would pick the second only if the entry takes longer than the player wants to wait, and
-otherwise re-run after the entry lands, since it publishes the commits the player already approved;
-the choice, and the release itself, are the player's.
+- **The notes.** An RC's GitHub Release is marked a prerelease, its notes the commits since the
+  last release (not since the last RC), so the final release's notes are unchanged.
+- **The go-ahead: cutting an RC needs none; a release still needs its own, as today.** The
+  orchestrating session told the player it would propose this: an RC changes nothing at `/`, which
+  keeps serving the release, and counts nothing. Cost: any tag is published at once, so a wrong RC
+  is online (at `/rc/`, linked from nowhere) until the next one replaces it; an RC tag cannot be
+  deleted (the `version tags` ruleset blocks deletion), only superseded. **The alternative is the
+  player's word for each RC**, as for a release. Cost: a question for a build only the player opens,
+  and the tutorial's tries wait on an answer each time.
+- **The `version tags` ruleset already covers RC tags.** It targets `refs/tags/v*`, so a
+  `vX.Y.Z-rc.N` tag needs the same green `test` check on its commit and cannot be moved or
+  deleted; nothing in the repository's settings changes.
 
 **Order against the tutorial.** The RC mechanism is built before the grassy-beaver tutorial ships,
 so the tutorial goes online as an RC first (the filer's proposal). The tutorial's pull requests may
