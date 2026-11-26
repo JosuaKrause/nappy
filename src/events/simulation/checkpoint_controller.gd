@@ -580,13 +580,15 @@ func _set_a_guard_on_her(hut: EventInstance, crossed: EventInstance, here: Vecto
 ## (`EventFootprints.raised_hand_rect()` on `EventInstance.its_guards_feet()`, asked of the world's
 ## `VisibleView.sees_all()`: inside the camera's view and, in the joystick scheme, clear of the two
 ## bottom corners its controls cover; feathery-lynx #581), so a hand she cannot see is never his
-## warning (bouncy-owl #1774); where none is (a view nobody has looked through, a rig), the
-## farthest. Null for none. The warning starts with the crossing (inbox #788 in minty-lemur), so it
-## is not held: which hut warns is the check. His is the hut a guard steps out of
+## warning (bouncy-owl #1774); where none is, the nearer when a view hides both (a camera held at the city's
+## edge can), whose charge comes from closer, and the farthest while no view has been looked through (a rig). Null for none. The
+## warning starts with the crossing (inbox #788 in minty-lemur), so it is not held: which hut warns is the check. His is the hut a guard steps out of
 ## (`_set_a_guard_on_her()`).
 func _hut_that_warns(door: EventInstance, here: Vector2) -> EventInstance:
 	var axis := door.facing_now()
 	var view := world.visible_view()
+	var nearest: EventInstance = null
+	var nearest_at := INF
 	var farthest: EventInstance = null
 	var farthest_at := -1.0
 	var seen: EventInstance = null
@@ -605,11 +607,16 @@ func _hut_that_warns(door: EventInstance, here: Vector2) -> EventInstance:
 		if range_to > farthest_at:
 			farthest_at = range_to
 			farthest = instance
+		if range_to < nearest_at:
+			nearest_at = range_to
+			nearest = instance
 		if range_to > seen_at and view != null \
 				and view.sees_all(EventFootprints.raised_hand_rect(instance.its_guards_feet())):
 			seen_at = range_to
 			seen = instance
-	return seen if seen != null else farthest
+	if seen != null:
+		return seen
+	return nearest if view != null and view.camera_view().has_area() else farthest
 
 ## **The checkpoint's warning**: while a crossing is warning her (`_start_the_crossing_warning()`),
 ## the guard at the hut on its line `_hut_that_warns()` chose — across the road from her unless that
