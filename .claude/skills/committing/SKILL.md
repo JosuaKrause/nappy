@@ -333,7 +333,9 @@ what is still open, with the built half filed as a decision. CI holds a pull req
 `src/` or `tests/` to this (`tools/ci_code_pr_queue.py`, which also accepts a description line `No
 queue item: <reason>`).
 
-**And work that only a person can judge adds its review item in the same PR**: a file
+**And work that a person's sign-off waits on adds its review item in the same PR** (a question
+that needs a run of the game but no sign-off, which bag fills the escape right say, is the Review
+tab's alone and owes no file: **board**, "The layout"): a file
 `docs/review/<entry name>.md`, made with `tools/new-name.sh review --entry <name> "<title>"`, which
 names a second item from the same entry `<entry name>-<adjective>-<animal>`, never a number
 (woolly-finch 18, inbox #941 in breezy-alpaca). The item says what to do, where to look, and the

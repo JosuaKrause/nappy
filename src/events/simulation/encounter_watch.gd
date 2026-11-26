@@ -46,6 +46,11 @@ extends RefCounted
 ##   instance is seen, or as influenced-unseen once the encounter is over without it, so influenced
 ##   ÷ seen counts only what she could see.
 ##
+## - **passed** at most once, when an encounter that was seen is over while the day goes on: the
+##   instance has been out of sight for `ENCOUNTER_GAP`, or is gone. She has left it behind, though
+##   she may have turned back; the day ending on it (`end_day()`) is not a pass. `VisitCounter` turns
+##   the first pass of day 1 into the day-one milestone "first obstacle passed".
+##
 ## **A bout of running** begins the first frame she runs (`Stroller.run_excess_ratio()` above 0, the
 ## test `EventManager` already makes) after `RUN_BOUT_GAP` or more without running, or the
 ## first time in a day.
@@ -163,7 +168,7 @@ func caught_by(instance: EventInstance, visible: VisibleView, her: Vector2) -> v
 ## running start again with the next day.
 func end_day() -> void:
 	for record in _open:
-		_close(record)
+		_close(record, false)
 	_open.clear()
 	_records.clear()
 	_clock = 0.0
@@ -260,14 +265,18 @@ func _close_what_is_over() -> void:
 		var record := _open[i]
 		var gone := record.last_frame != _frame or not is_instance_valid(record.instance)
 		if gone or _clock - record.last_present >= ENCOUNTER_GAP:
-			_close(record)
+			_close(record, true)
 			_open[i] = _open[_open.size() - 1]
 			_open.pop_back()
 		else:
 			i += 1
 
-func _close(record: Record) -> void:
+## Ends `record`'s encounter; `day_goes_on` is false only when the day's end closes it, and a seen
+## encounter closed with the day still running is one she passed.
+func _close(record: Record, day_goes_on: bool) -> void:
 	record.open = false
+	if day_goes_on and record.seen:
+		_reports.tell_encounter_passed(_day, record.name)
 	if record.influence_waiting:
 		record.influence_waiting = false
 		_reports.tell_encounter_influenced(_day, record.name, false)

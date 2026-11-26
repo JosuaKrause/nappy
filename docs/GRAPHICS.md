@@ -326,6 +326,7 @@ arm direction; ordinary movement suffixes describe the body's facing.
 | Owning design | Prepared assets, dimensions and registration |
 |---|---|
 | dotted-lemur, three cues on one screen (the alley's own tile picture) | `art/tiles/alley_draft.svg` is a 32×32 paving alternative for comparison; the live alley tile is the runtime alley. |
+| grassy-beaver, a day one that teaches (the thought bubbles over her) | `art/ui/thought_bubble.svg` (56×46, bottom-centre anchor (28, 46), the lower trailing dot's foot) is the bubble's frame, a paper-white cloud in the vocabulary's near-black outline. Its icon box is centred on (28, 17.5) for a hint that points nowhere; for one that points, the icon is centred on (21, 17.5) and `art/ui/hint_arrow.svg` (14×14, centre anchor (7, 7), drawn pointing east and turned toward the way to go) on (41, 17.5). The icons are 24×20 with a centre anchor: `hint_park.svg` (the way to the park), `hint_back_to_route.svg` (back to the tutorial route), `hint_crosswalk.svg` (use the crosswalk) and `hint_cross_street.svg` (cross the street, on a crosswalk) point with the arrow; `hint_turn_back.svg` (turn back), `hint_noise.svg` (walk wide of the noise), `hint_chalk.svg` (walk into the alley to the chalk mark) and `hint_hut.svg` (walk through the checkpoint hut) carry their own blue arrow or none. All ten are on the `ui` atlas page. The [review sheet](evidence/grassy-beaver-bubble-pictures-2026-11-25/README.md) shows them at game scale over the mother. |
 
 ### Unbound, with nothing to bind them
 

@@ -1,0 +1,17 @@
+<!-- Back to the route: the tutorial route's sidewalk, edged in the straw yellow of the
+     route's tinted curbstones (Palette.ROUTE_KERB_TINT), and the pram standing off it.
+     hint_arrow.svg beside it points at the nearest tile of the route.
+     A thought-bubble icon: 24x20, centre anchor (12,10), drawn into the bubble's icon box
+     (thought_bubble.svg). -->
+<svg xmlns="http://www.w3.org/2000/svg" width="24" height="20" viewBox="0 0 24 20" shape-rendering="geometricPrecision" stroke="#221f28" stroke-width="0.9" stroke-linejoin="round" stroke-linecap="round">
+  <rect x="2.5" y="0.5" width="7" height="19" fill="#8b8478"/>
+  <path d="M2.5 0.5 V19.5 M9.5 0.5 V19.5" stroke="#f2e07a" stroke-width="1.6"/>
+  <path d="M1.7 0.5 V19.5 M10.3 0.5 V19.5" stroke-width="0.8"/>
+  <path d="M3.4 5 H8.6 M3.4 10 H8.6 M3.4 15 H8.6" stroke="#7a7368" stroke-width="0.6"/>
+  <g transform="translate(13.4 6)">
+    <path d="M1 3.2 Q1 0.4 4.2 0.4 L4.2 3.2 Z" fill="#e9dfc8"/>
+    <rect x="0.6" y="3.2" width="8" height="3.4" rx="0.8" fill="#34405e"/>
+    <circle cx="2" cy="7.6" r="1.3" fill="#2a2730"/>
+    <circle cx="7.2" cy="7.6" r="1.3" fill="#2a2730"/>
+  </g>
+</svg>

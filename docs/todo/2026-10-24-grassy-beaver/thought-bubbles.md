@@ -10,7 +10,16 @@ eg to also show that guard huts can be walked through" (curly-moose #819).
 **Build:** a bubble over the mother holding an icon, no words: a park and a direction (day 1), an
 obstacle to avoid, crossing the street, turning around, and later lessons such as the checkpoint
 hut that can be walked through. Each lesson's bubble shows only a few times, at the moment it
-applies, then never again.
+applies, then never again. What is open is the mechanics that show them: what counts the shows,
+what decides that a hint applies and where it points, and the node that draws the bubble over her.
+
+**The pictures the mechanics draw** are the frame `art/ui/thought_bubble.svg`,
+the pointing arrow `art/ui/hint_arrow.svg` (drawn pointing east and turned toward the way to go),
+and one icon per hint, `art/ui/hint_park.svg`, `hint_back_to_route.svg`, `hint_crosswalk.svg`,
+`hint_cross_street.svg`, `hint_turn_back.svg`, `hint_noise.svg`, `hint_chalk.svg` and
+`hint_hut.svg`, all on the `ui` atlas page. `docs/GRAPHICS.md` gives each one's size, anchor and
+the place in the frame its icon and arrow go; whether the player keeps them is a question on the
+Nappy board's main tab.
 
 **Two bubbles asked for since:** the zebra-crossing bubble on day 1, shown when she steps onto the
 road away from a crossing (minty-dolphin #834, #867; `car-free-start.md`), and one for the chalk
@@ -34,6 +43,5 @@ It shows wherever she leaves the route: past the first block the side streets ca
 which leave the carriageway open, so she can still leave there in the road (`hand-crafted-day-one.md`).
 
 *Proposed, not asked for:* the bubble looks unlike the danger exclamation mark already drawn over
-her, since **cues** keeps that vocabulary short; the icons are SVG, drawn by Opus under **svg-art**
-and **cues**, and the first attempt comes back to the player early; "a few times" starts at three
-per lesson per run, and whether a retry of a day counts is the builder's to state.
+her, since **cues** keeps that vocabulary short; "a few times" starts at three per lesson per run,
+and whether a retry of a day counts is the builder's to state.
