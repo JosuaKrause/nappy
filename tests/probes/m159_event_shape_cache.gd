@@ -57,7 +57,8 @@ func _measure_cached(defs: Array[EventDef]) -> Vector2i:
 static func _legacy_has_a_spread(def: EventDef) -> bool:
 	match def.picture():
 		EventDef.Look.ROADWORKS, EventDef.Look.BURNT_SHELL, EventDef.Look.STALL, \
-				EventDef.Look.ROADBLOCK, EventDef.Look.BARRICADE, EventDef.Look.CAFE, \
+				EventDef.Look.ROADBLOCK, EventDef.Look.CLOSING_ROADBLOCK, EventDef.Look.BARRICADE, \
+				EventDef.Look.CAFE, \
 				EventDef.Look.FALLEN_TREE, EventDef.Look.CAR_ACCIDENT, EventDef.Look.BURST_MAIN, \
 				EventDef.Look.SCAFFOLDING, EventDef.Look.COLLAPSED_FRONTAGE:
 			return true

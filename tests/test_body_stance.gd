@@ -324,14 +324,24 @@ func _test_where_a_body_stands_is_read_from_one_place(t: TestRunner) -> void:
 	var on_the_road := _carriageway_point()
 	t.check(on_the_road != Vector2.INF, "the street has a carriageway lane beside a kerb")
 	var at_the_kerb := 0
+	var in_the_middle := 0
 	for def in CatalogueRows.every():
 		var stands := BodyStance.of(WorldMap.open_ground(), def, on_the_road, Vector2.RIGHT).center()
 		var kerbed := def.stands_at_its_kerb()
+		var mid_street := def.stands_mid_street()
 		if kerbed:
 			at_the_kerb += 1
-		t.check(stands == (CityMap.kerb_beside(on_the_road) if kerbed else on_the_road),
-				"%s stands %s" % [def.id(), "on the kerb beside its lane" if kerbed else "where it is put on the road"])
+		if mid_street:
+			in_the_middle += 1
+		var expected := on_the_road
+		if kerbed:
+			expected = CityMap.kerb_beside(on_the_road)
+		elif mid_street:
+			expected = CityMap.street_middle_beside(on_the_road)
+		t.check(stands == expected, "%s stands %s" % [def.id(), "on the kerb beside its lane" if kerbed
+				else "on the middle of its street" if mid_street else "where it is put on the road"])
 	t.check(at_the_kerb > 0, "the catalogue has a row that spans the street and stands at its kerb")
+	t.check(in_the_middle > 0, "and a row that closes its street and stands on the middle of it")
 
 ## **The kerb exception must not silently regress.** `delivery_van` and `ice_cream_van` are
 ## `pavement_side == AT_THE_KERB` on purpose, so a body stood on a kerb lane's pavement is left flush

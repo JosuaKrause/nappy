@@ -1,8 +1,8 @@
 extends RefCounted
 ## `UnitFills`, the day's bag fills by view and kind of ground: a fill holds its cell's events in a
 ## hundred of its marbles and empty for the rest; a wall share gives the walls' place to empty and
-## leaves every other row its count; a view weighs a row by its role on the day; a row has marbles
-## only on ground it stands on, scaled by its weight there; a marble that takes a section weighs as
+## leaves every other row its count; a view weighs a row by its role on the day, and a row that
+## closes its whole street has none on the route; a row has marbles only on ground it stands on, scaled by its weight there; a marble that takes a section weighs as
 ## the two locations it speaks for; and a cell no row stands in is the empty marble alone.
 ##
 ## Built for real over rows made by hand (`EventDraft` with the settings a fill reads) or taken
@@ -19,6 +19,7 @@ func run(t: TestRunner) -> void:
 	_test_a_rows_weight_on_a_ground_scales_its_marbles(t)
 	_test_a_larger_marble_weighs_as_the_locations_it_speaks_for(t)
 	_test_a_cell_no_row_stands_in_is_all_empty(t)
+	_test_a_row_that_closes_its_street_has_no_marble_on_the_route(t)
 	_test_a_unit_is_made_a_fresh_bag_of_its_fill(t)
 
 const ON := PlacementView.View.ON_THE_ROUTE
@@ -316,3 +317,21 @@ func _test_a_cell_no_row_stands_in_is_all_empty(t: TestRunner) -> void:
 					wrong.append("day %d view %d ground %d" % [day, view, ground])
 	t.check(stands and wrong.is_empty(),
 			"a cell holding no event is all empty though a row stands there (%s)" % [wrong])
+
+## **A row that closes its whole street has no marble on the route** (`EventDef.stands_off_the_route()`),
+## from the catalogue on day 8: the closing roadblock is in a street's fill beside the route and off
+## it and in none on the route, and the route's fill holds every other row as many times as the same
+## rows without it would, so its share of the route's bag is not a share that comes back empty.
+func _test_a_row_that_closes_its_street_has_no_marble_on_the_route(t: TestRunner) -> void:
+	var day := 8
+	var rows := _catalogue(day)
+	t.check(rows.has("closing_roadblock"), "the closing roadblock is drawn on day %d" % day)
+	var fills := _fills(rows, day)
+	t.check(not fills.of(ON, STREET).has("closing_roadblock")
+			and fills.of(BESIDE, STREET).has("closing_roadblock")
+			and fills.of(OFF, STREET).has("closing_roadblock"),
+			"the closing roadblock has marbles in a street's fill beside and off the route, none on it")
+	var without := rows.duplicate()
+	without.erase("closing_roadblock")
+	t.check(fills.of(ON, STREET) == _fills(without, day).of(ON, STREET),
+			"the route's street fill is the same as it is without the closing roadblock")

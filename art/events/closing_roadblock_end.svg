@@ -1,0 +1,11 @@
+<!-- The post that caps each end of the closing roadblock's barrier
+     (`closing_roadblock_segment.svg`): a concrete post as low as the barrier, with a red cap,
+     and a steel picket standing up out of it that holds the end of the razor-wire coil. -->
+<svg xmlns="http://www.w3.org/2000/svg" width="6" height="30" viewBox="0 0 6 30" shape-rendering="geometricPrecision" stroke="#3b2d32" stroke-width="0.8" stroke-linejoin="round" stroke-linecap="round">
+  <rect x="2.4" y="1.5" width="1.2" height="11" fill="#3f3d45" stroke="none"/>
+  <path d="M3 3.2 C6 4.5 6 10 3 11.2 C0 10 0 4.5 3 3.2 Z" fill="none" stroke="#3f3d45" stroke-width="0.9"/>
+  <rect x="0" y="12" width="6" height="18" fill="#85857f"/>
+  <rect x="0" y="12" width="6" height="4" fill="#c4503c"/>
+  <rect x="4" y="16" width="2" height="11" fill="#a5a59d" stroke="none"/>
+  <rect x="0" y="27" width="6" height="3" fill="#221f28" stroke="none"/>
+</svg>

@@ -1366,6 +1366,18 @@ func is_closed(tile: Vector2i) -> bool:
 ## (`EventPlan.body_at()`); what is painted on the ground is not read, and the one caller places
 ## only on a carriageway (`EventDef.stands_at_its_kerb()`, the roadblock).
 static func kerb_beside(at: Vector2) -> Vector2:
+	return _across_its_street(at, false)
+
+## **Where the middle of the street runs that the carriageway lane `at` stands in**: `at` moved
+## across its street onto the line halfway between its two kerbs, kept where it is along the street.
+## `at` itself where `kerb_beside()` finds no one carriageway lane. The lattice's geometry, read by
+## a plan without a map (`EventDef.stands_mid_street()`, the closing roadblock).
+static func street_middle_beside(at: Vector2) -> Vector2:
+	return _across_its_street(at, true)
+
+## Shared by `kerb_beside()` and `street_middle_beside()`: `at` moved across its street to the
+## street's middle line, or to the kerb on its own side.
+static func _across_its_street(at: Vector2, to_the_middle: bool) -> Vector2:
 	var tile := WorldMap.tile_of(at)
 	var x_offset := corridor_offset(tile.x)
 	var y_offset := corridor_offset(tile.y)
@@ -1377,7 +1389,8 @@ static func kerb_beside(at: Vector2) -> Vector2:
 	var coordinate := at.x if across_x else at.y
 	var into := float(x_offset if across_x else y_offset) \
 			+ fposmod(coordinate, float(Tuning.TILE_SIZE)) / float(Tuning.TILE_SIZE)
-	var kerb := float(Tuning.SIDEWALK_WIDTH) if into < Tuning.STREET_WIDTH * 0.5 \
+	var kerb := Tuning.STREET_WIDTH * 0.5 if to_the_middle \
+			else float(Tuning.SIDEWALK_WIDTH) if into < Tuning.STREET_WIDTH * 0.5 \
 			else float(Tuning.STREET_WIDTH - Tuning.SIDEWALK_WIDTH)
 	return at + (Vector2.RIGHT if across_x else Vector2.DOWN) * (kerb - into) * Tuning.TILE_SIZE
 

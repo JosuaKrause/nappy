@@ -1,0 +1,38 @@
+<!-- One stretch of the closing roadblock's barrier (`closing_roadblock_segment.svg`) seen
+     end-on, for an east-west street, where the band runs away from the camera down a north-south
+     column (`EventPictures.closing_roadblock_segment_texture()`). The same concrete, the same
+     square red and cream blocks and the same coil of razor wire as the broadside picture, turned on
+     its side: the plinth's dark foot line down both outer edges, the lit cap down the left, the
+     block panel down the middle of the face, and the coil running the length of the column over
+     the top, seen as loops one behind the next. Same width as the open roadblock's end-on column
+     (`roadblock_segment_vertical.svg`), so a guard posted beside it stands clear of it the same
+     way. It tiles: every plane runs the full height, the blocks repeat every 15px and the loops
+     every 7.5px, so stretched copies meet on the same phase. Feet-anchored at the bottom centre;
+     `closing_roadblock_end.svg` caps the two ends. -->
+<svg xmlns="http://www.w3.org/2000/svg" width="20" height="30" viewBox="0 0 20 30" shape-rendering="geometricPrecision">
+  <!-- The plinth's foot, down both outer edges. -->
+  <rect x="0.6" y="0" width="1.6" height="30" fill="#221f28" fill-opacity="0.72" stroke="none"/>
+  <rect x="17.8" y="0" width="1.6" height="30" fill="#221f28" fill-opacity="0.72" stroke="none"/>
+  <!-- The concrete: body grey across the whole width, the lit cap down the left. -->
+  <rect x="2.2" y="0" width="15.6" height="30" fill="#85857f" stroke="none"/>
+  <rect x="2.2" y="0" width="3.2" height="30" fill="#a5a59d" stroke="none"/>
+  <!-- The block panel down the middle: cream, with a red block every other 7.5px. -->
+  <rect x="7" y="0" width="6" height="30" fill="#e0d8c4" stroke="none"/>
+  <rect x="7" y="0" width="6" height="7.5" fill="#c4503c" stroke="none"/>
+  <rect x="7" y="15" width="6" height="7.5" fill="#c4503c" stroke="none"/>
+  <!-- The wire over the top, loop behind loop. -->
+  <g fill="none" stroke="#3f3d45" stroke-width="1.1">
+    <ellipse cx="10" cy="0" rx="5.6" ry="4.4"/>
+    <ellipse cx="10" cy="7.5" rx="5.6" ry="4.4"/>
+    <ellipse cx="10" cy="15" rx="5.6" ry="4.4"/>
+    <ellipse cx="10" cy="22.5" rx="5.6" ry="4.4"/>
+    <ellipse cx="10" cy="30" rx="5.6" ry="4.4"/>
+  </g>
+  <g fill="none" stroke="#b9b8b4" stroke-width="0.5" stroke-opacity="0.85">
+    <ellipse cx="10" cy="-0.6" rx="5.6" ry="4.4"/>
+    <ellipse cx="10" cy="6.9" rx="5.6" ry="4.4"/>
+    <ellipse cx="10" cy="14.4" rx="5.6" ry="4.4"/>
+    <ellipse cx="10" cy="21.9" rx="5.6" ry="4.4"/>
+    <ellipse cx="10" cy="29.4" rx="5.6" ry="4.4"/>
+  </g>
+</svg>

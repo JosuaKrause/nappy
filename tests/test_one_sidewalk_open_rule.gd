@@ -36,6 +36,7 @@ func run(t: TestRunner) -> void:
 			[] as Array[Vector2i]).set_beside([BESIDE] as Array[Vector3i])
 	_test_a_second_body_across_is_refused(t)
 	_test_a_roadblock_keeps_the_far_sidewalk(t)
+	_test_a_closing_roadblock_stands_only_off_her_routes(t)
 	_test_a_street_a_seal_closes_refuses_nothing(t)
 	_test_a_body_in_the_end_box_is_refused(t)
 	_test_only_her_routes_streets_are_asked(t)
@@ -103,6 +104,35 @@ func _test_a_roadblock_keeps_the_far_sidewalk(t: TestRunner) -> void:
 		t.check(rule.allows(hot, at, with_the_pole, with_the_pole),
 				"at heat %d the hunting roadblock beside the pole stands too: its guard's catch lies "
 				% level + "inside its band, so its band is the disc read")
+
+## Every row that stands mid street, the closing roadblock among them, takes both sidewalks from the
+## street's middle, so on a street of her routes it is refused alone, at any lane: what
+## `EventDef.stands_off_the_route()` restates for the bag, held here in step with the rule. On a
+## street beside the routes, where no sidewalk is kept, it stands.
+func _test_a_closing_roadblock_stands_only_off_her_routes(t: TestRunner) -> void:
+	var rule := _rule()
+	var asked := 0
+	for def in CatalogueRows.every():
+		if not def.stands_mid_street():
+			continue
+		asked += 1
+		t.check(def.stands_off_the_route(),
+				"%s stands mid street, so the route's bags hold no marble of it" % def.id())
+		for row: int in [44, 45]:
+			var at := Vector2i(51, row)
+			var closing := EventPlan.new(def, _map.tile_to_world(at))
+			t.check(closing.obstructs(), "%s is a body that closes its street" % def.id())
+			t.check(not rule.allows(closing, at, NONE, NONE),
+					"%s alone on her route's street (lane row %d) is refused: its band takes both "
+					% [def.id(), row] + "sidewalks")
+	t.check(asked > 0, "there were rows that stand mid street to ask (%d)" % asked)
+	var beside := _map.street_network().by_key(BESIDE)
+	var rect := beside.tile_rect()
+	var lane := rect.position + (Vector2i(3, Tuning.SIDEWALK_WIDTH) if beside.horizontal
+			else Vector2i(Tuning.SIDEWALK_WIDTH, 3))
+	var off := _standing("closing_roadblock", lane)
+	t.check(rule.allows(off, lane, NONE, NONE),
+			"a closing roadblock on a street beside her routes stands: that street keeps no sidewalk")
 
 func _test_a_street_a_seal_closes_refuses_nothing(t: TestRunner) -> void:
 	var rule := _rule()

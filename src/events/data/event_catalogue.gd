@@ -180,6 +180,11 @@ const SIDEWALK_SPREAD_MAX := Tuning.SIDEWALK_WIDTH * Tuning.TILE_SIZE * 0.5
 ## to one sidewalk + road", inbox #1465 in spry-plover). Its picture is drawn at the same width.
 const ROADBLOCK_REACH := (Tuning.STREET_WIDTH - Tuning.SIDEWALK_WIDTH) * Tuning.TILE_SIZE * 0.5
 
+## **How far the closing roadblock's band reaches either way from the middle of its street**: half
+## of the street, 96px, so the band covers all 192px of it, both sidewalks and the road
+## (`EventDef.stands_mid_street()`).
+const CLOSING_ROADBLOCK_REACH := Tuning.STREET_WIDTH * Tuning.TILE_SIZE * 0.5
+
 ## `mast.svg` is thinner than a person: a pole, not a body to edge past. Solid enough that she
 ## cannot walk through it; the field, not the pole, is what a route goes round.
 const MAST_BODY := 6.0
@@ -435,6 +440,7 @@ static func _build() -> Array[EventDef]:
 		_loudspeaker(),
 		_curfew_announce(),
 		_roadblock(),
+		_closing_roadblock(),
 		_checkpoint_hut(),
 		_checkpoint_gate(),
 		_checkpoint_post(),
@@ -1863,9 +1869,46 @@ static func _curfew_announce() -> EventDef:
 ## (`_test_a_hunts_row_wakes_up_at_its_own_threshold`) catches a row whose field sits under the
 ## trigger; this one is the row that found it.
 static func _roadblock() -> EventDef:
-	var row := EventDraft.new("roadblock")
-	row.look(LookSpec.of(EventDef.Look.ROADBLOCK))
-	row.body(BodySpec.solid(GroundShape.band(ROADBLOCK_REACH))
+	var row := _roadblock_draft("roadblock", ROADBLOCK_REACH, EventDef.Look.ROADBLOCK)
+	row.drawn(2.0, 6)
+	return row.build()
+
+## **The closing roadblock, beside the open one**: the same barrier and guards (`_roadblock()`),
+## standing on the middle of its street with a band that reaches `CLOSING_ROADBLOCK_REACH` either
+## way, so it covers all 192px of the street and shuts both sidewalks ("there are two kinds of
+## roadblocks. one that is open and one that is closing the street", inbox #1491 in silky-lemur;
+## "close the street fully", PLAYTEST-135 7). It has a picture and a badge of its own
+## (`EventDef.Look.CLOSING_ROADBLOCK`): a lower barrier with a coil of razor wire along its top,
+## drawn wall to wall at the width it collides at, so the badge says which kind is coming before
+## either is in sight, whether she can get past it or has to go round.
+##
+## **It stands only where a closed street is allowed.** On a street her routes run down the
+## one-sidewalk rule (`OneSidewalkOpenRule`) reads its band at the street's middle and refuses it,
+## and the route rules refuse it where it would cut a route (`RouteSidewalkRule`,
+## `RouteGroundRule`), so it is a roadblock of the streets beside and off her routes, where
+## closing a street costs her a detour and never the day. The open kind keeps the routes' streets,
+## which its far sidewalk leaves passable. Its guards stand where the open one's do, in the road on
+## either side of the band at the street's middle (`EventFootprints.guard_post_offset()`).
+##
+## It is drawn half as often as the open one, so a street that is shut for her stays the rarer
+## kind, and it has no marble in the bags of her routes' streets (`EventDef.stands_off_the_route()`),
+## where the one-sidewalk rule would refuse every draw of it, so those bags place what they did
+## without it. Its `max_per_day` binds only a scene recipe's rows: the units draw it by its weight
+## alone, at most one to a unit (`MarbleDraw`), and no daily cap bounds how many a day stands.
+static func _closing_roadblock() -> EventDef:
+	var row := _roadblock_draft("closing_roadblock", CLOSING_ROADBLOCK_REACH,
+			EventDef.Look.CLOSING_ROADBLOCK)
+	row.closing_its_street()
+	row.drawn(1.0, 4)
+	return row.build()
+
+## The roadblock row with a band reaching `reach` either way across its street from where its body
+## stands, drawn as `picture`: everything but how often it is drawn, which each row's own builder
+## says.
+static func _roadblock_draft(id: String, reach: float, picture: EventDef.Look) -> EventDraft:
+	var row := EventDraft.new(id)
+	row.look(LookSpec.of(picture))
+	row.body(BodySpec.solid(GroundShape.band(reach))
 			.walked_round()
 			.going_on()
 			.as_a_spread())
@@ -1883,12 +1926,11 @@ static func _roadblock() -> EventDef:
 			.warning_for(_chargers.warning()).leaving_its_body().over_the_street().round_buildings()
 	row.hunt(HuntSpec.pursuing(chase, LethalSpec.within(MASKED_MAN_REACH)))
 	row.spanning_the_street()
-	row.drawn(2.0, 6)
 	# **Its weight on a kind of ground** (`EventDraft.weighed_on()`; `docs/EVENTS.md`, "The
 	# density, and why it is a declared table"):
 	# - a junction box, 0: a box's ground never takes it, though its tiles lie there.
 	row.weighed_on(PlacementGround.Kind.JUNCTION, 0.0)
-	return row.build()
+	return row
 
 # --------------------------------------------------------- Act III: vans (8-11) ---
 
