@@ -224,9 +224,9 @@ restart prompt alone is not enough.
 
 **Every question is checked against the player's recorded words before it is posted, and again when
 the work it names merges.** Most questions that reached the board were there only because nothing
-was searched first: each was one noun search away from an answer, and the player said so.
-The player named the cause (most board questions were there only because they were not checked
-first); the steps below are the filer's proposal for fixing it, open to correction.
+was searched first: each was one noun search away from an answer.
+The player named the cause: most board questions were there only because they were not checked
+first (inbox #1775 in tiny-newt). The steps below are the filer's proposal for fixing it, open to correction.
 
 1. **Search for the question's nouns, before writing it.** Run `tools/decisions.sh --in all <noun>`
    and `rg -i <noun> docs/playtests/` for each noun the question turns on (the thing, the place,

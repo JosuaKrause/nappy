@@ -42,7 +42,7 @@ func run(_t: TestRunner) -> void:
 			var state := CityState.new()
 			state.begin_day(map.plans_by_block(), day)
 			map.repaint(state)
-			var tree := RouteTree.for_day(map, day)
+			var tree := RouteTree.for_day(map, day, null)
 			var plan := RegionPlanner.plan_day(map, DaySpec.for_day(day), tree)
 			var doors := PackedVector2Array()
 			for body in plan.door_plans():

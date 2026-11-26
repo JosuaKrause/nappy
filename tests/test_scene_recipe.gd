@@ -162,7 +162,8 @@ func _test_malformed_file(t: TestRunner) -> void:
 func _test_closures(t: TestRunner, map: CityMap) -> void:
 	var rng := RandomNumberGenerator.new()
 	rng.seed = 23
-	var planned := ClosurePlanner.plan_day(map, DaySpec.for_day(1), rng)
+	var planned := ClosurePlanner.plan_day(map, DaySpec.for_day(1), rng,
+			RouteTree.for_day(map, 1, null))
 	t.check(not planned.is_empty(), "closure comparison has a production-selected candidate")
 	if planned.is_empty():
 		return
@@ -183,7 +184,8 @@ func _test_closures(t: TestRunner, map: CityMap) -> void:
 func _test_a_closure_must_fit_a_bounded_window(t: TestRunner, map: CityMap) -> void:
 	var rng := RandomNumberGenerator.new()
 	rng.seed = 23
-	var planned := ClosurePlanner.plan_day(map, DaySpec.for_day(1), rng)
+	var planned := ClosurePlanner.plan_day(map, DaySpec.for_day(1), rng,
+			RouteTree.for_day(map, 1, null))
 	if planned.is_empty():
 		return
 	var mouths := planned[0].mouth_rects()

@@ -115,7 +115,7 @@ func run(t: TestRunner) -> void:
 			var state := CityState.new()
 			state.begin_day(map.plans_by_block(), day)
 			map.repaint(state)
-			var tree := RouteTree.for_day(map, day)
+			var tree := RouteTree.for_day(map, day, null)
 			var spec := DaySpec.for_day(day)
 			var region := RegionPlanner.plan_day(map, spec, tree)
 			var stood: Array[EventPlan] = []

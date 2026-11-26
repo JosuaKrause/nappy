@@ -21,11 +21,6 @@ lesson" (minty-dolphin #834); `day-two.md` carries the path past it.
 *Proposed, not asked for:* the four-step order (introduce safely, develop, twist, conclude), from
 the research. A retry of day 1 replays the same order.
 
-**The loud car accident moves to day 2.** Asked on the board whether the car accident (a hard seal
-that emits, `docs/EVENTS.md`'s `car_accident` row, placed from day 1 and day 1's largest crying loss)
-comes off day 1, the player: "yes, let's keep things light on day 1. move it to day 2"
-(minty-dolphin #834). Its first day becomes 2.
-
 **The homeless yeller comes last on day 1.** Asked whether day 2 should teach timing a moving
 obstacle (lesson (e)), the player: "yeller is also a moving obstacle. -- also we can teach multiple
 things in a day if we make things progressively harder. we could teach the yeller on day 1 but after
@@ -36,6 +31,17 @@ the one before. *Proposed, not asked for:* the yeller placed where she has to ti
 his beat rather than walk wide of him.
 
 ## The tutorial route
+
+**The route itself exists; its lessons are what is open.** `TutorialRoute`
+(`src/routes/tutorial_route.gd`) works out day 1's tutorial route once from the city: the
+doorstep's street, then five lesson streets (six where no five-street route keeps every rule), then
+the tutorial park. Day 1's tree is grown with it, and the seals close every side street and
+through-alley off it past its first block, so no valid route leaves it there (gentle-owl #1253;
+`docs/CITY.md`, "How the corridor is built" and "Sealing the tree"). `DayStreets.tutorial_route()`
+hands it to every reader on the day whose spec walks it (`DaySpec.walks_the_tutorial()`). What this
+item still asks is the lessons on it: each lesson's row stood in its place along the route at dawn,
+the route's other locations past its first block left empty, and the director's handouts held on
+the route before the park (the design's "the lessons on the route").
 
 **Placed at dawn on the way to the park, ordinary placement elsewhere.** Said while placement by
 construction (the design review's) was being built: "so for the day 1 tutorial we do static placement of
@@ -62,33 +68,3 @@ orchestrator's sketch, which the player's words name only by number; each list a
 before the answer it drew, gentle-owl #1253): the market stall on the far
 sidewalk as the noise passed wide, and the dog walker coming toward her on her own sidewalk as the
 one with less room.
-
-**Closed off past its first block.** Asked how many streets the walk to the close park offers and
-whether day 1 guarantees them, the player, on the orchestrator's proposal of a park exactly 5
-streets out, one street per lesson from (2) to (6): "okay, we can make it even more guaranteed and
-seal off the tutorial route except for the first block (so other routes can be placed)", then "so
-every side street after the first one on the tutorial route has blocking obstacles and no
-branching", then "doesn't have to be a full hard seal -- street can be open -- just both sidewalks
-need to be blocked -- no valid route goes off of the tutorial route past the first block"
-(gentle-owl #1253). **Read as:** each side street off the tutorial route past its first block
-carries a soft seal, both sidewalks blocked and the carriageway open, so no valid route leaves the
-tutorial route past its first block; on the first block she can still turn off, and the day's other
-routes start there with every guarantee they have (two cost-free routes, the day winnable). Past
-its first block no valid route gives a shortcut that skips a lesson, so the route need not be the
-shortest walk to its park. She can still leave it there in the road, round a soft seal, since the
-carriageway stays open: the back-to-the-route bubble (`thought-bubbles.md`) and the cars starting
-once she is a full block off the route (`car-free-start.md`) hold wherever she leaves it.
-*Proposed, not asked for:* the soft seals are day 1's own soft-seal rows, `skip` facing
-`scaffolding` and `moving_van`, both scripted from day 1 (`docs/EVENTS.md`), with the delivery van
-and the café tables as further day-1 candidates; not the market stall, which is lesson (2)'s
-proposed noise source, so a stall sealing a side street would blur that lesson. The count of 5
-streets is the orchestrator's.
-
-**Measured** (120 seeds, day 1's street network, a street counted as one segment between junctions,
-the doorstep's own segment included, as the note records it), of calm areas, parks, zones, squares
-and courtyards counted together, by their shortest walk from the door: the nearest is 3 streets out
-on 107 seeds and 4 on 13; every one of the 120 seeds has one whose shortest walk is 5 or 6 streets;
-113 of them have one at exactly 5. **Inferred, not measured:** since the sealed route need not be the
-shortest walk, a 5-street tutorial route exists on every seed, the 7 seeds with no calm area at
-exactly 5 by a longer walk to a nearer one. The probe did not count parks apart from the other calm
-areas, nor 5-street walks that are not the shortest; both are the builder's to count.

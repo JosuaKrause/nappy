@@ -60,7 +60,7 @@ func _the_return_days_director(map: CityMap, seed_value: int) -> EventDirector:
 		var plan_rng := RandomNumberGenerator.new()
 		plan_rng.seed = 23
 		_plans = GameDawn.of(DaySpec.for_day(RETURN_DAY), plan_rng, map) \
-				.on(RouteTree.for_day(map, RETURN_DAY)).plan().placements()
+				.on(RouteTree.for_day(map, RETURN_DAY, null)).plan().placements()
 	var plans := _plans
 	var director := EventDirector.new(map)
 	var rng := RandomNumberGenerator.new()

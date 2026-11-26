@@ -173,7 +173,7 @@ func _plan(seed: int, day: int) -> _Built:
 	var state := CityState.new()
 	state.begin_day(built.map.plans_by_block(), day)
 	built.map.repaint(state)
-	built.tree = RouteTree.for_day(built.map, day)
+	built.tree = RouteTree.for_day(built.map, day, null)
 	built.lines = RouteLines.new()
 	built.lines.setup(built.map)
 	built.lines.refresh(built.tree)

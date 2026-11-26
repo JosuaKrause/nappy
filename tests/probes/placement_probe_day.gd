@@ -61,7 +61,7 @@ func _prepare(tag: String, parent: Node) -> void:
 	var state := CityState.new()
 	state.begin_day(map.plans_by_block(), _day)
 	map.repaint(state)
-	_tree = RouteTree.for_day(map, _day)
+	_tree = RouteTree.for_day(map, _day, null)
 	_spec = DaySpec.for_day(_day)
 	# The day's own closures, holds, region wall and seals, planned as the game plans them
 	# (`City.start_day()`, `DayPlanner._plan_a_day()`), so the seals and the wall's bodies

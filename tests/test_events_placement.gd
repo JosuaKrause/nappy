@@ -33,6 +33,11 @@ extends "res://tests/events_shared_city.gd"
 ## (`_planned_on_the_route()`), and the flock case and the corner-refusal case read the shared
 ## city's days (`_planned()`), which the planning of a day leaves as it was (it spends nothing).
 ##
+## **Day 1 here grows the ordinary tree**, deliberately: these sweeps hand `RouteTree.for_day()` no
+## tutorial route, since what each asks is a rule over any day's tree; the tree day 1 grows in
+## the game, along the tutorial route, is held by `tests/test_seals.gd` and
+## `tests/test_events_scheduler.gd`'s day-1 case (`_test_day_one_on_the_tutorial_tree`).
+##
 ## **Why a real city is built here.** This is not a direct test of the city: these cases ask what the
 ## dawn plans on a generated city (where a day's rows were placed), so they need a city and a planned
 ## day. The dawn's group handed each dawn the city's mast sites and shared one plan between the cases
@@ -168,7 +173,7 @@ func _test_the_day_is_placed_by_role(t: TestRunner) -> void:
 		var state := CityState.new()
 		state.begin_day(map.plans_by_block(), day)
 		map.repaint(state)
-		var tree := RouteTree.for_day(map, day)
+		var tree := RouteTree.for_day(map, day, null)
 		var corridor := Corridor.of(tree)
 		for key in tree.gaps():
 			gaps["%d:%s" % [day, key]] = true
@@ -311,7 +316,7 @@ func _test_friction_on_a_sidewalk_can_be_walked_past(t: TestRunner) -> void:
 	var checked := 0
 	for day: int in [8, 14]:
 		var map := _repainted_city(day)
-		var corridor := Corridor.of(RouteTree.for_day(map, day))
+		var corridor := Corridor.of(RouteTree.for_day(map, day, null))
 		for def in CatalogueRows.every():
 			if not def.stands_on(GameEnums.TileType.SIDEWALK) or def.paces_a_beat():
 				continue
@@ -354,7 +359,7 @@ func _test_friction_on_a_sidewalk_can_be_walked_past(t: TestRunner) -> void:
 		var placed_on := 0
 		for day: int in cities:
 			var map: CityMap = cities[day]
-			var role := _role_it_places_as(def, day, map, Corridor.of(RouteTree.for_day(map, day)))
+			var role := _role_it_places_as(def, day, map, Corridor.of(RouteTree.for_day(map, day, null)))
 			if role == -1:
 				continue
 			placed_on += 1
@@ -497,7 +502,7 @@ func _test_the_square_poster_crew_only_ever_stands_on_a_square(t: TestRunner) ->
 			var state := CityState.new()
 			state.begin_day(map.plans_by_block(), day)
 			map.repaint(state)
-			var tree := RouteTree.for_day(map, day)
+			var tree := RouteTree.for_day(map, day, null)
 			var corridor := Corridor.of(tree)
 			var ground := EventScheduler.row_ground(map, corridor)
 			var offered := ground.tiles_for(def)
@@ -628,7 +633,7 @@ func _test_a_recipes_drawn_row_keeps_its_route_on_its_run(t: TestRunner) -> void
 			var state := CityState.new()
 			state.begin_day(map.plans_by_block(), day)
 			map.repaint(state)
-			var corridor := Corridor.of(RouteTree.for_day(map, day))
+			var corridor := Corridor.of(RouteTree.for_day(map, day, null))
 			var locations := DayLocations.lay_out(map, corridor)
 			var ground := EventScheduler.row_ground(map, corridor)
 			var offered := ground.tiles_for(def)
@@ -714,7 +719,7 @@ func _test_a_pacing_row_on_the_routes_sidewalk_can_be_left(t: TestRunner) -> voi
 			var state := CityState.new()
 			state.begin_day(map.plans_by_block(), day)
 			map.repaint(state)
-			var tree := RouteTree.for_day(map, day)
+			var tree := RouteTree.for_day(map, day, null)
 			var corridor := Corridor.of(tree)
 			for plan in _planned_on_the_route(map, sites, day, tree):
 				if not plan.paces_a_beat() or not plan.counts_against_the_line():
@@ -825,7 +830,7 @@ func _test_a_routes_junctions_stay_clear(t: TestRunner) -> void:
 		var state := CityState.new()
 		state.begin_day(map.plans_by_block(), day)
 		map.repaint(state)
-		var tree := RouteTree.for_day(map, day)
+		var tree := RouteTree.for_day(map, day, null)
 		var corridor := Corridor.of(tree)
 		var counted: Array[EventPlan] = []
 		for plan in _planned_on_the_route(map, sites, day, tree):
@@ -963,7 +968,7 @@ func _test_nothing_takes_the_routes_own_sidewalk(t: TestRunner) -> void:
 		var state := CityState.new()
 		state.begin_day(map.plans_by_block(), day)
 		map.repaint(state)
-		var tree := RouteTree.for_day(map, day)
+		var tree := RouteTree.for_day(map, day, null)
 		var corridor := Corridor.of(tree)
 		var counted: Array[EventPlan] = []
 		for plan in _planned_on_the_route(map, sites, day, tree):
@@ -1047,7 +1052,7 @@ func _test_a_pacing_rows_opening_stays_open(t: TestRunner) -> void:
 		var state := CityState.new()
 		state.begin_day(map.plans_by_block(), day)
 		map.repaint(state)
-		var tree := RouteTree.for_day(map, day)
+		var tree := RouteTree.for_day(map, day, null)
 		var corridor := Corridor.of(tree)
 		var counted: Array[EventPlan] = []
 		for plan in _planned_on_the_route(map, sites, day, tree):
@@ -1154,7 +1159,7 @@ func _test_a_flock_is_scenery(t: TestRunner) -> void:
 	var off_corridor := 0
 	var map := _map()
 	for day: int in [1, 4, 8, 11, 14]:
-		var corridor := Corridor.of(RouteTree.for_day(map, day))
+		var corridor := Corridor.of(RouteTree.for_day(map, day, null))
 		for plan in _planned(day):
 			if plan.row_id() != "pigeon_flock" or not plan.is_placed():
 				continue
@@ -1337,7 +1342,7 @@ func _test_nothing_the_catalogue_places_stands_on_held_ground(t: TestRunner) -> 
 			var state := CityState.new()
 			state.begin_day(map.plans_by_block(), day)
 			map.repaint(state)
-			var tree := RouteTree.for_day(map, day)
+			var tree := RouteTree.for_day(map, day, null)
 			var region_plan := RegionPlanner.plan_day(map, DaySpec.for_day(day), tree)
 			var closure_rng := RandomNumberGenerator.new()
 			closure_rng.seed = hash("closures:%d:%d" % [map.city_seed(), day])
@@ -1453,7 +1458,7 @@ func _test_no_body_closes_a_walked_sidewalk(t: TestRunner) -> void:
 			var state := CityState.new()
 			state.begin_day(map.plans_by_block(), day)
 			map.repaint(state)
-			var tree := RouteTree.for_day(map, day)
+			var tree := RouteTree.for_day(map, day, null)
 			var region_plan := RegionPlanner.plan_day(map, DaySpec.for_day(day), tree)
 			var closure_rng := RandomNumberGenerator.new()
 			closure_rng.seed = hash("closures:%d:%d" % [map.city_seed(), day])

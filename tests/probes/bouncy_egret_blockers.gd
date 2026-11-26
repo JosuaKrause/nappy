@@ -59,7 +59,7 @@ func _count_day(map: CityMap, day: int) -> Dictionary:
 	var state := CityState.new()
 	state.begin_day(map.plans_by_block(), day)
 	map.repaint(state)
-	var tree := RouteTree.for_day(map, day)
+	var tree := RouteTree.for_day(map, day, null)
 	var region_plan := RegionPlanner.plan_day(map, DaySpec.for_day(day), tree)
 	var closures := ClosurePlanner.plan_day(map, DaySpec.for_day(day),
 			_rng(map, day, "closures"), tree, region_plan)
