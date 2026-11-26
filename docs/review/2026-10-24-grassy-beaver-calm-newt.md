@@ -19,5 +19,8 @@ her on that same street, after which the day runs at its ordinary pace.
 The question a run answers: does each lesson read as one thing after another, does the stall teach
 passing a noise wide as the leaf blower was meant to, does the yeller still read as the last lesson
 one street short of the park, and does the empty route with nothing sent along it feel authored or
-merely empty. A choice that does not read is overturned to the plainer alternative the record
+merely empty. On seed 4431 the yeller paces onto the zebra of the fifth lesson, the crossing with
+cars, so she meets him on the crossing rather than after it (the bursts in
+`docs/evidence/grassy-beaver-lessons-on-the-route-2026-11-26/`): whether the two still read as two
+lessons there is part of the same question. A choice that does not read is overturned to the plainer alternative the record
 names, and that goes to the board as its own decision.

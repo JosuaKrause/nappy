@@ -115,8 +115,11 @@ street is refused by the calm rule, and an earlier street would put him before l
 player's order. On those days day 1 teaches fewer lessons. A lesson that cannot stand is not placed, and the run log
 says so.
 
-Each lesson's row in the game on seed 4431, and lesson (3)'s dog walker meeting her on its street,
-is in `docs/evidence/grassy-beaver-lessons-on-the-route-2026-11-26/`.
+Each lesson's row in the game on seed 4431, lesson (3)'s dog walker meeting her on its street, and
+bursts of her walk from lesson (4)'s zebra over lesson (5)'s and past the yeller are in
+`docs/evidence/grassy-beaver-lessons-on-the-route-2026-11-26/`. On that seed the yeller's beat
+reaches lesson (5)'s zebra, so she meets him on the crossing with cars, and in one of the runs a car
+sounds its horn at her there; how often the two lessons meet on one spot is not measured.
 
 ## Not done here
 

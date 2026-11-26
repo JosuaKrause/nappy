@@ -779,7 +779,9 @@ static func _rigged_walk(just_ahead: bool) -> Dictionary:
 
 ## **A tutorial route whose answers the test sets** (`TutorialRoute`): the whole street is the
 ## route, the tiles north of `PARK_ROW` are its park, and lesson (3)'s street is the stretch from
-## `LESSON_ROWS.x` to `LESSON_ROWS.y`.
+## `LESSON_ROWS.x` to `LESSON_ROWS.y`, which she comes to on that stretch alone either way she
+## walks, and past which, north, the route runs on toward the park. It has no way along the street
+## (`way_toward_her_along()` answers empty), so the dog walker is sent down her line.
 class FakeTutorialRoute extends TutorialRoute:
 	func _init() -> void:
 		super(null, null, [] as Array[StreetNetwork.Segment], [] as Array[Vector2i],
@@ -794,6 +796,17 @@ class FakeTutorialRoute extends TutorialRoute:
 	func is_on_lesson(lesson: TutorialRoute.Lesson, tile: Vector2i) -> bool:
 		return lesson == TutorialRoute.Lesson.NOISE_WITH_LESS_ROOM \
 				and tile.y >= LESSON_ROWS.x and tile.y < LESSON_ROWS.y
+	## Overrides TutorialRoute.is_coming_to_lesson.
+	func is_coming_to_lesson(lesson: TutorialRoute.Lesson, tile: Vector2i,
+			_homeward := false) -> bool:
+		return is_on_lesson(lesson, tile)
+	## Overrides TutorialRoute.lies_toward_the_park.
+	func lies_toward_the_park(lesson: TutorialRoute.Lesson, tile: Vector2i) -> bool:
+		return lesson == TutorialRoute.Lesson.NOISE_WITH_LESS_ROOM and tile.y < LESSON_ROWS.y
+	## Overrides TutorialRoute.way_toward_her_along.
+	func way_toward_her_along(_lesson: TutorialRoute.Lesson,
+			_homeward := false) -> PackedVector2Array:
+		return PackedVector2Array()
 
 ## The row north of which the fake route's park lies.
 const PARK_ROW := 6
@@ -814,9 +827,11 @@ static func _day_one(map: CityMap, route: TutorialRoute) -> EventDirector:
 	director.start_day(1, plans, rng, DaySpec.DirectorSends.THE_DAYS_ROWS)
 	return director
 
-## What the director hands out with her at `tile` walking north, after `seconds` of walking.
-static func _handed_at(director: EventDirector, tile: Vector2i, seconds := 30.0) -> String:
-	var due := director.due(seconds, _turned(tile, true), Vector2.UP * Tuning.WALK_SPEED)
+## What the director hands out with her at `tile` walking `way` (north unless given), after
+## `seconds` of walking.
+static func _handed_at(director: EventDirector, tile: Vector2i, seconds := 30.0,
+		way := Vector2.UP) -> String:
+	var due := director.due(seconds, _turned(tile, true), way * Tuning.WALK_SPEED)
 	return (due[0] as EventDef).id() if due.size() >= 2 else ""
 
 ## **On the tutorial route before the park, the director sends lesson (3)'s dog walker and nothing
@@ -836,15 +851,23 @@ func _test_on_the_tutorial_route_only_lesson_threes_dog_walker_comes(t: TestRunn
 		after += _handed_at(director, Vector2i(4, 20))
 	t.check(after == "", "and nothing else on the route before the park (%s)" % after)
 
-## **Once she has stood in the tutorial park the hold ends**, and the first handout on her walk
-## home is the rig's second dog walker: day one's two dog walkers (PLAYTEST-05 6) are lesson (3)'s
-## and that one.
+## **Once she has stood in the tutorial park, the first handout on her walk home is the rig's
+## second dog walker, on lesson (3)'s street**: the route between the park and that street is still
+## held, so nothing comes before it, and homeward of it the hold is over. Day one's two dog walkers
+## (PLAYTEST-05 6) are lesson (3)'s and that one.
 func _test_after_the_park_the_second_dog_walker_comes_first(t: TestRunner) -> void:
 	var director := _day_one(_street(), FakeTutorialRoute.new())
 	_handed_at(director, HER, 0.1)
 	director.due(0.1, _turned(Vector2i(4, PARK_ROW - 2), true), Vector2.ZERO)
-	t.check(_handed_at(director, Vector2i(4, 60)) == "dog_walker",
-			"the first handout on the walk home is the second dog walker")
+	var between := ""
+	for _i in 5:
+		between += _handed_at(director, Vector2i(4, 20), 30.0, Vector2.DOWN)
+	t.check(between == "", "nothing is handed out between the park and lesson (3)'s street (%s)"
+			% between)
+	t.check(_handed_at(director, HER, 0.1, Vector2.DOWN) == "dog_walker",
+			"the first handout on the walk home is the second dog walker, on lesson (3)'s street")
+	t.check(_handed_at(director, Vector2i(4, 60), 30.0, Vector2.DOWN) != "",
+			"and homeward of that street the bag runs on the clock")
 
 ## **An ordinary day 1, with no tutorial route, is not held**: the first handout comes on the
 ## clock's turn wherever she walks.
