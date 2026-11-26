@@ -136,7 +136,7 @@ func _test_an_onscreen_but_far_mark_is_not_seen_and_still_relocates(t: TestRunne
 	# The mark's own picture on screen and nothing else: its corners are 23px from its centre,
 	# and its guard stands at least 62px from it, so a relocation is never held back for him.
 	_look_at(Rect2(mark_at - Vector2(20.0, 20.0), Vector2(40.0, 40.0)))
-	director.set_sight(RunCity.events(_city).sees)
+	director.set_sight(RunCity.events(_city).visible_view())
 
 	var far_alley := _alley_farther_than(ResistanceDirector.NOTICE_RADIUS, mark_at)
 	t.check(far_alley != Vector2.INF, "the test city has an alley far from the mark")
@@ -213,7 +213,7 @@ func _test_a_relocated_mark_never_lands_where_she_can_see_it_appear(t: TestRunne
 	var player := _rig_player(t, _outside_the_alley_at(far_alley))
 	director.use_player(player)
 	_look_at(Rect2(raw_nearest - Vector2(0.5, 0.5), Vector2.ONE))
-	director.set_sight(RunCity.events(_city).sees)
+	director.set_sight(RunCity.events(_city).visible_view())
 
 	director.tick(STEP)
 	var new_at := director.contact_position()
@@ -319,7 +319,7 @@ func _test_a_mark_under_a_covered_corner_is_not_noticed(t: TestRunner) -> void:
 		t.check(view.sees(mark_at) != joystick,
 				"the actual camera view covers the mark only in joystick mode")
 		RunCity.events(_city).visible_view().look(view.camera_view(), TouchCover.joystick() if joystick else null)
-		director.set_sight(RunCity.events(_city).sees)
+		director.set_sight(RunCity.events(_city).visible_view())
 		var player := _rig_player(t, her)
 		director.use_player(player)
 		for i in ceili((ResistanceDirector.SEEN_DWELL_SECONDS + 0.5) / STEP):
@@ -345,7 +345,7 @@ func _test_a_mark_under_a_covered_corner_is_not_noticed(t: TestRunner) -> void:
 ## **Nothing the resistance places appears under a covered corner** *(olive-hedgehog, inbox #598, the
 ## player: "off screen is not the same as visible -- the corners get removed for visible not for
 ## off screen" · "I don't want any pop in")*. Joystick scheme, asked through the day's own view as
-## `main` wires it (`EventManager.sees()` for the notice):
+## `main` wires it (`EventManager.visible_view()` for the notice):
 ## **a relocation to a mouth under the bottom-left corner is refused.** For each mark tile of the
 ## test city, its mark's picture laid at several places inside the corner, she stands where the view
 ## would put it there; a case is kept where, with the view nowhere near, her tick moves the mark onto
@@ -358,7 +358,7 @@ func _test_nothing_appears_under_a_covered_corner(t: TestRunner) -> void:
 	var events := RunCity.events(_city)
 	var player := _rig_player(t, director.contact_position())
 	director.use_player(player)
-	director.set_sight(events.sees)
+	director.set_sight(events.visible_view())
 	var scale := Tuning.VIEW_HALF_EXTENT * 2.0 / ScreenOrientation.DESIGN_SIZE
 	var corner := TouchCover.joystick().left_corner()
 	var corner_at := corner.position * scale
@@ -432,7 +432,7 @@ func _test_the_neighbor_is_not_taken_under_a_covered_corner(t: TestRunner) -> vo
 		events.visible_view().look(Rect2(view_at, Tuning.VIEW_HALF_EXTENT * 2.0), TouchCover.joystick())
 		t.check(Rect2(view_at, Tuning.VIEW_HALF_EXTENT * 2.0).has_point(at) and not events.sees(at),
 				"the neighbor stands in the view, under the covered corner")
-		late.set_sight(events.sees)
+		late.set_sight(events.visible_view())
 		late.tick(STEP)
 		t.check(not _said(lines, "taken with the raid") and is_instance_valid(walker)
 				and not walker.is_gone(),
@@ -457,7 +457,7 @@ func _test_the_neighbor_waits_until_none_of_their_figure_shows(t: TestRunner) ->
 		var late := _director_on_the_neighbor(t)
 		var lines: Array[String] = []
 		late.use_trace(RecordingTrace.new(lines))
-		late.set_sight(events.sees)
+		late.set_sight(events.visible_view())
 		var walker := late.rider()
 		t.check(walker != null, "%s scheme: the neighbor is walking home" % scheme)
 		if walker:
@@ -575,7 +575,7 @@ func _test_a_mark_seen_for_the_dwell_time_within_range_never_moves_again(t: Test
 			% [offered])
 	var mark_at := director.contact_position()
 	_look_at(Rect2(-1.0e6, -1.0e6, 2.0e6, 2.0e6))
-	director.set_sight(RunCity.events(_city).sees)
+	director.set_sight(RunCity.events(_city).visible_view())
 
 	# Within SEEN_DISTANCE the whole time, never merely "on screen".
 	var near_at := mark_at + Vector2(ResistanceDirector.SEEN_DISTANCE - 20.0, 0.0)

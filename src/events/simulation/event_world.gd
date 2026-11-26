@@ -34,14 +34,15 @@ var _day := 0
 ## (`work_out_mast_sites()`) and handed to every dawn after (`mast_sites()`); none before.
 var _mast_sites: Array[MastSites.Site] = []
 ## What she can see this frame — the one answer to "can she see it" for everything on a day
-## (`VisibleView`): the screen-edge badge, the placing of what arrives from off screen, the fire's
-## sighting, a chalk mark's notice (`ResistanceDirector.set_sight()`, wired to
-## `EventManager.sees()` by `main`), the poster crews, the page's counter, and a charger already in
-## the world or a vehicle letting men out, which warn only in sight (`WhereSheIs.view()`, which
-## `EventManager` tells it each tick). What the resistance
-## places and removes asks the siting's `DRAWING_OFF_THE_VIEW` of the same view instead. One instance for
-## the day, never replaced, so a caller may keep it. Set at the top of each physics tick by
-## `EventManager._look_through_the_camera()`. Asked as `visible_view()`.
+## (`VisibleView`): the screen-edge badge, the placing of what arrives from off screen, the
+## fire's sighting, a chalk mark's notice and day 13's task guard's warning
+## (`ResistanceDirector.set_sight()`, handed `EventManager.visible_view()` by `main`), the
+## poster crews, the page's counter, and a charger already in the world or a vehicle letting men
+## out, which warn only in sight (`WhereSheIs.view()`, which `EventManager` tells it each tick).
+## What the resistance places and removes asks the siting's `DRAWING_OFF_THE_VIEW` of the same
+## view instead. One instance for the day, never replaced, so a caller may keep it. Set at the
+## top of each physics tick by `EventManager._look_through_the_camera()`. Asked as
+## `visible_view()`.
 var _visible := VisibleView.new()
 
 ## Today's streets (`streets()`), handed in by `EventManager.setup()`; null where the world is

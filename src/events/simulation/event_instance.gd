@@ -799,7 +799,9 @@ var _notice := Warning.new()
 ## on a notice, so whether it has begun is the record's `began`.
 var _charge: ChargeRecord
 ## **A checkpoint hut's guard raising his hand**: true while a crossing of this hut's door is
-## warning her and this hut is the one across the road from her, or this alley post's
+## warning her and this hut is the one whose guard warns her
+## (`CheckpointController._hut_that_warns()`: across the road from her, or the nearer where that
+## hand would be hidden from her), or this alley post's
 ## (`CheckpointController.warn_at_the_doors()`, which sets it every frame, through
 ## `raise_its_guards_hand()`); once the crossing's warning has run with her still across, this hut's
 ## guard comes out and charges at once (`PursuitSpec.Start.CHARGES_AT_ONCE`). Drawn with
@@ -2432,6 +2434,16 @@ func raise_its_guards_hand(on: bool) -> void:
 ## Whether its guard has his hand raised at her (`raise_its_guards_hand()`).
 func is_its_guard_warning() -> bool:
 	return _guard_warns_her
+
+## **Where its guard stands**, in world px: a checkpoint hut's beside the hut on the pavement
+## (`EventFootprints.hut_guard_beside()`, where `CheckpointLook` draws him), anyone else's, an alley
+## post's, on its own place. Where the hand he raises at her stands
+## (`CheckpointController`, which raises only a hand she can see all of).
+func its_guards_feet() -> Vector2:
+	if _def.picture() != EventDef.Look.CHECKPOINT_HUT:
+		return global_position
+	return global_position + EventFootprints.hut_guard_beside(
+			EventFootprints.hut_doorway(_map, global_position))
 
 ## Whether it is a mast that has been reached and silenced (`silence()`): it still stands, with no
 ## arcs and no field.

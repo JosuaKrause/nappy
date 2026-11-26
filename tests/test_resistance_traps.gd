@@ -451,7 +451,7 @@ func _test_a_trap_rechecks_the_camera_when_its_warning_expires(t: TestRunner) ->
 		camera.global_position = her
 		var view := RunCity.events(_city).visible_view()
 		view.look(Rect2(her - Tuning.VIEW_HALF_EXTENT, Tuning.VIEW_HALF_EXTENT * 2.0), TouchCover.joystick() if joystick else null)
-		director.set_sight(RunCity.events(_city).sees)
+		director.set_sight(RunCity.events(_city).visible_view())
 		# The note handed over where the contact stands: its trap is sent at her from there.
 		director.contact().complete_now()
 		var warning := _warning_for(RunCity.events(_city), "robber_giving_chase")

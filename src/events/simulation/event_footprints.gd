@@ -226,6 +226,32 @@ static func raised_hand_rect(feet: Vector2) -> Rect2:
 
 static var _warning_guard := Vector2.ZERO
 
+## **Which way a checkpoint hut standing at `at` on `map` has its doorway**: facing the carriageway,
+## read off `WorldMap.pavement_inward()` at the tile it stands on rather than stored, since the
+## placement never turns. It is the geometry every other row that cares which way a pavement faces
+## asks — `EventDef.Pavement.AGAINST_THE_BUILDING`'s own facing is `-pavement_inward`, and the
+## doorway faces the carriageway for the same reason a lorry backing into a yard faces out of the
+## wall behind it. `Vector2i.DOWN` (south) off a pavement or on no map, the harmless default open
+## ground gets.
+static func hut_doorway(map: WorldMap, at: Vector2) -> Vector2i:
+	if map == null:
+		return Vector2i.DOWN
+	var inward := map.pavement_inward(map.world_to_tile(at))
+	if inward != Vector2i.ZERO:
+		return -inward
+	return Vector2i.DOWN
+
+## **Where a checkpoint hut's guard stands, from the hut's own place**, for a hut whose doorway is
+## `doorway` (`hut_doorway()`): posted beside it on the pavement rather than in the doorway, offset
+## along one axis by the doorway's turn so the two never overlap whichever of the four the doorway
+## is. Where `CheckpointLook` draws him and where his raised hand stands
+## (`EventInstance.its_guards_feet()`).
+static func hut_guard_beside(doorway: Vector2i) -> Vector2:
+	return Vector2(0.0, HUT_GUARD_BESIDE) if doorway.x == 0 else Vector2(HUT_GUARD_BESIDE, 0.0)
+
+## How far from a checkpoint hut's own place its guard stands (`hut_guard_beside()`), in px.
+const HUT_GUARD_BESIDE := 22.0
+
 # ------------------------------------------------------------------- the hold ---
 
 ## Whether a checkpoint's own hold suppresses *every* drawing of `event`, halo included.

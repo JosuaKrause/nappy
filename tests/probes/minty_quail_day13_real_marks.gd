@@ -167,7 +167,7 @@ func _read_the_mark_at(city: City, director: ResistanceDirector, player: Strolle
 	RunCity.events(city).stream_around(at)
 	RunCity.events(city).visible_view().look(Rect2(at - Tuning.VIEW_HALF_EXTENT,
 			Tuning.VIEW_HALF_EXTENT * 2.0), null)
-	director.set_sight(RunCity.events(city).sees)
+	director.set_sight(RunCity.events(city).visible_view())
 	var step := _roadblock_step()
 	director._step = step
 	var def := EventCatalogue.by_id(step.task_event_id)

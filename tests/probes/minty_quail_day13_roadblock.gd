@@ -98,7 +98,7 @@ func _read_the_mark_at(city: City, director: ResistanceDirector, player: Strolle
 	player.global_position = at
 	RunCity.events(city).visible_view().look(Rect2(at - Tuning.VIEW_HALF_EXTENT,
 			Tuning.VIEW_HALF_EXTENT * 2.0), null)
-	director.set_sight(RunCity.events(city).sees)
+	director.set_sight(RunCity.events(city).visible_view())
 	var spent := {}
 	for plan in RunCity.events(city).plans():
 		spent[plan] = plan.is_spent()

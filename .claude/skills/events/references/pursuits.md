@@ -15,9 +15,11 @@ her in her view when she comes close before it charges by its own rule (below). 
 on-screen charger starts only in her view**: a waiting charger notices her only with all of its
 warning picture in sight, a vehicle stops for her only where it and its men would stand whole in
 sight (`EventInstance._would_stand_in_her_view()`, `VisibleView.sees_all()`: the camera's view
-less, in the joystick scheme, the two bottom corners its controls cover; feathery-lynx #581), and
-day 13's guard set on her out of it is
-sent as an off-screen charger instead. A charger that fits neither kind is fixed by such a check,
+less, in the joystick scheme, the two bottom corners its controls cover; feathery-lynx #581), day
+13's guard set on her warns in place only with all of his warning in sight, is sent as an
+off-screen charger only once he is wholly off the camera's view, and waits in between
+(`ResistanceDirector._set_the_task_guard_on_her()`), and a door's crossing is warned of by the hut
+guard whose raised hand is all in sight (`CheckpointController._hut_that_warns()`). A charger that fits neither kind is fixed by such a check,
 never by a badge.
 
 **Three things bind a change to any pursuer, and `SKILL.md`, "The telegraph fairness contract",
@@ -70,7 +72,8 @@ on, and verifying escape with the actual Baby meter.
   in minty-lemur), so a clock before he runs is no heads-up she can see.
 - **The checkpoint guard is the one pursuer exempt from the stand-off, by the player's choice**
   (inbox #764 in minty-lemur, inbox #788 in minty-lemur). His warning comes before he exists — from the frame she crosses a
-  door's line, the hut's guard across the road (or the post's) raises his hand for every
+  door's line, the hut's guard across the road (or the post's; the nearer hut's where the far one's
+  hand would not be all in sight) raises his hand for every
   charger's warning (`ChargerTiming.warning()`); back across first, it is called off — and once it has run with her
   still across he charges from that hut or post, inside his own stand-off
   (`PursuitSpec.Start.CHARGES_AT_ONCE`: no notice of his own, telegraph 0). So his charge is not met at the

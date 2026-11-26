@@ -43,7 +43,7 @@ each setting of the row means; a part a row says nothing of holds that part's pl
 | `pursuit` | A `PursuitSpec`, or null for a row that does not pursue: it comes after **her** rather than along a path, at its `speed`, strictly between a walk and a run — the one thing running is the answer to, see `Tuning.validate_pursuit`. Its fields: |
 | `pursuit.start()` | How its chase begins. `NOTICES` (the default): one that waits for her (`notice`) warns inside its one radius and charges if she is still inside once `PursuitSpec.warns_for()` has run; one with no notice closes on her through its telegraph and lunges at its stand-off (the day-3 dog). `SETS_OFF_BESIDE_HER`: put down inside its own stand-off to charge her (the men an investigating vehicle lets out, `EventCatalogue.out_of_the_car()`), so it never lunges early, never backs off, holds its ground and charges when its notice has run its whole length, owed the badge's `Tuning.OFFSCREEN_WARNING_MIN` rather than an approach's `PURSUIT_MIN_NOTICE`. `CHARGES_AT_ONCE`: charges from its first frame because its warning came before it was set on her (`door_guard`, after the hut guard's raised hand for the warning every charger keeps, `ChargerTiming.warning()`, "Checkpoints"); its `telegraphs_for()` is 0 and it owes no notice of its own. `ARRIVES_CHASING`: warned of by its badge alone and created already chasing her (the robber and the guard a done task sends) |
 | `pursuit.warns_for()` | How long a pursuer that waits for her warns before it charges, in seconds: from the frame it notices her inside its one radius (along a clear line, its warning in her view), back outside it before this has run it stops warning and waits again, still inside it charges (the instance's own notice time, `EventInstance`'s private `_notice_time()`). `EventCatalogue.CHARGER_WARNING` (1.75s), played through the run's `ChargerTiming`, for the waiting dog, the alley robber and the hunting roadblock's guard — see "Every charger that does not arrive charging warns first" |
-| `pursuit.stands_for_its_notice()` | Whether a pursuer that noticed her **stands still for its notice**, turned to her in its alert pose, instead of closing on her (woolly-penguin #748). Only the closing stops: one set off beside her lunges as it would, and one that waited for her charges on its warning's clock, as every waiting charger does. Read only on an instance that waited for her or set off beside her, so the day-3 dog, whose telegraph is its approach, still comes. `charging_dog`, the roadblock's hunting copy and the men an investigating vehicle lets out stand, and day 13's task guard stands for the second his task gives him in her view; `alley_robbery` does not |
+| `pursuit.stands_for_its_notice()` | Whether a pursuer that noticed her **stands still for its notice**, turned to her in its alert pose, instead of closing on her (woolly-penguin #748). Only the closing stops: one set off beside her lunges as it would, and one that waited for her charges on its warning's clock, as every waiting charger does. Read only on an instance that waited for her or set off beside her, so the day-3 dog, whose telegraph is its approach, still comes. `charging_dog`, the roadblock's hunting copy and the men an investigating vehicle lets out stand, and day 13's task guard stands for the second his task gives him in her sight; `alley_robbery` does not |
 | `pursuit.walk_speed()` | How fast it walks at her through its notice, when that is slower than its chase: the alley robber's 40px/s, so his alert walk is seen. `0` closes at `speed` |
 | `pursuit.lunge_reach()` | Where its lunge is measured from when that is **not** its catch. `0` — every pursuer but the alley robber and the man who comes at her from his row — means the catch, and `standoff_reach()` is what every stand-off caller asks. The alley robber catches at 26px but lunges from 38px, so his stand-off is 116px and the room between his lunge and his catch is 90px. `EventDef.validate()` refuses a `PursuitSpec.lunge_reach()` inside the row's own catch (`lunge_is_inside_the_catch()`), since that stand-off would leave her less than `PURSUIT_REACTION` of his approach |
 | `lethal()` on a pursuer | How close the man has to get to catch her, when that is **not** the field's own core: `LethalSpec.within(reach)`. Unset, the catch is the inner radius, and `lethal_reach()` is what every caller asks. It exists for a pursuer whose killer is not what the field is drawn around: the roadblock's guard catches at a man's reach, not at his band's core — see "The heat" |
@@ -584,7 +584,7 @@ sets what the warning is:
    steps an `EventInstance` directly) notices her by its radius alone.
 2. **A charger that exists only to charge her but does not arrive charging** — the man an
    investigating patrol car or a hunting van lets out, and day 13's task guard set on her in her
-   view — charges whatever she does, and first shows that he is about to: he stands with his hand
+   sight — charges whatever she does, and first shows that he is about to: he stands with his hand
    raised for the off-screen badge's heads-up, `Tuning.WARNING_ALONE_MAX` (1.0s), then charges.
    **A vehicle stops for her only where it and its men would stand whole in her view**
    (`EventInvestigation`, `EventInstance._would_stand_in_her_view()`), at every place a man may get
@@ -597,7 +597,10 @@ sets what the warning is:
    start the timer and if the player goes back no charge happens but if they stay crossed the
    charge will start. Warning starts when the player is crossing")*: the frame she walks across a
    door's line (under a raised boom, or past an alley's post), the guard at the hut across the road
-   from her, or the post's, raises his hand (`CheckpointController._start_the_crossing_warning()`). Back
+   from her, or the post's, raises his hand (`CheckpointController._start_the_crossing_warning()`);
+   where that hand would not be all in her sight, under a corner the joystick's controls cover or
+   past the view's edge, the nearer hut's guard raises his instead (`_hut_that_warns()`), since the
+   warning starts with the crossing and cannot wait for him to come into sight. Back
    across the line before the warning every charger keeps (`ChargerTiming.warning()`, 1.75s) has run, it is called off and nobody
    comes; still across, a `door_guard` steps out of that hut or post and charges at once
    (`PursuitSpec.Start.CHARGES_AT_ONCE`).
@@ -611,16 +614,17 @@ sets what the warning is:
 | `charging_dog` placed on the map (past `RUN_TAUGHT_DAY`) | 1 | Sitting (`charging_dog_resting_*`) | Standing still, alert (`charging_dog_alert_*`), for 1.75s while she is inside its 162.5px radius | Gallop |
 | `alley_robbery`, and the chalk-mark guard drawn from it | 1 | Hood up, hands in his coat (`robber_waiting_*`) | Walking at her at 40px/s in his two-frame alert (`robber_alert_*`), holding at his 116px stand-off, for 1.75s while she is inside his 225px radius | Lunge |
 | `roadblock`'s hunting guard | 1 | Posted at the band (`guard_standing_*`) | Standing at his post with his hand raised (`guard_alert_*`), for 1.75s while she is inside 225px of the band | Lunge |
-| Day 13's task guard once the task sets him on her (`EventInstance.notice_her_at()`) | 2 in her view, 3 out of it | Hood up | In her view, standing in his alert for 1.0s; out of it, taken out unseen and sent as a task's robber is, the badge alone for 1.0s (`EventCatalogue.task_guard_sent()`) | Lunge, or arriving charging |
+| Day 13's task guard once the task sets him on her (`EventInstance.notice_her_at()`) | 2 in her sight, 3 off the view | Hood up | With all of his warning picture in her sight, standing in his alert for 1.0s; wholly off the camera's view, taken out unseen and sent as a task's robber is, the badge alone for 1.0s (`EventCatalogue.task_guard_sent()`); between the two, still waiting until he is one or the other | Lunge, or arriving charging |
 | The man out of an investigating patrol car or a hunting van | 2 | None: he gets out | Standing where he got out, hand raised (`policeman_alert_*` through day 8, `guard_alert_*` from day 9), for 1.0s | Lunge |
-| `door_guard` | Warned at the door | The huts' guards standing at their posts | From her crossing, for 1.75s while she stays across: the guard at the hut across the road, hand raised (`guard_alert_front`); at an alley's door, the post's guard | Steps out of that hut, or the post, and charges at once |
+| `door_guard` | Warned at the door | The huts' guards standing at their posts | From her crossing, for 1.75s while she stays across: the guard at the hut across the road, hand raised (`guard_alert_front`), or the nearer hut's where that hand would not be all in her sight; at an alley's door, the post's guard | Steps out of that hut, or the post, and charges at once |
 | `masked_pursuer`, set off by a place on the escape's stairs | 3, on his line | None: not in the world until she comes within 426px of the foot of his shaft (`EventDef.sets_off_within()`) | His badge alone, pointing at the foot of the shaft: for no time when she walks into the place, for 1.0s when she is inside it already as he may come | Runs his line up the shaft from the tick he exists |
 | The day-3 dog and the dogs sprinkled after it, sent down her heading | 3 | None | Its half-second badge, then its approach | Gallop |
 | `robber_giving_chase`, `van_guard_giving_chase`, `policeman_giving_chase`, `guardsman_giving_chase` | 3 | None | Its badge alone | From the first frame |
 
 **Day 13's task guard is set on her from wherever he stands**, often a city away, so a radius he has
-to be inside would leave him nothing to do: his warning is a second, raised in her view or a badge
-out of it *(inbox #764 in minty-lemur, the player: "yes, we can do a 1s on screen and 1s off-screen warning if they
+to be inside would leave him nothing to do: his warning is a second, raised with all of it in her
+sight or a badge once he is wholly off the camera's view, and while he is between the two, under a
+covered corner or half past the view's edge, the done task's order waits *(inbox #764 in minty-lemur, the player: "yes, we can do a 1s on screen and 1s off-screen warning if they
 were not visible")*. **The masked man has to be run from** *(inbox #764 in minty-lemur, the player: "player should
 have to run to the door")*: 426px is where, coming down from the second floor, she is at the head
 of the second flight, so that a runner reaches the first floor's door and a walker is caught on
@@ -642,7 +646,8 @@ created 270 to 294px from her once that second has run
 (`tests/probes/escape_stairwell_guard_trigger.gd`).
 **At a door the crossing is the warning's start** *(inbox #788 in minty-lemur)*: going back across within 1.75s is
 the answer that brings nobody. Staying across, what she does through it decides it: the guard steps
-out of the hut across the road, about 80px across from the near lane, or out of an alley's post,
+out of the hut whose guard warned her, the one across the road, about 80px across from the near
+lane, unless its guard's hand was hidden from her and the nearer hut's warned instead, or out of an alley's post,
 16px to 48px across, and walking on is caught, standing is caught, and going on at a run escapes
 (`tests/test_checkpoints.gd`).
 
@@ -1169,7 +1174,9 @@ start the timer and if the player goes back no charge happens but if they stay c
 will start. Warning starts when the player is crossing")*: the frame she walks across the line,
 the guard drawn at the gatehouse across the road from her raises his hand
 (`EventInstance.is_its_guard_warning()`, `guard_alert_front`, `CheckpointController.warn_at_the_doors()`), or at
-an alley's door the post's own guard. Back across the line before the warning every charger keeps (`ChargerTiming.warning()`, 1.75s)
+an alley's door the post's own guard. Where the far guard's raised hand would not be all in her sight
+(`VisibleView.sees_all()` of it at `EventInstance.its_guards_feet()`), the nearer gatehouse's guard
+raises his, so the warning is never a hand under a corner the joystick's controls cover. Back across the line before the warning every charger keeps (`ChargerTiming.warning()`, 1.75s)
 has run, or held at a hut (gone through the lawful way), the crossing is called off and nobody
 comes. **Still across once it has run, one `door_guard` steps out of the wall of that gatehouse, or
 of the post, on the side she crossed to, and charges at once** (`PursuitSpec.Start.CHARGES_AT_ONCE`): the
@@ -2353,7 +2360,7 @@ neighbourhood's own rather than a patrol's.
 | `checkpoint_hut` | SCRIPTED | 7 | `RegionPlanner`'s own structure, not a catalogue roll: two stand at every open region-boundary street crossing, one on each pavement, doorway facing the carriageway. Detains for `EventCatalogue.CHECKPOINT_DETAIN_SECONDS` (2s) as she comes within `EventCatalogue.CHECKPOINT_DETAIN_REACH` (48px) of its own solid edge — 80px from its centre, inside inner radius 84px — and `detains_again()`, so the same gatehouse tolls her again on a later approach from either side. A small peak (4.0) over a tight 84/98px band is "a bit of excitement" on top of the flat `Tuning.CHAT_EXCITEMENT` the detention charges, and it is deliberately not what makes the row expensive: it is one of the three **detainers** exempt from "nothing is cheaper to walk through than around", priced by its capture instead. Low because a door is several bodies and a hold earns no decay — see "Checkpoints" and the one-barrier note above. |
 | `checkpoint_gate` | SCRIPTED | 7 | The boom over the road between a door's two gatehouses. No field of its own — a car passing under it costs her nothing — and **never an inspection**: `BodySpec.while_lowered()`, so it is solid to her while the arm is down and ground she may walk under while a car holds it up, and it does not come down while any of her rig is beneath it. A gatehouse beside it does not take her in from the carriageway it spans. Drawn raised or lowered from the shared `GateState` `Crowd` keeps current. |
 | `checkpoint_post` | SCRIPTED | 7 | The alley half of a door: one guard at each mouth of a through-alley that crosses a region boundary. Detains exactly like `checkpoint_hut`, same numbers and the same `detains_again()`. |
-| `door_guard` **lethal** | SCRIPTED | 9 | The guard a door sets on her when she walks across its line rather than through a gatehouse — under a raised boom — placed by `EventManager` alone, one at a time, stepping out of the wall of the gatehouse across the road from her on the side she crossed to, or out of an alley door's post, once she has stayed across for the warning every charger keeps (`ChargerTiming.warning()`, 1.75s) while the guard there raised his hand. The roadblock's hunting guard copied: `guard_lunging_*` from his first frame, charging at once (`PursuitSpec.Start.CHARGES_AT_ONCE`, no notice of his own: the hut's guard's raised hand was his warning), 130px/s, a `Tuning.PURSUIT_TIME` chase, a 28px catch (`MASKED_MAN_REACH`), and `masked_pursuer`'s field (18 over 28–120px). Lethal on every day and at every heat, not through `hunts`. See "Checkpoints". The guards standing at the gatehouses are his neutral stage and the one across the road raising his hand from her crossing his warning, since he is not in the world until it has run. His badge is the side view, the one picture of the man no other look stands for. |
+| `door_guard` **lethal** | SCRIPTED | 9 | The guard a door sets on her when she walks across its line rather than through a gatehouse — under a raised boom — placed by `EventManager` alone, one at a time, stepping out of the wall of the gatehouse whose guard warned her — across the road from her, or the nearer one where that guard's raised hand would be hidden from her — on the side she crossed to, or out of an alley door's post, once she has stayed across for the warning every charger keeps (`ChargerTiming.warning()`, 1.75s) while the guard there raised his hand. The roadblock's hunting guard copied: `guard_lunging_*` from his first frame, charging at once (`PursuitSpec.Start.CHARGES_AT_ONCE`, no notice of his own: the hut's guard's raised hand was his warning), 130px/s, a `Tuning.PURSUIT_TIME` chase, a 28px catch (`MASKED_MAN_REACH`), and `masked_pursuer`'s field (18 over 28–120px). Lethal on every day and at every heat, not through `hunts`. See "Checkpoints". The guards standing at the gatehouses are his neutral stage and the one whose hand goes up from her crossing his warning, since he is not in the world until it has run. His badge is the side view, the one picture of the man no other look stands for. |
 
 ### Act III — Disappearances (days 8–11)
 
@@ -3379,11 +3386,13 @@ Two things it does **not** announce, each for its own reason:
   the world never carries one, wherever its charge begins** (`EventInstance.was_warned_of()`;
   "Every charger that does not arrive charging warns first", its two kinds of charge): it is an
   on-screen charger, and it warns in her view instead. The waiting robber, the hunting roadblock's
-  guard and the dog that waits past day 3 notice her only with their warning picture inside the
-  camera's view; day 13's guard set on her in her view raises his hand there, and out of it he is
-  sent as an off-screen charger under a badge; a vehicle stops for her only with its men's place in
-  her view, so they get out where she can see them, hand raised; and the checkpoint guard's warning
-  is the hut guard's raised hand. A charger that warned her in view and whose charge runs on out of
+  guard and the dog that waits past day 3 notice her only with all of their warning picture in sight
+  (inside the camera's view and, in the joystick scheme, clear of the two bottom corners its controls
+  cover); day 13's guard set on her with all of his warning in sight raises his hand there, wholly
+  off the camera's view he is sent as an off-screen charger under a badge, and between the two his
+  order waits; a vehicle stops for her only with its men's place all in sight, so they get out where
+  she can see them, hand raised; and the checkpoint guard's warning is the raised hand of a hut
+  guard she can see all of. A charger that warned her in view and whose charge runs on out of
   it, or that falls behind out of it and closes again, carries none. A stationary abduction two
   streets away is a place, and
   finding out it is there is what walking a street is for; her own footsteps are not news.

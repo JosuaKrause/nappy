@@ -114,7 +114,7 @@ func _read_the_mark(t: TestRunner, seed_value: int) -> Dictionary:
 	var mark_at := director.contact_position()
 	player.reset_at(mark_at, Vector2.DOWN)
 	RunCity.events(city).visible_view().look(_view_of(player), null)
-	director.set_sight(RunCity.events(city).sees)
+	director.set_sight(RunCity.events(city).visible_view())
 	director.contact().complete_now()
 	var step := director.current_step()
 	if step == null or step.task_event_id != "roadblock" or _task_guard(city) == null:

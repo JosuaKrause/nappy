@@ -10,8 +10,9 @@ extends RefCounted
 ## **The one answer to "can she see it"**, for everything that asks: the screen-edge badge, which is
 ## up for a thing until she can see it (`DangerEdge`); the fire's
 ## sighting, which summons the engine (`EventSpawner.summon_what_has_been_sighted()`); a chalk mark
-## counting as noticed, the one "has she seen this" of the resistance's (`ResistanceDirector`, handed
-## `sees()` by `main`); the poster crews' pasting (`PosterWalls._work_the_crews()`); the
+## counting as noticed, and day 13's task guard warning in place only with all of his warning in
+## sight, the resistance's "has she seen this" (`ResistanceDirector`, handed this view by `main`);
+## the poster crews' pasting (`PosterWalls._work_the_crews()`); the
 ## page's counter (`EncounterWatch`, the pelican's `pelican-seen`); and a charger already in the
 ## world, who warns only with all of his warning in sight, and a vehicle, which stops for her only
 ## with itself and every man it lets out in sight (`sees_all()`,

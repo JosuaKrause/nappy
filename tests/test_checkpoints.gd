@@ -97,6 +97,7 @@ func run(t: TestRunner) -> void:
 	_test_the_arm_never_comes_down_on_her(t)
 	await _test_walking_under_the_boom_sets_a_guard_on_her(t)
 	await _test_the_guard_who_warned_is_the_guard_who_comes(t)
+	await _test_a_hand_under_a_covered_corner_is_not_raised(t)
 	_test_the_guard_leaves_room_to_answer(t)
 	await _test_a_walk_under_the_boom_is_seen(t)
 	await _test_a_raised_boom_does_not_open_the_checkpoint_for_her(t)
@@ -2050,11 +2051,12 @@ func _test_a_raised_boom_does_not_open_the_checkpoint_for_her(t: TestRunner) -> 
 
 # ------------------------------------------------------------------ under the boom ---
 
-## A real street door — its gate and the two huts on its line, from `RegionPlanner.plan_day()` on
-## a door day — stood up live in a real `City`'s manager, with a real stroller. A real city because
-## what a walk under the boom sets off is added to it like any unplanned event, and asks its map for
-## walkable ground.
-func _street_door_rig(t: TestRunner) -> Dictionary:
+## A real street door — its gate and the two huts on its line, from `RegionPlanner.plan_day()`
+## on a door day, the first or, with `along`, the first on a street running that way — stood up
+## live in a real `City`'s manager, with a real stroller. A real city because what a walk under
+## the boom sets off is added to it like any unplanned event, and asks its map for walkable
+## ground.
+func _street_door_rig(t: TestRunner, along := Vector2.ZERO) -> Dictionary:
 	var day := Tuning.REGION_WALL_FIRST_DAY
 	var map := CityGenerator.generate(BASE_SEED)
 	var run := RunCity.started_run(RUN_SEED)
@@ -2069,8 +2071,13 @@ func _street_door_rig(t: TestRunner) -> Dictionary:
 	var gate: EventInstance = null
 	var state: GateState = null
 	var huts: Array[EventInstance] = []
-	if not plan.gate_states().is_empty():
-		state = plan.gate_states()[0]
+	# The first door, or with `along` the first on a street running that way.
+	for door_state in plan.gate_states():
+		for body in plan.door_plans():
+			if state == null and body.gate() == door_state \
+					and (along == Vector2.ZERO or absf(body.faces().dot(along)) >= 0.99):
+				state = door_state
+	if state != null:
 		# The planner's own plans, with their facing and the door's shared boom state, taken as a
 		# door day takes them: the gate's and the two huts on its line, in one walk.
 		var gate_plan: EventPlan = null
@@ -2080,8 +2087,11 @@ func _street_door_rig(t: TestRunner) -> Dictionary:
 		var hut_plans: Array[EventPlan] = []
 		if gate_plan:
 			for body in plan.door_plans():
+				# This door's own two: another door further along the same line is another street's.
 				if body.row_id() == "checkpoint_hut" and absf(
-						(body.placed_at() - gate_plan.placed_at()).dot(body.faces())) <= 1.0:
+						(body.placed_at() - gate_plan.placed_at()).dot(body.faces())) <= 1.0 \
+						and body.placed_at().distance_to(gate_plan.placed_at()) \
+								<= Tuning.STREET_WIDTH * Tuning.TILE_SIZE:
 					hut_plans.append(body)
 			var bodies: Array[EventPlan] = [gate_plan]
 			bodies.append_array(hut_plans)
@@ -2252,6 +2262,77 @@ func _test_walking_under_the_boom_sets_a_guard_on_her(t: TestRunner) -> void:
 	t.check(_walks_under(walks_told) == walks + 1 and _door_guard_after_her(RunCity.events(city)) == guard,
 			"walking back under it while he is after her sets nobody else on her")
 	_free_street_door_rig(rig)
+
+## **A raised hand she cannot see is not the crossing's warning** (feathery-lynx #581: the bottom
+## corners the joystick's controls cover are not in sight; bouncy-owl #1774: a charger already in the
+## world warns her where she can see him; inbox #788 in minty-lemur: the warning starts at the
+## crossing, so it is not held). At a door on a north-south street, whose huts stand west and east
+## of the road with their guards posted 22px east of each (`EventFootprints.hut_guard_beside()`),
+## she crosses the door's line northward under the raised boom 28px west of the road's middle, so
+## the east hut is the far one. Her camera stands up and to the left of her, as her look-ahead
+## facing up and to the left and the camera's smoothing trailing a run can put it, with the far
+## guard's raised hand (`EventFootprints.raised_hand_rect()` on `EventInstance.its_guards_feet()`)
+## inside the camera's view and 4px into the bottom-right corner each way, and the near guard's
+## hand all in sight. In the joystick scheme the near hut's guard raises his hand
+## (`CheckpointController._hut_that_warns()`); in the tap scheme, under the same view, the far one's
+## does. The camera is the one the tick looks through, so it is the camera that is put there.
+func _test_a_hand_under_a_covered_corner_is_not_raised(t: TestRunner) -> void:
+	for joystick: bool in [true, false]:
+		var rig := _street_door_rig(t, Vector2.DOWN)
+		var city: City = rig["city"]
+		var gate: EventInstance = rig["gate"]
+		var huts: Array[EventInstance] = []
+		huts.assign(rig["huts"])
+		if not gate or huts.size() != 2:
+			_free_street_door_rig(rig)
+			return
+		var scheme := "joystick" if joystick else "tap"
+		var axis := gate.facing_now()
+		(rig["state"] as GateState).set_boom_up(true)
+		var lane := gate.global_position + Vector2.LEFT * 28.0
+		var near_hut := huts[0] if huts[0].global_position.x < huts[1].global_position.x \
+				else huts[1]
+		var far_hut := huts[1] if near_hut == huts[0] else huts[0]
+		var cover := TouchCover.joystick()
+		RunCity.events(city).use_controls(cover if joystick else null)
+		var scale := Tuning.VIEW_HALF_EXTENT * 2.0 / cover.design_box()
+		var corner := Rect2(cover.right_corner().position * scale, cover.right_corner().size * scale)
+		var hand := EventFootprints.raised_hand_rect(far_hut.its_guards_feet())
+		var near_hand := EventFootprints.raised_hand_rect(near_hut.its_guards_feet())
+		# The view's top-left corner, with the hand's bottom-right 4px inside the corner each way.
+		var view_at := hand.end - corner.position - Vector2(4.0, 4.0)
+		var centre := view_at + Tuning.VIEW_HALF_EXTENT
+		var seen := VisibleView.around(centre, cover)
+		var her := lane - axis * 20.0
+		t.check(seen.camera_view().encloses(hand) and not seen.sees_all(hand)
+				and seen.sees_all(near_hand) and seen.sees(her),
+				"(%s) the far guard's hand is in the camera's view but under a covered corner, " % scheme
+				+ "the near guard's all in sight, and she in sight, the camera %s from her"
+				% (centre - her))
+		# Round to the south side of the line clear of the door, then up to it and across it.
+		await _step_her_to(t, rig, lane + axis * 20.0 + Vector2.LEFT * 300.0)
+		await _step_her_to(t, rig, lane + axis * 20.0)
+		var stroller: Stroller = rig["stroller"]
+		stroller.global_position = her
+		var camera: Camera2D = stroller.get_node("Camera2D")
+		# A camera not being drawn has no screen centre of its own, so the view is read from where it
+		# stands (`Stroller.view_centre_of()`), exactly there rather than eased toward it.
+		camera.enabled = false
+		camera.global_position = centre
+		await _ticks(t, 1)
+		var looked := RunCity.events(city).visible_view()
+		t.check(looked.camera_view().get_center().is_equal_approx(centre)
+				and looked.sees_all(hand) != joystick and looked.sees_all(near_hand),
+				"(%s) the tick looked through that camera (%s)" % [scheme, looked.camera_view()])
+		# The hand goes up on the tick after the crossing is seen.
+		await _ticks(t, 1)
+		if joystick:
+			t.check(near_hut.is_its_guard_warning() and not far_hut.is_its_guard_warning(),
+					"(joystick) with the far guard's hand under the corner, the near hut's guard raises his")
+		else:
+			t.check(far_hut.is_its_guard_warning() and not near_hut.is_its_guard_warning(),
+					"(tap) under the same view, the guard across the road raises his")
+		_free_street_door_rig(rig)
 
 ## **The man who warned her is the man who comes** (review 4 of PR #781). She crosses under the
 ## raised boom in the near lane, so the guard at the hut across the road raises his hand; through

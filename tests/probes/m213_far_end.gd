@@ -95,7 +95,7 @@ func _task_guards(t: TestRunner) -> void:
 			player.global_position = her
 			RunCity.events(city).visible_view().look(Rect2(her - Tuning.VIEW_HALF_EXTENT,
 					Tuning.VIEW_HALF_EXTENT * 2.0), null)
-			director.set_sight(RunCity.events(city).sees)
+			director.set_sight(RunCity.events(city).visible_view())
 			director._on_contact_completed(mark.index)
 			placed += 1
 			var guard: EventInstance = director._task_guard
@@ -195,7 +195,7 @@ func _on_screen(t: TestRunner) -> void:
 			var her := map.tile_to_world(tile)
 			view.look(Rect2(her - Tuning.VIEW_HALF_EXTENT,
 					Tuning.VIEW_HALF_EXTENT * 2.0), null)
-			director.set_sight(view.sees)
+			director.set_sight(view)
 			var mark := director._nearest_alley_within(her)
 			if mark == Vector2.INF:
 				continue
@@ -247,7 +247,7 @@ func _moves_from_everywhere(t: TestRunner) -> void:
 					continue
 				var her := map.tile_to_world(tile)
 				view.look(Rect2(her - Tuning.VIEW_HALF_EXTENT, Tuning.VIEW_HALF_EXTENT * 2.0), null)
-				director.set_sight(view.sees)
+				director.set_sight(view)
 				asked += 1
 				var mark := director._nearest_alley_within(her)
 				if mark == Vector2.INF:

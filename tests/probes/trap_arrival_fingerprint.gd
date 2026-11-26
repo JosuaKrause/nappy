@@ -83,7 +83,7 @@ func _a_day(t: TestRunner, city: City, run: RunState, seed_value: int, day: int)
 	director.setup(city.map(), run, RunCity.events(city), city.streets(), city.fronts(), city,
 			null, RunCity.spawn_siting(city))
 	director.use_player(player)
-	director.set_sight(RunCity.events(city).sees)
+	director.set_sight(RunCity.events(city).visible_view())
 	director.start_day(day, _rng(seed_value, day, "resistance"), 300.0)
 	var label := "seed %d day %d" % [seed_value, day]
 	var printed := 0

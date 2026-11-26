@@ -89,6 +89,7 @@ func run(t: TestRunner) -> void:
 	_test_the_done_task_sets_the_guard_on_her_wherever_he_stands(t, true)
 	_test_the_done_task_sets_the_guard_on_her_wherever_he_stands(t, false)
 	_test_out_of_her_view_the_done_task_sends_him_under_a_badge(t)
+	_test_half_in_her_sight_the_done_task_waits(t)
 	_test_a_guard_warning_her_when_the_task_is_done_still_charges(t)
 	_test_the_guard_walks_round_a_building_to_her(t)
 	for seed_value in PLACEMENT_SEEDS:
@@ -604,7 +605,7 @@ func _test_the_done_task_sets_the_guard_on_her_wherever_he_stands(t: TestRunner,
 	t.check(not guard.is_gone() and not guard.is_waiting(),
 			"(%s) the moment she has done the task, he is after her" % what)
 	if parked:
-		# In her view his warning is a second, standing with it up *(inbox #764 in minty-lemur, the player: "yes,
+		# In her sight his warning is a second, standing with it up *(inbox #764 in minty-lemur, the player: "yes,
 		# we can do a 1s on screen and 1s off-screen warning if they were not visible")*.
 		t.check(guard.is_standing_for_its_notice(), "(%s) in her view he stands with his warning up" % what)
 		var held_at := guard.global_position
@@ -679,6 +680,84 @@ func _test_out_of_her_view_the_done_task_sends_him_under_a_badge(t: TestRunner) 
 			"and sent at her under a %.1fs badge, to arrive charging"
 			% (warning.row().warned_for() if warning else -1.0))
 	_tear_down(player, director, city)
+
+## **Half in her sight, the done task's order waits** (feathery-lynx #581: the bottom corners
+## the joystick's controls cover are not in sight; bouncy-owl #1774: a charger already in the
+## world warns her where she can see him; inbox #764 in minty-lemur: a second's warning in
+## sight, or a second's badge when he is not visible; olive-hedgehog #598: nothing vanishes
+## while any of it is drawn). She touches the roadblock with the waiting guard's warning picture
+## (`EventInstance.warning_rect()`) inside the camera's view, 10px into its bottom-left corner:
+## in the joystick scheme, whose controls cover that corner, he is neither set on her nor taken
+## away, and the order is asked again each tick (`ResistanceDirector.tick()`), so once the view
+## moves to have all of his warning in sight he warns her standing where he is. In the tap
+## scheme, under the same view, he warns her at once. And with his warning picture 10px past the
+## view's left side, in either scheme, he waits too, until the view has left all of him behind,
+## when he is sent at her under a badge.
+func _test_half_in_her_sight_the_done_task_waits(t: TestRunner) -> void:
+	for case: String in ["joystick corner", "tap corner", "past the edge"]:
+		var city := _build_city(t, SEED)
+		var director := _start_the_day(t, city, SEED)
+		var player := _rig_player(t, director, director.contact_position())
+		_view = Rect2()
+		var mark := director.current_step()
+		if mark:
+			director.contact().complete_now()
+		var step := director.current_step()
+		var guard: EventInstance = _task_guard()
+		t.check(step != null and guard != null and guard.is_waiting(),
+				"(%s) the task offers a roadblock, guarded by a waiting guard" % case)
+		if step == null or guard == null:
+			_tear_down(player, director, city)
+			return
+		var touched: EventInstance = director.rider()
+		player.global_position = _beside(city.map(), touched.body_position(),
+				ContactPoint.body_reach(touched))
+		var cover := TouchCover.joystick()
+		var joystick := case == "joystick corner"
+		var warning := guard.warning_rect()
+		var size := Tuning.VIEW_HALF_EXTENT * 2.0
+		var corner_width := cover.left_corner().end.x * size.x / cover.design_box().x
+		var camera := Rect2(Vector2(warning.position.x + 10.0 - corner_width,
+				warning.end.y + 2.0 - size.y), size)
+		if case == "past the edge":
+			camera = Rect2(Vector2(warning.position.x + 10.0, warning.get_center().y - size.y * 0.5),
+					size)
+		_seen_through.look(camera, cover if joystick else null)
+		t.check(camera.intersects(warning) and not camera.encloses(warning) \
+				if case == "past the edge" else camera.encloses(warning),
+				"(%s) his warning picture is on the camera's view (%s in %s)" % [case, warning, camera])
+		director.contact().complete_now()
+		if case == "tap corner":
+			t.check(not guard.is_gone() and guard.is_standing_for_its_notice(),
+					"(tap corner) under the same view, he warns her at once, standing where he is")
+			_tear_down(player, director, city)
+			continue
+		t.check(_task_guard() == guard and not guard.is_gone() and guard.is_waiting()
+				and _sent_guards_warning(city) == null,
+				"(%s) not all of his warning in her sight, he is neither set on her nor sent" % case)
+		director.tick(STEP)
+		t.check(guard.is_waiting() and not guard.is_gone(), "(%s) and goes on waiting a tick on" % case)
+		if joystick:
+			_seen_through.look(Rect2(camera.position - Vector2(20.0, 0.0), size), cover)
+			director.tick(STEP)
+			t.check(not guard.is_gone() and guard.is_standing_for_its_notice(),
+					"(joystick corner) once all of his warning is in sight, he warns her standing where he is")
+		else:
+			_seen_through.look(Rect2(warning.end + Vector2(400.0, 400.0), size), null)
+			director.tick(STEP)
+			t.check(guard.is_gone() and _sent_guards_warning(city) != null,
+					"(past the edge) once the view has left all of him, he is sent at her under a badge")
+		_tear_down(player, director, city)
+
+## How long one of this suite's hand-stepped director ticks is, in seconds.
+const STEP := 1.0 / 60.0
+
+## The badge day 13's sent task guard comes under (`EventCatalogue.task_guard_sent()`), or null.
+static func _sent_guards_warning(city: City) -> PendingWarning:
+	for pending in RunCity.events(city).pending_warnings():
+		if pending.row() == EventCatalogue.task_guard_sent():
+			return pending
+	return null
 
 ## **A guard already warning her when she finishes the task is set on her too** — left to his own
 ## warning by radius, she could walk out of it and he would never come *(inbox #651 follow-up, the
@@ -1258,7 +1337,7 @@ func _start_the_day(t: TestRunner, city: City, seed_value: int) -> ResistanceDir
 			RunCity.spawn_siting(city))
 	_seen_through = RunCity.events(city).visible_view()
 	_seen_through.look(_view, null)
-	director.set_sight(RunCity.events(city).sees)
+	director.set_sight(RunCity.events(city).visible_view())
 	director.start_day(DAY, _rng(seed_value, "resistance"), 300.0)
 	return director
 

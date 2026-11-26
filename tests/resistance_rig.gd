@@ -107,7 +107,7 @@ func _free_city() -> void:
 	_library = null
 
 ## The day's one view looked at `rect` with no corner covered, which is what the director's
-## `ResistanceDirector.set_sight()` (handed `EventManager.sees`) and the city's siting (`DRAWING_OFF_THE_VIEW`) both read.
+## `ResistanceDirector.set_sight()` (handed `EventManager.visible_view()`) and the city's siting (`DRAWING_OFF_THE_VIEW`) both read.
 func _look_at(rect: Rect2) -> void:
 	RunCity.events(_city).visible_view().look(rect, null)
 
@@ -115,7 +115,7 @@ func _look_at(rect: Rect2) -> void:
 ## area is the whole view) and hands the director what she can see.
 func _watch_the_screen_round(director: ResistanceDirector, her: Vector2) -> void:
 	_look_at(Rect2(her - Tuning.VIEW_HALF_EXTENT, Tuning.VIEW_HALF_EXTENT * 2.0))
-	director.set_sight(RunCity.events(_city).sees)
+	director.set_sight(RunCity.events(_city).visible_view())
 
 ## Today's walled-off crossing alleys, as the city's streets derive them and hand them to its siting
 ## (`tests/test_resistance_replacement.gd` holds the handing).
@@ -694,7 +694,7 @@ func _read_the_mark_on(t: TestRunner, day: int, seed_value: int, trace_into: Arr
 		_watch_the_screen_round(director, mark)
 	else:
 		_look_at(Rect2(mark - view_half, view_half * 2.0))
-		director.set_sight(RunCity.events(_city).sees)
+		director.set_sight(RunCity.events(_city).visible_view())
 	var step := director.current_step()
 	if step != null and step.is_pickup:
 		_read_the_mark(director)
