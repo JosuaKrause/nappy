@@ -125,11 +125,10 @@ func _drives_clear(row: EventDef, path: PackedVector2Array) -> bool:
 ## straight through it or round the corner in it, or only by `only` where that is given
 ## (`leg_out_by()`).
 ##
-## Along its street, the box at or behind it is `floori(along / period)`. A car inside a box drives
-## straight out of it, so the stretch it is on or entering runs from box `from` the way it drives:
-## the box behind it, or, driving toward the low end and not inside a box, the next one up. Every leg
-## ends where the car leaves a box, so the next leg starts at the start of the stretch this one
-## chose. **Nothing is asked of that stretch but that the leg drives it clear**: the box it comes to
+## Along its street, a car inside a box drives straight out of it, so the stretch it is on or
+## entering runs from box `from` the way it drives: the box it is in or last left
+## (`JunctionBoxes.behind()`). Every leg ends where the car leaves a box, so the next leg starts at
+## the start of the stretch this one chose. **Nothing is asked of that stretch but that the leg drives it clear**: the box it comes to
 ## is left by a through road, whose far box has another that is not the way back, so a car that has
 ## taken one never runs out of road, and asking that the stretch it is on be one too would only
 ## refuse a car driving off a stub into the through roads.
@@ -146,23 +145,19 @@ func _down_the_road(row: EventDef, at: Vector2, heading: Vector2,
 	var vertical := absf(heading.y) > absf(heading.x)
 	var way := Vector2i(0, 1 if heading.y > 0.0 else -1) if vertical \
 			else Vector2i(1 if heading.x > 0.0 else -1, 0)
-	var period := float(CityMap.period() * Tuning.TILE_SIZE)
-	var box_px := float(Tuning.STREET_WIDTH * Tuning.TILE_SIZE)
 	var along := at.y if vertical else at.x
 	var corridor := CrowdLanes.corridor_at(at.x if vertical else at.y)
 	if corridor < 0:
 		return PackedVector2Array()
-	var behind := floori(along / period)
-	var inside := along - behind * period <= box_px
 	var forward := (way.y if vertical else way.x) > 0
-	var from_index := behind if (forward or inside) else behind + 1
+	var from_index := JunctionBoxes.behind(along, forward)
 	var from := Vector2i(corridor, from_index) if vertical else Vector2i(from_index, corridor)
 	var box := from + way
 	# Straight on first, then the two turns, the one that leads away from her first.
 	var outs: Array[Vector2i] = [way]
 	var turns: Array[Vector2i] = [Vector2i(way.y, way.x), Vector2i(-way.y, -way.x)]
 	if her != Vector2.INF:
-		var centre := Vector2(box) * period + Vector2(box_px, box_px) * 0.5
+		var centre := Vector2(JunctionBoxes.centre(box.x), JunctionBoxes.centre(box.y))
 		if Vector2(turns[0]).dot(her - centre) > Vector2(turns[1]).dot(her - centre):
 			turns.reverse()
 	outs.append_array(turns)
@@ -293,13 +288,9 @@ static func _axis_of(piece: Vector2) -> Vector2:
 ## lane to the box's edge on that side. Empty where the corner is already behind it.
 static func _through(at: Vector2, way: Vector2i, box: Vector2i,
 		out: Vector2i) -> PackedVector2Array:
-	var period := float(CityMap.period() * Tuning.TILE_SIZE)
-	var box_px := float(Tuning.STREET_WIDTH * Tuning.TILE_SIZE)
-	var corner := Vector2(box) * period
 	var vertical := way.y != 0
 	if out == way:
-		var edge := (corner.y if vertical else corner.x) \
-				+ (box_px if (way.x + way.y) > 0 else 0.0)
+		var edge := JunctionBoxes.exit(box.y if vertical else box.x, (way.x + way.y) > 0)
 		return PackedVector2Array([at, Vector2(at.x, edge) if vertical else Vector2(edge, at.y)])
 	var out_vertical := out.y != 0
 	var lane := CrowdLanes.lane_centre(box.x if out_vertical else box.y,
@@ -316,8 +307,7 @@ static func _through(at: Vector2, way: Vector2i, box: Vector2i,
 		var turned := (PI * 0.5) * float(i) / float(TURN_PIECES)
 		leg.append(centre - o * TURN_RADIUS * cos(turned) + d * TURN_RADIUS * sin(turned))
 	leg.append(meet + o * TURN_RADIUS)
-	var edge_out := (corner.y if out_vertical else corner.x) \
-			+ (box_px if (out.x + out.y) > 0 else 0.0)
+	var edge_out := JunctionBoxes.exit(box.y if out_vertical else box.x, (out.x + out.y) > 0)
 	leg.append(Vector2(lane, edge_out) if out_vertical else Vector2(edge_out, lane))
 	return leg
 

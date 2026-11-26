@@ -1427,9 +1427,10 @@ func _toward_her_on_the_road(at: Vector2, heading: Vector2, def: EventDef,
 ## and through the next junction box** (`leg_in_the_lane()`).
 ##
 ## **Where that lane has no room, it comes down the crossing street at the next box ahead of her**
-## (`_across_the_next_box()`): the street her walk turns into there, when it turns. A crater a spent
-## explosion left in her own street, or a seal across it where the walk turns, refuses every leg
-## down her street and none across the box ahead.
+## (`_across_the_next_box()`), the street her walk turns into there when it turns, **and turns at
+## that box into her street toward her** (`leg_in_the_lane()`). A crater a spent explosion left in
+## her own street, or a seal across it where the walk turns, refuses every leg down her street and
+## none down the crossing street.
 ##
 ## Empty where neither has a leg a car may drive and go on from (`leg_in_the_lane()`), or a place
 ## out of sight. The caller waits and asks again.
@@ -1461,23 +1462,25 @@ func _stands_in_a_box(tile: Vector2i) -> bool:
 	return offsets.x >= 0 and offsets.y >= 0
 
 ## **The convoy down the crossing street at the next junction box ahead of her**, with her at `at`
-## walking `walking` (a unit along her street): the box she stands in or the first one ahead,
-## asked only where the box comes within her view along her street
-## (`Tuning.VIEW_HALF_EXTENT`), so the truck crosses it where she can see it. Each arm of the
+## walking `walking` (a unit along her street): the first box wholly ahead of her
+## (`JunctionBoxes.past()`), asked only where it comes within her view along her street
+## (`Tuning.VIEW_HALF_EXTENT`), so the truck turns at it where she can see it. Each arm of the
 ## crossing street is asked, the truck driving down it toward the box from just out of sight up it
-## (`_down_the_lane()`); its leg runs on across the box in front of her and through the next box
-## (`leg_in_the_lane()`), so nothing in her own street stands in its way. Empty where neither arm
-## has room.
+## (`_down_the_lane()`); its leg turns at the box into her street toward her and runs on past her
+## (`leg_in_the_lane()`), so nothing in her own street short of that box stands in its way. Empty
+## where neither arm has room.
+##
+## **Never the box she stands in.** A truck down the crossing street there has no side of the box to
+## turn toward her by, and one that crossed the box would go on into the street's far arm, where
+## she may have stepped by the time it exists, and come up that arm behind her: a truck never comes
+## from behind her (inbox #1460 in silky-lemur).
 func _across_the_next_box(at: Vector2, walking: Vector2, def: EventDef,
 		view: VisibleView) -> PackedVector2Array:
 	var vertical := absf(walking.y) > absf(walking.x)
 	var mine := at.y if vertical else at.x
 	var forward := (walking.y if vertical else walking.x) > 0.0
-	var box := _next_box(mine, forward)
-	var period := float(CityMap.period() * Tuning.TILE_SIZE)
-	var box_px := float(Tuning.STREET_WIDTH * Tuning.TILE_SIZE)
-	var near_edge := box * period + (0.0 if forward else box_px)
-	var ahead := (near_edge - mine) * (1.0 if forward else -1.0)
+	var box := JunctionBoxes.past(mine, forward)
+	var ahead := (JunctionBoxes.entry(box, forward) - mine) * (1.0 if forward else -1.0)
 	if ahead > (Tuning.VIEW_HALF_EXTENT.y if vertical else Tuning.VIEW_HALF_EXTENT.x):
 		return PackedVector2Array()
 	var across := Vector2.RIGHT if vertical else Vector2.DOWN
@@ -1486,16 +1489,6 @@ func _across_the_next_box(at: Vector2, walking: Vector2, def: EventDef,
 		if not leg.is_empty():
 			return leg
 	return PackedVector2Array()
-
-## The index of the next junction box along a street from `along` (a world coordinate along it),
-## driving or walking toward the high end where `forward`: the box `along` lies in, or the first
-## one ahead of it, the corridors crossing the street every `CityMap.period()` tiles.
-static func _next_box(along: float, forward: bool) -> int:
-	var inside := CrowdLanes.corridor_at(along)
-	if inside >= 0:
-		return inside
-	var period := float(CityMap.period() * Tuning.TILE_SIZE)
-	return floori(along / period) + (1 if forward else 0)
 
 ## The first leg of `def` in the lane of corridor `index` driving `going` (a unit along the street),
 ## from its place just out of sight up the lane (`PendingWarning.in_its_lane()`, against `view`, the
@@ -1519,24 +1512,30 @@ func _down_the_lane(at: Vector2, going: Vector2, index: int, def: EventDef,
 
 ## **Whether a row warned of first in its lane could be created from wherever the camera is once its
 ## badge has been up**: the thing is created just out of sight of where the camera is then
-## (`EventsAhead._warn_in_its_lane()`), and she may have walked or run along her street, `walking`
-## (a unit), by up to `RUN_SPEED` times `warned_for()`, and a tile for the camera's own lead. Its
-## place moves with her as far as her street runs along its lane: all the way in the lane beside
-## her, not at all in a crossing street's. Its place and its leg are asked every half tile of that
-## stretch either way; a break in the carriageway, a leg a car may not drive or go on from, or a
-## placed plan's room across it refuses the row, which waits for room. A badge is never raised for
-## a thing that cannot come: "a badge shouldn't disappear before the entity is visible"
-## (minty-dolphin #852).
+## (`EventsAhead._warn_in_its_lane()`), its place level with her along its lane, and she may have
+## walked or run by up to `RUN_SPEED` times `warned_for()`, and a tile for the camera's own lead,
+## along her street, `walking` (a unit), or, for a lane that crosses her street, along that lane
+## too: across her own street, or up or down the crossing street from the box. Its place moves with
+## her by as much of each shift as lies along its lane: all of a shift along her street in the lane
+## beside her, none of it in a crossing street's, and all of a shift along the crossing street.
+## Its place and its leg are asked every half tile of each stretch; a break in the carriageway, a
+## leg a car may not drive or go on from, or a placed plan's room across it refuses the row, which
+## waits for room. A badge is never raised for a thing that cannot come: "a badge shouldn't
+## disappear before the entity is visible" (minty-dolphin #852).
 func _holds_while_its_badge_is_up(def: EventDef, place: Vector2, at: Vector2,
 		going: Vector2, walking: Vector2) -> bool:
 	var reach := Tuning.RUN_SPEED * def.warned_for() + Tuning.TILE_SIZE
-	var shift := -reach
-	while shift <= reach:
-		var by := walking * shift
-		var leg := leg_in_the_lane(def, place + going * by.dot(going), at + by, going, at)
-		if leg.is_empty() or not clear_to_send(leg, def):
-			return false
-		shift += Tuning.TILE_SIZE * 0.5
+	var ways: Array[Vector2] = [walking]
+	if is_zero_approx(walking.dot(going)):
+		ways.append(going)
+	for way: Vector2 in ways:
+		var shift := -reach
+		while shift <= reach:
+			var by := way * shift
+			var leg := leg_in_the_lane(def, place + going * by.dot(going), at + by, going, at)
+			if leg.is_empty() or not clear_to_send(leg, def):
+				return false
+			shift += Tuning.TILE_SIZE * 0.5
 	return true
 
 ## **The first leg of a row sent down a lane of the road** (the patrol and the convoy the director
@@ -1547,11 +1546,13 @@ func _holds_while_its_badge_is_up(def: EventDef, place: Vector2, at: Vector2,
 ##
 ## **It runs down the lane past her.** A row warned of first in its lane (the convoy, 120px/s) runs
 ## to the point of the lane level with her and on through the next junction box the way the day's
-## `WayOn` leaves it (`_past_her_through_the_next_box()`). **In a crossing street's lane it turns
-## at the box ahead of her into her street, toward where she was sited** (`_round_the_corner_toward()`),
-## and on past her through the next box; where it cannot, it crosses the box in front of her and
-## goes on through the next. One created at once (the patrol, slower than her walk) runs past her by as far as its place is up the
-## road from her.
+## `WayOn` leaves it (`_past_her_through_the_next_box()`). **In a lane that crosses her street
+## (`_crosses_her_street()`) it turns at the box ahead of her into her street, toward where she was
+## sited** (`_round_the_corner_toward()`), and on past her through the next box, **and goes no other
+## way**: a leg straight across that box would go on into the crossing street's far arm, where her
+## walk may have turned by the time the truck exists, and come up it behind her (inbox #1460 in
+## silky-lemur). One created at once (the patrol, slower than her walk) runs past her by as far as
+## its place is up the road from her.
 ##
 ## **Nothing is sent on a leg it could not go on from.** The leg is sent only where the day's
 ## `WayOn` says a car may drive it (`WayOn.driven()`: round a crater in its lane by the street's other
@@ -1568,9 +1569,8 @@ func leg_in_the_lane(def: EventDef, place: Vector2, her: Vector2,
 	var vertical := absf(going.y) > absf(going.x)
 	var level := Vector2(place.x, her.y) if vertical else Vector2(her.x, place.y)
 	if def.is_warned_in_its_lane():
-		var round := _round_the_corner_toward(def, place, going, sited_at, her)
-		if not round.is_empty():
-			return round
+		if _crosses_her_street(place, going, sited_at):
+			return _round_the_corner_toward(def, place, going, sited_at, her)
 		return _past_her_through_the_next_box(def, place, level, going, her, sited_at)
 	var ends := PendingWarning.lane_ends(_map, going)
 	var far := _past_her_by(level, going, place.distance_to(level), ends)
@@ -1582,36 +1582,41 @@ func leg_in_the_lane(def: EventDef, place: Vector2, her: Vector2,
 		return PackedVector2Array()
 	return leg
 
+## **Whether a lane at `place` driving `going` crosses the street she was sited in at `sited_at`**:
+## its corridor is not the one she stood in along that axis, so it meets her street at a junction
+## box she was not standing in (`_across_the_next_box()`). The lane beside her, sited for her
+## standing in a box included, runs along her street.
+static func _crosses_her_street(place: Vector2, going: Vector2, sited_at: Vector2) -> bool:
+	var vertical := absf(going.y) > absf(going.x)
+	return CrowdLanes.corridor_at(place.x if vertical else place.y) \
+			!= CrowdLanes.corridor_at(sited_at.x if vertical else sited_at.y)
+
 ## **The convoy's leg round the corner into her street** from `place`, in the lane of a crossing
 ## street driving `going`, with her at `her` and sited at `sited_at`: down the lane to the junction
 ## box where it meets her street, a turn there into her street toward the side `sited_at` lies on
 ## (`WayOn.leg_out_by()`), on down her street past her and through the next box
-## (`WayOn.next_leg()`); empty where the lane is her own street's, where `sited_at` stands in that
-## box, or where it could not drive that or go on from its end. **This is how a truck comes at her
-## where her walk turns**: the street straight on past that box is sealed, the one her walk turns
-## into is open, and the truck comes down it and round the corner toward her.
+## (`WayOn.next_leg()`); empty where it could not drive that or go on from its end. **This is how a
+## truck comes at her where her walk turns**: the street straight on past that box is sealed, the one
+## her walk turns into is open, and the truck comes down it and round the corner toward her.
+##
+## **It sets off at least a tile short of the box.** Its place is level with her along the lane and
+## moves with her as she crosses her own street (`EventsAhead._warn_in_its_lane()`), so with her on
+## the far side of it the place just out of sight can lie in the box or past it; the truck sets off a
+## tile short of the box instead, further from her than just out of sight, and still turns there.
 func _round_the_corner_toward(def: EventDef, place: Vector2, going: Vector2, sited_at: Vector2,
 		her: Vector2) -> PackedVector2Array:
 	var vertical := absf(going.y) > absf(going.x)
-	var lane_corridor := CrowdLanes.corridor_at(place.x if vertical else place.y)
-	var her_corridor := CrowdLanes.corridor_at(sited_at.y if vertical else sited_at.x)
-	if her_corridor < 0 or lane_corridor == CrowdLanes.corridor_at(
-			sited_at.x if vertical else sited_at.y):
+	var box := JunctionBoxes.holding(sited_at.y if vertical else sited_at.x)
+	if box < 0:
 		return PackedVector2Array()
-	var toward_her := (sited_at.x - place.x) if vertical else (sited_at.y - place.y)
-	var box_low := float(lane_corridor * CityMap.period() * Tuning.TILE_SIZE)
-	var box_high := box_low + float(Tuning.STREET_WIDTH * Tuning.TILE_SIZE)
-	var mine := sited_at.x if vertical else sited_at.y
-	if mine >= box_low and mine <= box_high:
-		return PackedVector2Array()
-	var toward := Vector2(signf(toward_her), 0.0) if vertical else Vector2(0.0, signf(toward_her))
-	var period := float(CityMap.period() * Tuning.TILE_SIZE)
-	var box_px := float(Tuning.STREET_WIDTH * Tuning.TILE_SIZE)
 	var forward := (going.y if vertical else going.x) > 0.0
-	var edge := her_corridor * period + (-1.0 if forward else box_px + 1.0)
+	var edge := JunctionBoxes.short_of(box, forward)
 	var short := Vector2(place.x, edge) if vertical else Vector2(edge, place.y)
-	if (short - place).dot(going) <= 0.0:
-		return PackedVector2Array()
+	var from := place
+	if (short - place).dot(going) < Tuning.TILE_SIZE:
+		from = short - going * Tuning.TILE_SIZE
+	var toward_her := (sited_at.x - place.x) if vertical else (sited_at.y - place.y)
+	var toward := Vector2(signf(toward_her), 0.0) if vertical else Vector2(0.0, signf(toward_her))
 	var way := way_on()
 	var turn := way.leg_out_by(def, short, going, toward, her)
 	if turn.size() < 2:
@@ -1619,7 +1624,7 @@ func _round_the_corner_toward(def: EventDef, place: Vector2, going: Vector2, sit
 	var on := way.next_leg(def, turn[turn.size() - 1], toward, her)
 	if on.size() < 2:
 		return PackedVector2Array()
-	var laid := PackedVector2Array([place])
+	var laid := PackedVector2Array([from])
 	laid.append_array(turn)
 	laid.append_array(on.slice(1))
 	return _driven_and_going_on(def, laid, her)
@@ -1654,14 +1659,13 @@ func _past_her_through_the_next_box(def: EventDef, place: Vector2, level: Vector
 ## came by.
 static func _short_of_her_box(level: Vector2, going: Vector2, sited_at: Vector2) -> Vector2:
 	var vertical := absf(going.y) > absf(going.x)
-	var ahead := 1.0 if (going.y if vertical else going.x) > 0.0 else -1.0
-	var box := _next_box(sited_at.y if vertical else sited_at.x, ahead > 0.0)
-	var period := float(CityMap.period() * Tuning.TILE_SIZE)
-	var box_px := float(Tuning.STREET_WIDTH * Tuning.TILE_SIZE)
-	var entry := box * period + (0.0 if ahead > 0.0 else box_px)
-	if (entry - (level.y if vertical else level.x)) * ahead > 0.0:
+	var forward := (going.y if vertical else going.x) > 0.0
+	var box := JunctionBoxes.ahead(sited_at.y if vertical else sited_at.x, forward)
+	var entry := JunctionBoxes.entry(box, forward)
+	if (entry - (level.y if vertical else level.x)) * (1.0 if forward else -1.0) > 0.0:
 		return level
-	return Vector2(level.x, entry - ahead) if vertical else Vector2(entry - ahead, level.y)
+	var short := JunctionBoxes.short_of(box, forward)
+	return Vector2(level.x, short) if vertical else Vector2(short, level.y)
 
 ## `laid` as the day's `WayOn` drives it (`WayOn.driven()`: round a crater in its lane by the
 ## street's other lane), with her at `her`, or empty where it may not be driven or has no next leg
