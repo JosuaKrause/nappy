@@ -13,9 +13,18 @@
 # RELEASE_TAG=<tag> tools/export-web.sh   # names build/web/<tag>/, default "dev", and is the
 #                                         # version baked into the export
 #
+# A release candidate's tag (`vX.Y.Z-rc.N`, as `tools/release-tags.py kind` reads it) also takes
+# GoatCounter's `count.js` off the page, so not even the visit to a candidate is counted
+# (docs/TELEMETRY.md, "The page counts visits"); the game's own gate refuses its events as well.
+# That question is asked before any work, and an answer that cannot be had (no `uv`, a `uv run`
+# that fails, an answer that is no kind) is refused rather than read as "not a candidate", which
+# would put the counter on a candidate's page.
+#
 # index.js, index.wasm and index.pck move into build/web/$RELEASE_TAG/ after the export, and
 # index.html is rewritten to name them there — see the export-versioning step below for why.
-# .github/workflows/deploy.yml sets RELEASE_TAG to the pushed tag; a local export has none, so
+# .github/workflows/deploy.yml sets RELEASE_TAG to the tag of the build it exports (the newest
+# release's for the root, the candidate's for /rc/, either of which may be other than the pushed
+# tag); a local export has none, so
 # it falls back to "dev", which is also what tools/serve-web.sh gets since it calls this script
 # with no RELEASE_TAG of its own. The build stamp — the version and HEAD's hash, baked into the
 # export as project settings — is the step below the Godot check; without RELEASE_TAG the version
@@ -38,6 +47,7 @@ Release requires tools/build-web-template.sh first; debug uses the stock templat
   tools/export-web.sh
   tools/export-web.sh debug
   RELEASE_TAG=v1.2.3 tools/export-web.sh
+  RELEASE_TAG=v1.3.0-rc.1 tools/export-web.sh   # a release candidate: no count.js on the page
 EOF
 }
 
@@ -65,6 +75,29 @@ if [[ ! -x "$GODOT" ]]; then
     exit 127
 fi
 
+# Whether this export is a release candidate, asked of the one reader of tag names every tool
+# shares, before anything is built or written. `kind` answers `none` with exit 0 for a name that
+# is no version tag ("dev", a check's name), so a non-zero exit or any other answer is a failure
+# to ask, and is refused: guessing "no" would put the counter on a candidate's page.
+RELEASE_TAG_GIVEN="${RELEASE_TAG:-}"
+RELEASE_TAG="${RELEASE_TAG:-dev}"
+if ! command -v uv >/dev/null 2>&1; then
+    echo "FAILED: uv is not on PATH; it says whether $RELEASE_TAG is a release candidate" >&2
+    exit 1
+fi
+if ! TAG_KIND="$(uv run --project "$PROJECT_DIR" --quiet python "$PROJECT_DIR/tools/release-tags.py" \
+        kind "$RELEASE_TAG")"; then
+    echo "FAILED: could not ask tools/release-tags.py whether $RELEASE_TAG is a release candidate" >&2
+    exit 1
+fi
+case "$TAG_KIND" in
+    release|candidate|none) ;;
+    *)
+        echo "FAILED: tools/release-tags.py answered '$TAG_KIND' for $RELEASE_TAG, which is no kind" >&2
+        exit 1
+        ;;
+esac
+
 if [[ "$MODE" == release ]]; then
     "$PROJECT_DIR/tools/build-web-template.sh" --verify || exit 1
     source "$PROJECT_DIR/tools/web-template/pins.env"
@@ -85,7 +118,7 @@ headroom_preflight tools/export-web.sh "$OUT_DIR" "" web-export || exit 1
 # `build_text()` — where an exported build has no repository to ask `git`, and Godot bakes the
 # project settings into the export, so the two are written into project.godot for the duration
 # of the export and the file is put back from a copy on every exit. The version is RELEASE_TAG
-# when the caller set one (deploy.yml passes the pushed tag; its checkout is shallow, so
+# when the caller set one (deploy.yml passes the tag of the build it exports; its checkout is shallow, so
 # `git describe` there would name no tag) and `git describe --tags --always` with a `-dirty` mark
 # otherwise, the shape `BuildInfo.source_version()` gives a working tree; the commit is HEAD's
 # abbreviated hash either way, since on a release describe collapses to the tag and a tag can be
@@ -94,7 +127,7 @@ headroom_preflight tools/export-web.sh "$OUT_DIR" "" web-export || exit 1
 # placeholder.
 PROJECT_FILE="$PROJECT_DIR/project.godot"
 SOURCE_COMMIT="$(git -C "$PROJECT_DIR" rev-parse --short HEAD 2>/dev/null || echo unknown)"
-if [[ -n "${RELEASE_TAG:-}" ]]; then
+if [[ -n "$RELEASE_TAG_GIVEN" ]]; then
     SOURCE_VERSION="$RELEASE_TAG"
 else
     SOURCE_VERSION="$(git -C "$PROJECT_DIR" describe --tags --always 2>/dev/null || echo unknown)"
@@ -191,7 +224,6 @@ fi
 # 404s. index.js is a third file the same query would go stale on, so it moves as well. The
 # small favicon/splash images (index.png, index.icon.png, index.apple-touch-icon.png) are plain
 # hrefs Godot's own shell writes and never touch GODOT_CONFIG, so they stay at the root.
-RELEASE_TAG="${RELEASE_TAG:-dev}"
 VERSIONED_DIR="$OUT_DIR/$RELEASE_TAG"
 
 echo
@@ -213,10 +245,11 @@ done
 # Every anchor below is asserted to occur exactly once before it is touched, so a future Godot
 # shell change that moves or renames one of these fails the export loudly rather than shipping a
 # page that quietly points at the wrong place.
-python3 - "$OUT_DIR/index.html" "$RELEASE_TAG" <<'PY'
+python3 - "$OUT_DIR/index.html" "$RELEASE_TAG" "$TAG_KIND" <<'PY'
+import re
 import sys
 
-path, tag = sys.argv[1], sys.argv[2]
+path, tag, kind = sys.argv[1], sys.argv[2], sys.argv[3]
 html = open(path, encoding="utf-8").read()
 
 
@@ -237,6 +270,18 @@ html = replace_once(html, '"index.wasm"', f'"{tag}/index.wasm"', 'fileSizes inde
 # gets the short one (docs/playtests/PLAYTEST-27.md finding 5). Removed here, from the shell's side,
 # rather than from head_include, since head_include's title is the one meant to survive.
 html = replace_once(html, '<title>Nappy</title>', '', 'Godot shell <title>Nappy</title>')
+
+# A release candidate counts nothing: html/head_include's GoatCounter script, the one element that
+# loads count.js, is taken off its page whole, and nothing naming GoatCounter may be left behind.
+if kind == "candidate":
+    inside = r"(?:(?!</script>).)*"
+    counter = re.compile(rf"<script>{inside}gc\.zgo\.at/count\.js{inside}</script>", re.S)
+    found = counter.findall(html)
+    if len(found) != 1:
+        sys.exit(f"FAILED: expected one count.js script on the candidate's page, found {len(found)}")
+    html = counter.sub("", html)
+    if "goatcounter" in html:
+        sys.exit("FAILED: the candidate's page still names goatcounter after its script was removed")
 
 open(path, "w", encoding="utf-8").write(html)
 PY
@@ -268,3 +313,6 @@ fi
 
 echo
 echo "OK: wrote $OUT_DIR ($RELEASE_TAG/index.js, $RELEASE_TAG/index.wasm, $RELEASE_TAG/index.pck)"
+if [[ "$TAG_KIND" == candidate ]]; then
+    echo "    a release candidate's page, with no count.js"
+fi

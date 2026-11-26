@@ -17,6 +17,11 @@ reuses the same rule rather than leaving it undefined). The "previous" tag is fo
 this needs no assumption that tags were created in version order. The first tag ever -- nothing
 found by that search -- covers from the root of history.
 
+**A release candidate** (`vX.Y.Z-rc.N`, `tools/lib_release_tags.py`) takes the range of the release
+`vX.Y.Z` it is a candidate for: everything since the previous *release*, never since the previous
+candidate, so the notes of the release that follows its candidates are what they would have been
+without them. A candidate is never anybody's "previous" tag.
+
 **Content.** One bullet per commit on `main`'s first-parent history in the range, its subject line
 verbatim -- this repository's own convention (see .claude/skills/committing/SKILL.md, "The squash
 commit is the pull request's title and description") already ends every one in `(#N)`, which GitHub
@@ -52,11 +57,13 @@ import subprocess
 import sys
 from pathlib import Path
 
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+
+import lib_release_tags as tags
+
 ROOT = Path(__file__).resolve().parent.parent
 
-TAG_RE = re.compile(r"^v(\d+)\.(\d+)\.(\d+)$")
-
-Version = tuple[int, int, int]
+Version = tags.Version
 
 # See the module docstring's "Why these paths are 'Game'" for the reasoning behind each entry.
 GAME_PREFIXES = ("src/", "art/", "assets/", "scenes/")
@@ -75,14 +82,18 @@ def run_git(args: list[str], *, cwd: Path = ROOT) -> str:
 
 
 def parse_tag(tag: str) -> Version:
-    match = TAG_RE.fullmatch(tag)
-    if not match:
-        raise ReleaseNotesError(f"{tag!r} is not a vMAJOR.MINOR.PATCH tag")
-    return (int(match.group(1)), int(match.group(2)), int(match.group(3)))
+    """The release `tag` is, or the release a candidate `tag` is for."""
+    release = tags.parse_release(tag)
+    if release is not None:
+        return release
+    candidate = tags.parse_candidate(tag)
+    if candidate is not None:
+        return candidate[0]
+    raise ReleaseNotesError(f"{tag!r} is not a vMAJOR.MINOR.PATCH tag or a vMAJOR.MINOR.PATCH-rc.N candidate")
 
 
 def tag_str(version: Version) -> str:
-    return f"v{version[0]}.{version[1]}.{version[2]}"
+    return tags.release_name(version)
 
 
 def resolve_commit(tag: str, commit: str | None, *, cwd: Path) -> str:
@@ -100,18 +111,17 @@ def resolve_commit(tag: str, commit: str | None, *, cwd: Path) -> str:
 
 
 def ancestor_version_tags(until: str, *, exclude: str, cwd: Path) -> list[Version]:
-    """Every `v<digits>.<digits>.<digits>` tag that is `until` itself or an ancestor of it, parsed,
-    `exclude` left out by name. `git tag --merged` is the ancestor test."""
+    """Every release tag (`vX.Y.Z`, never a candidate) that is `until` itself or an ancestor of it,
+    parsed, `exclude` left out by name. `git tag --merged` is the ancestor test."""
     output = run_git(["tag", "--merged", until, "-l", "v[0-9]*"], cwd=cwd)
     versions = []
     for line in output.splitlines():
         name = line.strip()
         if not name or name == exclude:
             continue
-        try:
-            versions.append(parse_tag(name))
-        except ReleaseNotesError:
-            continue
+        version = tags.parse_release(name)
+        if version is not None:
+            versions.append(version)
     return versions
 
 
@@ -211,7 +221,10 @@ def parse_args(argv: list[str]) -> argparse.Namespace:
         epilog="  tools/release-notes.py v0.20.0\n  tools/release-notes.py v0.20.1 --commit HEAD\n",
         formatter_class=argparse.RawDescriptionHelpFormatter,
     )
-    parser.add_argument("tag", help="the vMAJOR.MINOR.PATCH tag to print notes for")
+    parser.add_argument(
+        "tag",
+        help="the vMAJOR.MINOR.PATCH tag, or vMAJOR.MINOR.PATCH-rc.N candidate, to print notes for",
+    )
     parser.add_argument(
         "--commit",
         metavar="COMMITTISH",

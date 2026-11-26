@@ -241,12 +241,18 @@ and `tools/release.sh` make their own reads.
 ## Releasing
 
 **A push is a check and a tag is a release**: `https://nappy.josuakrause.com/` serves whatever the
-newest `v*` tag points at, so **a fix on `main` is not a fix on the site**. **Publishing needs its
+newest release tag (`vX.Y.Z`) points at, never a candidate, which is served at `/rc/`, so **a fix on
+`main` is not a fix on the site**. **Publishing needs its
 own go-ahead from the player in the current session**; the standing merge permission is not release
 permission. A release is cut with `tools/release.sh <major|minor|patch>`, which prints its plan and
 acts only with a trailing `push`; an agent runs that form as `uv run python tools/agent-identity.py
 run claude-coder -- tools/release.sh <part> push`. `major` is reserved for a change that breaks or
-fundamentally alters the game. `references/releasing.md` holds what CI and the deploy check, how
+fundamentally alters the game. **A release candidate**, `tools/release.sh rc <part>`, puts a second
+build online at an address of its own that counts nothing (inbox #1777 in tiny-newt), the path
+`/rc/` (inbox #1781 in tiny-newt), with a save of its own (the filer's proposal, lilac-alpaca). It
+needs no go-ahead (the filer's proposal, lilac-alpaca): the root plays the same release, though
+every candidate's deploy rebuilds it from the release's own tag, checks it in Chrome again and gives
+its page the `?rc=1` forward. `references/releasing.md` holds what CI and the deploy check, how
 the notes are generated, what the script refuses and why a browser fetches a release whole: read it
 before cutting a release or answering whether a commit is live.
 
@@ -506,6 +512,11 @@ fix the sentence or commit nothing. And `./tools/pycheck.sh` if it touches `tool
 The rules in this file that are the filer's proposal or reading, not the player's words, each open
 to the player's correction:
 
+- **Cutting a release candidate needs no go-ahead from the player** ("Releasing"), the filer's
+  proposal (lilac-alpaca): a candidate counts nothing and plays at an address linked from nowhere,
+  and the root plays the same release, though each candidate's deploy rebuilds the root from the
+  release's own tag and adds the `?rc=1` forward to its page. The plainer alternative is the
+  player's word for each candidate, as for a release.
 - **What is done when the classifier refuses a write the standing permission covers** ("Merging":
   report it naming the player's settings, never work around it). The player asked only for the
   standing permission in their own settings (curly-rabbit #1094).

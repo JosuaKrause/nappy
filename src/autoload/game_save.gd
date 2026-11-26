@@ -39,8 +39,9 @@ extends Node
 ## moment it is in `run_data()`, and `RunStateRegistry.restore_run_data()` is the one function
 ## that reads both back.
 ##
-## **One save, no slots.** `_DEFAULT_PATH` is the only file this ever reads or writes on a real
-## run; a suite hands the constructor a scratch path instead, and
+## **One save, no slots.** `player_path()` is the only file this ever reads or writes on a real
+## run, `_DEFAULT_PATH` for a release and a file of its own for a release candidate; a suite hands
+## the constructor a scratch path instead, and
 ## `_uses_save()` is the one gate every read and write goes through so a dev flag, a headless boot
 ## or the test runner never touches either.
 ##
@@ -81,6 +82,9 @@ const FORMAT_VERSION := 1
 const NODE_NAME := "GameSave"
 
 const _DEFAULT_PATH := "user://save.json"
+
+## A release candidate's own save (`player_path()`).
+const _CANDIDATE_PATH := "user://save-rc.json"
 
 ## What one save moment came to — a write's or a deletion's, as `write()` and `clear()` return it.
 ## The bus carries the change's beginning and then whether it was kept (`EventBus.save_written` and
@@ -189,18 +193,28 @@ var _last_operation := 0
 ## flush begins waiting, so the step it first counts is the time since then.
 var _last_tick_usec := 0
 
-## Where this save lives: the player's own (`_DEFAULT_PATH`) unless the one that makes it hands in
-## another. A suite makes its own with a scratch file and hands it to the boot it drives
+## Where this save lives: the player's own, which `main` hands in (`player_path()`), or another
+## the one that makes it hands in. A suite makes its own with a scratch file and hands it to the boot it drives
 ## (`main.use_save()`), so an agent's run never lands in a saved game — see the **writing-tests**
 ## skill.
 var _file_path: String
 
-## A save at `file_path`; the game builds one with none, which is the player's own.
-func _init(file_path := _DEFAULT_PATH) -> void:
+## A save at `file_path`: the player's own (`player_path()`) in the game, a scratch file in a suite.
+func _init(file_path: String) -> void:
 	_file_path = file_path
 
 func _path() -> String:
 	return _file_path
+
+## The player's own save for the build `version` names (`BuildInfo.exported_version()`, which `main`
+## hands here, so a developer's checkout on a candidate's tag keeps the release's): `_DEFAULT_PATH`,
+## or `_CANDIDATE_PATH` for a release candidate (`BuildInfo.names_a_release_candidate()`). A candidate is served beside the release on the same
+## site, where `user://` is one IndexedDB for both pages, so a file of its own keeps a try of a new
+## feature from overwriting the day a player reached on the release, and keeps a save a newer build
+## wrote from ever reaching the release's resume. A person who tries a candidate starts it from day
+## 1 rather than from their release day.
+static func player_path(version: String) -> String:
+	return _CANDIDATE_PATH if BuildInfo.names_a_release_candidate(version) else _DEFAULT_PATH
 
 ## The run's configuration, handed in by `main` at boot (`configure()`), or `null` before then,
 ## which `_uses_save()` answers with no save at all: nothing reads or writes the player's save

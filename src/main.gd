@@ -2268,7 +2268,7 @@ func _take_the_sitting() -> void:
 	if not _save:
 		_save = _sitting.get_node_or_null(NodePath(GameSave.NODE_NAME)) as GameSave
 	if not _save:
-		_save = GameSave.new()
+		_save = GameSave.new(GameSave.player_path(BuildInfo.exported_version()))
 		_save.name = GameSave.NODE_NAME
 		_sitting.add_child(_save)
 	if not _run_log:

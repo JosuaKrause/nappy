@@ -111,6 +111,10 @@ from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from typing import Any, NamedTuple
 
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+
+import lib_release_tags
+
 DEFAULT_SITE = "https://nappy.goatcounter.com/api/v0/"
 DEFAULT_PREFIX = "nappy-"
 DEFAULT_DAYS = 30
@@ -812,7 +816,9 @@ class ReleaseWindow(NamedTuple):
 
 def read_release_tags(root: Path | None = None) -> list[tuple[str, datetime]]:
     """Every `v*` tag in the repository with its date: the tagger's date for an annotated tag, the
-    commit's for a lightweight one (git's `creatordate`), as the moment it was made."""
+    commit's for a lightweight one (git's `creatordate`), as the moment it was made. A release
+    candidate (`vX.Y.Z-rc.N`, `tools/lib_release_tags.py`) is left out: it is served beside the
+    release and counts nothing, so it opens no window."""
     try:
         done = subprocess.run(
             ["git", "for-each-ref", "refs/tags/v*", "--format=%(refname:short) %(creatordate:iso-strict)"],
@@ -826,7 +832,7 @@ def read_release_tags(root: Path | None = None) -> list[tuple[str, datetime]]:
     tags: list[tuple[str, datetime]] = []
     for line in done.stdout.splitlines():
         name, _, stamp = line.partition(" ")
-        if name and stamp:
+        if name and stamp and lib_release_tags.parse_candidate(name) is None:
             tags.append((name, datetime.fromisoformat(stamp)))
     if not tags:
         raise GoatCounterError("--by-release found no v* tags in this repository")

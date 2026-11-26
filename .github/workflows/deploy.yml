@@ -1,7 +1,20 @@
-# Builds the Web export and publishes it to GitHub Pages, which is already on for this repo with
+# Builds the Web exports and publishes them to GitHub Pages, which is already on for this repo with
 # the custom domain https://nappy.josuakrause.com/ set as a repository setting — nothing here
-# may write to that setting, and nothing in the export may assume a `/nappy/` path prefix, since
+# may write to that setting, and nothing in an export may assume a `/nappy/` path prefix, since
 # the site is served from the domain's root rather than from a project-pages subpath.
+#
+# **Every deploy publishes the whole site, release and candidate together.** It fires on a release
+# tag (`vX.Y.Z`) and on a release candidate's (`vX.Y.Z-rc.N`, `tools/release.sh rc`) alike, and
+# Pages keeps nothing between deploys, so each one builds the newest release for the root and, when
+# one is out, the newest candidate for `/rc/`, each from its own tag's commit with that commit's
+# own recipe, and publishes the two as one artifact. `tools/release-tags.py site` says which two
+# (`tools/lib_release_tags.py`: a candidate stays while its number is above the release's, and a
+# minor or major release removes every candidate cut before it); `tools/assemble-site.py` lays
+# them out, with the root page forwarding `?rc=1` to `/rc/` and, with no candidate out, a `/rc/`
+# page forwarding to the root. A candidate's export carries no `count.js` (`tools/export-web.sh`).
+# **A candidate whose build fails never holds a release back**: a release's deploy then publishes
+# the release alone, `/rc/` forwarding to the root, and says so in the `assemble` job's summary,
+# while a candidate's deploy publishes nothing new and the live site stays as it was.
 #
 # The Godot binary, the custom Web template, the export and the browser check come from
 # .github/actions/web-browser-check, the one recipe ci.yml's `browser` job and web-template.yml
@@ -71,42 +84,99 @@ jobs:
             waited=$(( waited + 30 ))
           done
 
-  build:
+  # Which release the root serves and which candidate, if any, `/rc/` serves, read from every tag
+  # (`tools/release-tags.py site`), and whether the pushed tag is a release or a candidate. Full
+  # history and every tag, since a minor release's removal of the candidates before it is asked of
+  # the history (`git merge-base --is-ancestor`).
+  #
+  # **The step fails rather than hand on an empty release name.** An empty `ref` would check out
+  # the pushed tag for the root, on a candidate's push the candidate itself with `count.js` on its
+  # page. So the step runs under `pipefail`, the script refuses rather than print an empty name, its
+  # answer goes to a file that is checked line by line before anything reaches `$GITHUB_OUTPUT`,
+  # and `build-release` refuses an empty name again on its own side.
+  plan:
     needs: verify
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    outputs:
+      release: ${{ steps.site.outputs.release }}
+      candidate: ${{ steps.site.outputs.candidate }}
+      pushed: ${{ steps.site.outputs.pushed }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          filter: blob:none
+          fetch-depth: 0
+          fetch-tags: true
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v10.3.3
+        with:
+          enable-cache: true
+
+      - name: Read what the site publishes
+        id: site
+        shell: bash
+        run: |
+          set -euo pipefail
+          answer="$RUNNER_TEMP/site.txt"
+          uv run --quiet python tools/release-tags.py site --pushed "$GITHUB_REF_NAME" > "$answer"
+          cat "$answer"
+          for line in 'release=v[0-9]+\.[0-9]+\.[0-9]+' \
+              'candidate=(v[0-9]+\.[0-9]+\.[0-9]+-rc\.[0-9]+)?' 'pushed=(release|candidate)'; do
+            if ! grep -Eqx "$line" "$answer"; then
+              echo "refusing: the plan's answer has no line matching $line" >&2
+              exit 1
+            fi
+          done
+          cat "$answer" >> "$GITHUB_OUTPUT"
+
+  # The newest release, exported and played in Chrome from its own tag's commit -- the pushed tag on
+  # a release, an earlier one beside a candidate -- with that commit's own recipe
+  # (.github/actions/web-browser-check, the one ci.yml's `browser` job runs on every code pull
+  # request and every push to main), so the commit whose `test` check passed was exported and
+  # played this way before it could be tagged.
+  #
+  # RELEASE_TAG does two jobs in tools/export-web.sh. It names the build/web/<tag>/ directory
+  # index.js, index.wasm and index.pck move into, so their URLs change with every release and
+  # GitHub Pages' Cache-Control: max-age=600 — which nothing in this repo can turn off — can no
+  # longer serve a stale or, worse, mixed build inside that window (docs/playtests/PLAYTEST-27.md
+  # finding 1). And it is the version the script bakes into the export as
+  # `application/config/version`, beside HEAD's hash as `application/config/source_commit` --
+  # Godot's own settings mechanism, read at runtime by `BuildInfo.version_text()` where an export
+  # has no repository to ask -- so the page names the actual release (or candidate) rather than the
+  # placeholder project.godot carries in the repository.
+  build-release:
+    needs: plan
     runs-on: ubuntu-latest
     timeout-minutes: 180
     steps:
+      # An empty ref would check out the pushed tag, which on a candidate's push is not a release.
+      - name: Refuse an empty release name
+        env:
+          RELEASE: ${{ needs.plan.outputs.release }}
+        run: |
+          if [[ -z "$RELEASE" ]]; then
+            echo "refusing: the plan named no release for the root" >&2
+            exit 1
+          fi
+
       # Same partial clone and sparse checkout as ci.yml's `shards` job: the boot check and the
       # Web export read nothing under docs/evidence/ (docs/ carries a .gdignore, so the import
       # pass never sees it either). docs/DECISIONS.md, M201, a CI job does not download the evidence.
       - uses: actions/checkout@v7
         with:
+          ref: ${{ needs.plan.outputs.release }}
           filter: blob:none
           sparse-checkout-cone-mode: false
           sparse-checkout: |
             /*
             !/docs/evidence/
 
-      # The template, the boot check, the export and the browser check are the same recipe ci.yml's
-      # `browser` job runs on every code pull request and every push to main
-      # (.github/actions/web-browser-check), so the commit whose `test` check passed was exported
-      # and played in Chrome exactly this way before it could be tagged.
-      #
-      # RELEASE_TAG does two jobs in tools/export-web.sh, and github.ref_name on a tag push is the
-      # tag itself (e.g. "v1.2.3"), the same shape tools/release.sh writes. It names the
-      # build/web/<tag>/ directory index.js, index.wasm and index.pck move into, so their URLs
-      # change with every release and GitHub Pages' Cache-Control: max-age=600 — which nothing in
-      # this repo can turn off — can no longer serve a stale or, worse, mixed build inside that
-      # window (docs/playtests/PLAYTEST-27.md finding 1). And it is the version the script bakes
-      # into the export as `application/config/version`, beside HEAD's hash as
-      # `application/config/source_commit` -- Godot's own settings mechanism, read at runtime by
-      # `TitleScreen.version_text()` and `commit_text()` where an export has no repository to ask
-      # -- so the page names the actual release rather than the placeholder project.godot carries
-      # in the repository.
-      - name: Export the Web build and verify it in Chrome before publishing
+      - name: Export the release's Web build and verify it in Chrome before publishing
         uses: ./.github/actions/web-browser-check
         with:
-          release-tag: ${{ github.ref_name }}
+          release-tag: ${{ needs.plan.outputs.release }}
 
       - name: Keep browser verification evidence
         if: always()
@@ -116,24 +186,123 @@ jobs:
           path: ${{ runner.temp }}/browser-result
           if-no-files-found: warn
 
-      # og:image/twitter:image in export_presets.cfg's html/head_include point at
-      # social-card.png beside index.html, and this is what puts it there — art/social-card.png,
-      # a copy of the art/logo.png wordmark already flattened onto an opaque background
-      # (docs/playtests/PLAYTEST-27.md finding 5: logo.png's transparent pixels carry RGB (0,0,0), so a
-      # client that ignores alpha paints the card black rather than showing nothing). Copied
-      # rather than flattened here so the workflow needs no image-processing tool of its own.
-      # It has to be copied at all because art/ carries a .gdignore: the export never sees it, so
-      # the card is not in the .pck and could not be served out of one anyway.
-      - name: Publish the social card image
-        run: cp art/social-card.png build/web/social-card.png
+      - name: Keep the release's export for the site
+        uses: actions/upload-artifact@v7
+        with:
+          name: site-release
+          path: build/web
+          if-no-files-found: error
+
+  # The newest candidate, when one is out, the same way from its own tag's commit; its export
+  # carries no count.js, and its version names it a candidate, which the game reads to count
+  # nothing and to keep a save of its own.
+  build-candidate:
+    needs: plan
+    if: needs.plan.outputs.candidate != ''
+    runs-on: ubuntu-latest
+    timeout-minutes: 180
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ needs.plan.outputs.candidate }}
+          filter: blob:none
+          sparse-checkout-cone-mode: false
+          sparse-checkout: |
+            /*
+            !/docs/evidence/
+
+      - name: Export the candidate's Web build and verify it in Chrome before publishing
+        uses: ./.github/actions/web-browser-check
+        with:
+          release-tag: ${{ needs.plan.outputs.candidate }}
+
+      - name: Keep browser verification evidence
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: candidate-web-browser
+          path: ${{ runner.temp }}/browser-result
+          if-no-files-found: warn
+
+      - name: Keep the candidate's export for the site
+        uses: actions/upload-artifact@v7
+        with:
+          name: site-candidate
+          path: build/web
+          if-no-files-found: error
+
+  # One Pages artifact: the release at the root, the candidate under rc/ or a page there that
+  # forwards to the root (tools/assemble-site.py, whose dry run tools/test_assemble_site.py is).
+  # It runs whenever the release built, and the script decides what a failed candidate build means
+  # (`--candidate-build`, `--pushed`): on a release's deploy, the release alone, said in this job's
+  # summary; on a candidate's, a refusal, so nothing is published.
+  #
+  # og:image/twitter:image in export_presets.cfg's html/head_include point at social-card.png
+  # beside index.html, and the assembly is what puts it there — art/social-card.png, a copy of the
+  # art/logo.png wordmark already flattened onto an opaque background
+  # (docs/playtests/PLAYTEST-27.md finding 5: logo.png's transparent pixels carry RGB (0,0,0), so a
+  # client that ignores alpha paints the card black rather than showing nothing). It has to be
+  # copied at all because art/ carries a .gdignore: the export never sees it, so the card is not in
+  # the .pck and could not be served out of one anyway.
+  assemble:
+    needs: [plan, build-release, build-candidate]
+    if: ${{ !cancelled() && needs.build-release.result == 'success' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          filter: blob:none
+          sparse-checkout-cone-mode: false
+          sparse-checkout: |
+            /*
+            !/docs/evidence/
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v10.3.3
+        with:
+          enable-cache: true
+
+      - name: Fetch the release's export
+        uses: actions/download-artifact@v8
+        with:
+          name: site-release
+          path: build/release
+
+      - name: Fetch the candidate's export
+        if: needs.build-candidate.result == 'success'
+        uses: actions/download-artifact@v8
+        with:
+          name: site-candidate
+          path: build/candidate
+
+      - name: Lay out the site
+        shell: bash
+        env:
+          CANDIDATE: ${{ needs.plan.outputs.candidate }}
+          CANDIDATE_BUILD: ${{ needs.build-candidate.result }}
+          PUSHED: ${{ needs.plan.outputs.pushed }}
+        run: |
+          set -euo pipefail
+          args=(--release build/release --social-card art/social-card.png --out build/site
+            --pushed "$PUSHED")
+          if [[ -n "$CANDIDATE" ]]; then
+            args+=(--candidate build/candidate --candidate-build "$CANDIDATE_BUILD")
+          fi
+          uv run --quiet python tools/assemble-site.py "${args[@]}" | tee -a "$GITHUB_STEP_SUMMARY"
 
       - name: Upload the Pages artifact
         uses: actions/upload-pages-artifact@v5
         with:
-          path: build/web
+          path: build/site
 
+  # **The explicit `if:` is load-bearing.** With none, the implicit `success()` also looks past
+  # `assemble` to the jobs it needs, so a skipped `build-candidate` (every deploy with no candidate
+  # out) would skip this job and `release` after it, and the run would still look green
+  # (actions/runner#2205). Nothing here can be tried before a real tag is pushed.
   deploy:
-    needs: build
+    needs: assemble
+    if: ${{ !cancelled() && needs.assemble.result == 'success' }}
     runs-on: ubuntu-latest
     permissions:
       pages: write
@@ -148,10 +317,14 @@ jobs:
 
   # The native form of a release: a GitHub Release on the tag, published only once the site
   # itself is live, from `tools/release-notes.py` -- deterministic from git alone, no model and
-  # no network call to compute. `contents: write` is scoped to this job alone; the workflow-level
-  # permissions above stay exactly as narrow as they were before this job existed.
+  # no network call to compute. A candidate's is marked a prerelease, its notes the ones its
+  # target release would have (since the previous release for a patch candidate, since the
+  # previous `.0` for a minor or major one). `contents: write` is scoped to this job alone; the
+  # workflow-level permissions above stay exactly as narrow as they were before this job existed.
+  # Its `if:` is `deploy`'s, for the same reason.
   release:
-    needs: deploy
+    needs: [plan, deploy]
+    if: ${{ !cancelled() && needs.deploy.result == 'success' }}
     runs-on: ubuntu-latest
     timeout-minutes: 10
     permissions:
@@ -183,11 +356,17 @@ jobs:
       - name: Publish or update the GitHub release
         env:
           GH_TOKEN: ${{ github.token }}
+          PUSHED: ${{ needs.plan.outputs.pushed }}
         run: |
+          prerelease=false
+          if [[ "$PUSHED" == candidate ]]; then
+            prerelease=true
+          fi
           if gh release view "$GITHUB_REF_NAME" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
             gh release edit "$GITHUB_REF_NAME" --repo "$GITHUB_REPOSITORY" \
-              --notes-file /tmp/release-notes.md
+              --notes-file /tmp/release-notes.md --prerelease="$prerelease"
           else
             gh release create "$GITHUB_REF_NAME" --repo "$GITHUB_REPOSITORY" \
-              --title "$GITHUB_REF_NAME" --notes-file /tmp/release-notes.md --verify-tag
+              --title "$GITHUB_REF_NAME" --notes-file /tmp/release-notes.md --verify-tag \
+              --prerelease="$prerelease"
           fi

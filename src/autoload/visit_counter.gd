@@ -11,8 +11,8 @@ extends Node
 ## `count.js` counts on load, and every event here opts out of them with `no_session`, so it
 ## counts every time it is sent — a day lost three times in an evening is three `lost-*` — while
 ## the visit stays one visitor ("okay, I can turn session back on and you opt out for everything
-## except /nappy.josuakrause.com/"). Off the web, on a debug build, or behind `?debug=1`, it is a
-## silent no-op — see
+## except /nappy.josuakrause.com/"). Off the web, on a debug build, behind `?debug=1`, or on a
+## release candidate's build, it is a silent no-op — see
 ## `GoatCounterOutbox.may_ever_send()`. `count.js` loading asynchronously is not one of those: an
 ## event asked for before it has finished loading is queued and sent the moment it appears — see
 ## `GoatCounterOutbox` — and
@@ -195,7 +195,8 @@ func send_through(outbox: GoatCounterOutbox, platform: GoatCounterPlatform) -> v
 func _send_event(name: String) -> void:
 	if _config == null or _outbox == null or _platform == null \
 			or not GoatCounterOutbox.may_ever_send(_platform.is_on_the_web(),
-			_platform.is_a_debug_build(), _config.asks_for_the_readout()):
+			_platform.is_a_debug_build(), _config.asks_for_the_readout(),
+			_platform.build_version()):
 		return
 	_outbox.send(name, _platform.has_the_counter())
 
