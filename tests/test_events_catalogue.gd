@@ -23,6 +23,7 @@ func run(t: TestRunner) -> void:
 	_test_catalogue_is_fair(t)
 	_test_every_charger_is_built_from_the_runs_charger_timing(t)
 	_test_every_timing_the_flag_accepts_keeps_every_row_fair(t)
+	_test_a_second_ask_at_the_same_timing_keeps_the_runs_catalogue(t)
 	_test_a_one_shot_is_sited_on_her_way(t)
 	_test_a_row_is_weighed_only_on_ground_it_stands_on(t)
 	_test_every_copy_of_a_row_keeps_its_ground_weights(t)
@@ -82,6 +83,17 @@ func _test_every_charger_is_built_from_the_runs_charger_timing(t: TestRunner) ->
 	for id: String in shipped:
 		t.check(again[id] == shipped[id],
 				"%s is built as shipped by a catalogue made at the shipped timing" % id)
+
+## **The run's catalogue is built once**: a second ask at a timing other than the shipped one (a
+## recipe's boot configures `main` twice) is handed the catalogue the first built, and a new
+## timing gets a catalogue of its own.
+func _test_a_second_ask_at_the_same_timing_keeps_the_runs_catalogue(t: TestRunner) -> void:
+	var first := EventCatalogue.of_run(null, ChargerTiming.of(1.5, 1.2))
+	var again := EventCatalogue.of_run(first, ChargerTiming.of(1.5, 1.2))
+	t.check(again == first, "the same non-shipped timing keeps the catalogue it was built as")
+	var other := EventCatalogue.of_run(first, ChargerTiming.of(1.25, 1.2))
+	t.check(other != first and is_equal_approx(other.charger_timing().warning(), 1.25),
+			"a changed timing builds a catalogue of its own")
 
 ## **Every timing the flag accepts keeps every row fair**: `--chargers` (`DevFlags`) refuses a
 ## warning under `Tuning.OFFSCREEN_WARNING_MIN` and a radius factor outside

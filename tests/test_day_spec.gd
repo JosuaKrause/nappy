@@ -49,7 +49,8 @@ func _test_every_named_bag_is_a_whole_bag(t: TestRunner) -> void:
 	for bag_name: String in DaySpec.ESCAPE_BAGS:
 		var spec := DaySpec.for_section(DaySpec.Section.CITY, 60.0, "", bag_name)
 		for marble: String in spec.walk_bag():
-			t.check(marble == DaySpec.EMPTY_MARBLE or spec.walk_bag_rows(Shipped.rows()).has(marble),
+			t.check(marble == DaySpec.EMPTY_MARBLE
+					or spec.walk_bag_rows(Shipped.rows()).has(marble),
 					"bag %s's marble %s names a row" % [bag_name, marble])
 		t.check(spec.marbles_a_street() > 0, "bag %s draws a set number of marbles" % bag_name)
 	var sizes := {}

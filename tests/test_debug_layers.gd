@@ -181,11 +181,11 @@ func _test_the_escapes_second_world_hands_the_event_routes_its_events(t: TestRun
 	var rig := Rig.new(t, _config([], true))
 	var route_a := PackedVector2Array([Vector2.ZERO, Vector2(50.0, 0.0)])
 	var route_b := PackedVector2Array([Vector2(10.0, 10.0), Vector2(10.0, 90.0)])
-	var building := StandInEvents.new(EventSurroundings.new().reading(Shipped.rows()))
+	var building := StandInEvents.new(Shipped.rows(), EventSurroundings.new())
 	var instance_a := EventInstance.new()
 	instance_a.setup(Shipped.rows().by_id("police_patrol"), route_a[0], route_a)
 	building.live = [instance_a]
-	var city := StandInEvents.new(EventSurroundings.new().reading(Shipped.rows()))
+	var city := StandInEvents.new(Shipped.rows(), EventSurroundings.new())
 	var instance_b := EventInstance.new()
 	instance_b.setup(Shipped.rows().by_id("police_patrol"), route_b[0], route_b)
 	city.live = [instance_b]

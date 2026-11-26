@@ -1118,7 +1118,7 @@ func _mast_placement(def: EventDef, builder: PlanBuilder, at: Vector2,
 	return builder.place_at(def, tile, RandomNumberGenerator.new(), prior)
 
 ## The escape's exact actors use its own row variants (the walk's spec's
-## `DaySpec.walk_bag_rows(_rows)`), open streets, tree exclusion, spawn clearance and body
+## `DaySpec.walk_bag_rows()`), open streets, tree exclusion, spawn clearance and body
 ## spacing. No ordinary-day corridor or offscreen director stands in for it.
 func _finale_placement(def: EventDef, builder: PlanBuilder, at: Vector2, player_at: Vector2,
 		finale: FinalePlanner.Plan, prior: Array[EventPlan],

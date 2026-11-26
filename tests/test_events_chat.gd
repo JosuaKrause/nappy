@@ -67,7 +67,7 @@ func _chat_manager(t: TestRunner) -> EventManager:
 	# spawned event is added to (`WorldContext.add_entity()`).
 	var holder := WorldContext.new()
 	t.add_child(holder)
-	var manager := EventManager.new(EventSurroundings.new().reading(Shipped.rows())
+	var manager := EventManager.new(Shipped.rows(), EventSurroundings.new()
 			.on(map).drawn_in(holder))
 	manager.setup(run)
 	t.add_child(manager)

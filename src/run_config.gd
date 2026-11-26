@@ -355,7 +355,7 @@ func meters_override() -> Vector2:
 
 ## **How this run plays every charger's warning and notice**: `--chargers`' (or `?chargers=`'s), or
 ## the shipped timing (`EventCatalogue.shipped_charger_timing()`). `main` builds the run's
-## catalogue from it at boot (`EventCatalogue.for_run()`) and hands that down.
+## catalogue from it at boot (`EventCatalogue.of_run()`) and hands that down.
 func charger_timing() -> ChargerTiming:
 	if _charger_timing_override.x < 0.0:
 		return EventCatalogue.shipped_charger_timing()

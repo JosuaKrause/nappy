@@ -291,7 +291,8 @@ func _what_he_guards(city: City, director: ResistanceDirector, moves: int) -> Di
 	if from_arrow >= robbery.core_within() + reach - 0.5 \
 			and from_arrow <= robbery.notice_within() + reach + 0.5 and clear:
 		kind = "guarding"
-	elif clear and from_arrow <= ResistanceDirector.task_guard_farthest(Shipped.rows(), reach) + 0.5:
+	elif clear and from_arrow <= ResistanceDirector.task_guard_farthest(
+			Shipped.rows(), reach) + 0.5:
 		kind = "near"
 	return {"kind": kind, "from_arrow": from_arrow, "clear": clear, "moves": moves}
 

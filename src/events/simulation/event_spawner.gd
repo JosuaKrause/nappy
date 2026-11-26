@@ -437,11 +437,7 @@ func show_the_bang(def: EventDef) -> void:
 ## crater. Placed at the event's own position rather than at a planned tile, so the two are always
 ## consistent.
 func successor_of(instance: EventInstance) -> EventInstance:
-	var id := instance.take_what_it_leaves()
-	if id == "":
-		return null
-	var def := world.rows().by_id(id)
-	if not def:
-		push_error("event '%s' spawns unknown '%s'" % [instance.row_id(), id])
+	var def := instance.take_what_it_leaves()
+	if def == null:
 		return null
 	return create(def, instance.global_position)

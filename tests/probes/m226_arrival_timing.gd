@@ -71,7 +71,7 @@ static func collect(t: Node, encounter: Dictionary, answer: int, pelican: bool) 
 	var her: Vector2 = encounter["her"]
 	var heading: Vector2 = encounter["heading"]
 	var velocity: Vector2 = heading * Tuning.WALK_SPEED * [1.0, 0.0, -1.0][answer]
-	var source := Source.new(EventSurroundings.new().reading(Shipped.rows()))
+	var source := Source.new(Shipped.rows(), EventSurroundings.new())
 	t.add_child(source)
 	var where := WhereSheIs.nowhere()
 	var player := Node2D.new()

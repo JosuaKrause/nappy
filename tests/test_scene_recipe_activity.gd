@@ -11,7 +11,7 @@ func _ready() -> void:
 	# The recipe the boot plays, loaded as `main` loads it (`SceneRecipeRuntime.load_recipe()`): its
 	# data and the places it names. The booted game's parts are read off its scene tree.
 	var config := RunConfig.at_boot()
-	var loaded := SceneRecipeRuntime.load_recipe(EventCatalogue.for_run(config.charger_timing()),
+	var loaded := SceneRecipeRuntime.load_recipe(EventCatalogue.new(config.charger_timing()),
 			config.recipe_path(), config.dev_flag_words())
 	var packed: PackedScene = load("res://scenes/main.tscn")
 	var main := packed.instantiate()

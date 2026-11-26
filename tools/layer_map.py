@@ -198,7 +198,6 @@ STATIC_CACHES: dict[str, str] = {
     "EventFootprints._warning_sizes": "sizes read off the baked pictures, the same on every read",
     "EventFootprints._warning_guard": "a size read off the baked pictures, the same on every read",
     "EntityHalo._shared_material": "one shader material every halo shares",
-    "EventCatalogue._shipped": "the shipped catalogue, built once from constants",
     "EventInstance._NO_BIRDS": "an empty list, never written",
     "EventExcitement._NO_WALLS": "open ground, never written",
     "AtlasTable._baked": "the baked region table, read once from the bake's file and never written",

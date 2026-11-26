@@ -37,7 +37,7 @@ const AUTOLOADS: Array[String] = ["Tuning", "EventBus"]
 const EXEMPT: Dictionary[String, String] = {
 	"atlas_table._baked": "the baked atlas region table, read from its file on first use",
 	"resistance_steps._all": "the step table, built from constants on first use",
-	"event_catalogue._shipped": "the shipped catalogue, built once from constants on first use",
+	"shipped._shipped": "the shipped catalogue, built once from constants on first use",
 	"event_footprints._warning_sizes": "warning sizes, a pure function of the footprint tables",
 	"event_footprints._warning_guard": "the memo's guard for those sizes",
 	"entity_halo._shared_material": "the shared halo material, created on first use",

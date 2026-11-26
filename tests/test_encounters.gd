@@ -76,7 +76,7 @@ func _manager(t: TestRunner) -> EventManager:
 	# spawned event is added to (`WorldContext.add_entity()`).
 	var holder := WorldContext.new()
 	t.add_child(holder)
-	var manager := EventManager.new(EventSurroundings.new().reading(Shipped.rows())
+	var manager := EventManager.new(Shipped.rows(), EventSurroundings.new()
 			.on(map).drawn_in(holder))
 	# The game's bus, which this suite listens on, as whoever stands a manager hands it.
 	manager.use_bus(EventBus)

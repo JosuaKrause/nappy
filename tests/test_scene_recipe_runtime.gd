@@ -134,8 +134,8 @@ func _ready() -> void:
 	var runtime := SceneRecipeRuntime.new()
 	var data := {"name": "failed observation", "playback": {"duration": 1.0 / 60.0,
 		"observations": [{"tick": 1, "subject": "missing", "condition": "moving"}]}}
-	runtime.configure(Shipped.rows(), {"data": data, "anchors": {}, "manifest": {}}, _scripted(),
-			_run)
+	runtime.configure(Shipped.rows(), {"data": data, "anchors": {}, "manifest": {}},
+			_scripted(), _run)
 	add_child(runtime)
 	var watcher := Watcher.new()
 	watcher.manifest_path = _manifest_path()
@@ -147,8 +147,9 @@ func _ready() -> void:
 ## scene is installed into a world of stand-ins (`Pixel` is her, on a map the recipe builder makes) and
 ## its observations name her as `player`.
 func _probe_the_boundary() -> void:
-	var built := RecipeCityBuilder.build(Shipped.rows(), {"version": 1, "name": "one tick input",
-			"seed": 1, "extent": {"scope": "full"}, "city": {"context_seed": 1917501}})
+	var built := RecipeCityBuilder.build(Shipped.rows(), {"version": 1,
+			"name": "one tick input", "seed": 1, "extent": {"scope": "full"},
+			"city": {"context_seed": 1917501}})
 	var map: CityMap = built.map
 	var start := map.doorstep_world_position()
 	var seconds := 1.0 / Engine.physics_ticks_per_second

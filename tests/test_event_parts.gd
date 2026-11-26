@@ -281,7 +281,7 @@ func _test_the_manager_sees_her_only_once_she_is_handed_in(t: TestRunner) -> voi
 	t.add_child(holder)
 	var map := CityMap.new()
 	var run := RunState.new()
-	var manager := EventManager.new(EventSurroundings.new().reading(Shipped.rows())
+	var manager := EventManager.new(Shipped.rows(), EventSurroundings.new()
 			.on(map).drawn_in(holder))
 	manager.setup(run)
 	t.add_child(manager)

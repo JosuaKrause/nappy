@@ -168,7 +168,7 @@ func _test_a_row_that_does_not_announce_has_no_badge(t: TestRunner) -> void:
 func _test_the_drawing_shows_every_badge_the_model_lists(t: TestRunner) -> void:
 	var atlas := _PictureAtlas.new()
 	atlas.acquire(&"events")
-	var source := _Source.new(EventSurroundings.new().reading(Shipped.rows()))
+	var source := _Source.new(Shipped.rows(), EventSurroundings.new())
 	var player := Node2D.new()
 	t.add_child(player)
 	var def := Shipped.rows().by_id("fire_truck")

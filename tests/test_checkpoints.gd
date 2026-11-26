@@ -621,7 +621,7 @@ func _manager(t: TestRunner) -> EventManager:
 	# hands it), so a plan put in by `_door_instance()` stays in however far a test walks her.
 	var world := WorldContext.new()
 	var map := WorldMap.open_ground()
-	var manager := EventManager.new(EventSurroundings.new().reading(Shipped.rows())
+	var manager := EventManager.new(Shipped.rows(), EventSurroundings.new()
 			.on(map).drawn_in(world))
 	manager.setup(run)
 	manager.stream_within(INF)

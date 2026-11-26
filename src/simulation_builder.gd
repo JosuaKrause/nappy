@@ -226,7 +226,7 @@ func _stand_under(world: WorldContext) -> WorldSimulation:
 ## atlas, its frame timing, the drawn view, and whether they skip their drawing, drawn in
 ## `world`. The caller adds the map and what it moves by.
 func _the_events_surroundings(world: WorldContext) -> EventSurroundings:
-	var surroundings := EventSurroundings.new().reading(_rows).drawn_in(world) \
+	var surroundings := EventSurroundings.new().drawn_in(world) \
 			.tracing_to(_trace) \
 			.drawn_from(_atlas).shown_by(_drawn_view)
 	if _timing != null:
@@ -240,7 +240,7 @@ func _the_events_surroundings(world: WorldContext) -> EventSurroundings:
 ## **An event manager over `surroundings`, equipped the one way for every world**: the bus it
 ## reports on. Not yet in the tree: it takes its atlas page as it enters.
 func _new_events(surroundings: EventSurroundings) -> EventManager:
-	var events := EventManager.new(surroundings)
+	var events := EventManager.new(_rows, surroundings)
 	events.name = "Events"
 	events.use_bus(_bus)
 	return events

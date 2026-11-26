@@ -100,10 +100,10 @@ var _recipe_plan := false
 
 ## Builds the parts, each handed the one world, and connects the doors' intents and crossings.
 ## `surroundings` is what its events are set up in, built where the world is
-## (`SimulationBuilder`), the run's catalogue among them (`EventSurroundings.reading()`), which
-## the checkpoint reads its door guard from as it is made.
-func _init(surroundings: EventSurroundings) -> void:
-	world = EventWorld.new(surroundings)
+## (`SimulationBuilder`). `rows` is the run's catalogue, required: the checkpoint reads its door
+## guard from it as it is made, and the world's events look their rows up in it.
+func _init(rows: EventCatalogue, surroundings: EventSurroundings) -> void:
+	world = EventWorld.new(surroundings.reading(rows))
 	_warnings = WarningBoard.new(world)
 	_planner = DayPlanner.new(world)
 	_spawner = EventSpawner.new(world, _warnings)
@@ -120,11 +120,6 @@ func _init(surroundings: EventSurroundings) -> void:
 	_checkpoints.takes_her_in.connect(_take_her_in)
 	_checkpoints.holds_her.connect(_hold_her)
 	_checkpoints.lets_her_out.connect(_let_her_out)
-
-## **The run's catalogue** its world's events are read from (`EventWorld.rows()`): what the
-## resistance it sends events for reads its rows from too.
-func rows() -> EventCatalogue:
-	return world.rows()
 
 ## Takes the one reference on the baked page every `EventInstance` draws from — the whole catalogue,
 ## the checkpoint kit and the crater on one page (`EventPictures.ATLAS_GROUP`), for the manager's

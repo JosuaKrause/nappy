@@ -2227,16 +2227,17 @@ func row() -> EventDef:
 func row_id() -> String:
 	return _def.id()
 
-## **The id of the row it leaves, handed over once, as it goes off**: on the first ask with its
-## telegraph over, "" on every other ask and for a row that leaves nothing. The escape's explosion
+## **The row it leaves, handed over once, as it goes off**: on the first ask with its
+## telegraph over, null on every other ask and for a row that leaves nothing. The escape's
+## explosion
 ## leaves its crater the moment it bangs, so the crater stands where nothing of it could be seen
 ## (`EventStreaming.retire_finished()` asks every tick). An instance streamed back in after it had
 ## gone off already left it (`_restore_the_moment()`).
-func take_what_it_leaves() -> String:
-	if _left_what_it_leaves or _def.leaves_behind() == "" or is_telegraphing():
-		return ""
+func take_what_it_leaves() -> EventDef:
+	if _left_what_it_leaves or _def.left_behind() == null or is_telegraphing():
+		return null
 	_left_what_it_leaves = true
-	return _def.leaves_behind()
+	return _def.left_behind()
 
 ## Whether the sky lights up as it goes off (`LookSpec.flashes_as_it_goes_off()`): the escape
 ## city's explosion, which `BlastLight` flashes the screen for.

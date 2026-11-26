@@ -40,7 +40,7 @@ func _test_the_director_reads_the_rule_off_the_walks_spec(t: TestRunner) -> void
 	var leaves_it := EventScheduler.row_ground(map, null, false).tiles_for(def)
 	t.check(holds_it != leaves_it,
 			"the two rules differ on this city's ground (there was a rule to keep)")
-	var manager := EventManager.new(EventSurroundings.new().reading(Shipped.rows())
+	var manager := EventManager.new(Shipped.rows(), EventSurroundings.new()
 			.in_the_city(map))
 	manager.setup(RunState.new())
 	var maker := FakeSitingMaker.new(FakeWalkSiting.new())
@@ -70,8 +70,8 @@ func _test_the_escape_buildings_spec_holds_the_streets_and_sends_no_pursuer(
 	var asked := 0
 	var pursuers := {}
 	for spec: DaySpec in [DaySpec.for_day(DAY), building]:
-		var manager := EventManager.new(EventSurroundings.new()
-				.reading(Shipped.rows()).in_the_city(map))
+		var manager := EventManager.new(Shipped.rows(),
+				EventSurroundings.new().in_the_city(map))
 		manager.setup(RunState.new())
 		var maker := FakeSitingMaker.new(FakeWalkSiting.new())
 		manager.use_sitings(maker)

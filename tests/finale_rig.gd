@@ -838,7 +838,7 @@ func _test_a_lured_off_roadblock_raises_no_mark_over_her(t: TestRunner) -> void:
 	t.add_child(holder)
 	var open_ground := WorldMap.open_ground()
 	var run := RunState.new()
-	var manager := EventManager.new(EventSurroundings.new().reading(Shipped.rows())
+	var manager := EventManager.new(Shipped.rows(), EventSurroundings.new()
 			.on(open_ground).drawn_in(holder))
 	manager.setup(run)
 	t.add_child(manager)

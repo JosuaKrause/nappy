@@ -187,7 +187,7 @@ class Stage extends RefCounted:
 			surroundings.drawn_from(atlas)
 		if drawer != null:
 			surroundings.drawing_through(drawer)
-		manager = EventManager.new(surroundings)
+		manager = EventManager.new(Shipped.rows(), surroundings)
 		manager.setup(run)
 		world.add_child(manager)
 		manager.set_physics_process(false)

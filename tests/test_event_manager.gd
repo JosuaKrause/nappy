@@ -89,7 +89,7 @@ func _test_a_world_keeps_the_navigator_it_was_handed(t: TestRunner) -> void:
 	var run := RunState.new()
 	run.start_run(1)
 	var handed := Navigator.new()
-	var events := EventManager.new(EventSurroundings.new().reading(Shipped.rows())
+	var events := EventManager.new(Shipped.rows(), EventSurroundings.new()
 			.on(StreetMap.full()).moving_by(handed))
 	events.setup(run)
 	t.check(events.world.navigator() == handed,
@@ -964,7 +964,7 @@ func _test_the_cyclist_is_warned_shortly_before_he_arrives(t: TestRunner) -> voi
 	var atlas := AtlasLibrary.new()
 	atlas.acquire(&"events")
 	# The page every event made here is drawn from, as `main` hands the manager its library.
-	var manager := EventManager.new(EventSurroundings.new().reading(Shipped.rows())
+	var manager := EventManager.new(Shipped.rows(), EventSurroundings.new()
 			.in_the_city(map).drawn_in(holder)
 			.drawn_from(atlas))
 	manager.setup(run)

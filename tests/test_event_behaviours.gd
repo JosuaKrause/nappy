@@ -331,7 +331,7 @@ func _test_the_manager_streams_a_behaviours_state(t: TestRunner) -> void:
 	t.add_child(world)
 	var map := WorldMap.open_ground()
 	var run := RunState.new()
-	var manager := EventManager.new(EventSurroundings.new().reading(Shipped.rows())
+	var manager := EventManager.new(Shipped.rows(), EventSurroundings.new()
 			.on(map).drawn_in(world))
 	manager.setup(run)
 	t.add_child(manager)

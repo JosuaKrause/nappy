@@ -206,7 +206,7 @@ func _start_a_day(manager: EventManager, day: int) -> void:
 func _manager(t: TestRunner, atlas: AtlasLibrary) -> EventManager:
 	var surroundings := EventSurroundings.new().reading(Shipped.rows()) \
 			.on(StreetMap.full()).drawn_from(atlas)
-	var manager := EventManager.new(surroundings)
+	var manager := EventManager.new(Shipped.rows(), surroundings)
 	manager.setup(RunState.new())
 	t.add_child(manager)
 	return manager

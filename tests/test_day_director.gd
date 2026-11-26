@@ -79,7 +79,7 @@ func _rig(t: TestRunner, spec := DaySpec.new()) -> Dictionary:
 	# (`EventSurroundings.on()`, then `EventManager.setup()`, as the escape's building is set up).
 	var map := WorldMap.open_ground()
 	var holder := WorldContext.new()
-	var events := EventManager.new(EventSurroundings.new().reading(Shipped.rows())
+	var events := EventManager.new(Shipped.rows(), EventSurroundings.new()
 			.on(map).drawn_in(holder))
 	events.add_child(holder)
 	events.setup(_run)
@@ -811,7 +811,7 @@ class _FakeEvents extends EventManager:
 	## The real manager's parts, idle over an empty world, so what this does not override answers as
 	## a manager with nothing planned.
 	func _init(asked: Array[String]) -> void:
-		super(EventSurroundings.new().reading(Shipped.rows()))
+		super(Shipped.rows(), EventSurroundings.new())
 		_asked = asked
 
 	## Overrides EventManager.start_day.

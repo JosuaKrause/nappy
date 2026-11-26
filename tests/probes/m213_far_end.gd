@@ -43,10 +43,10 @@ func run(t: TestRunner) -> void:
 	_reachability(t)
 	# Measured at the notice radii as written and as shipped (`EventCatalogue.CHARGER_REACH`), at
 	# the shipped warning, so what a wider notice does to the guards is read side by side: each
-	# a catalogue of its own (`EventCatalogue.for_run()`), handed to everything the probe
+	# a catalogue of its own (`EventCatalogue.new()`), handed to everything the probe
 	# builds.
 	for reach: float in [EventCatalogue.CHARGER_REACH, 1.0]:
-		_rows = EventCatalogue.for_run(ChargerTiming.of(EventCatalogue.CHARGER_WARNING, reach))
+		_rows = EventCatalogue.new(ChargerTiming.of(EventCatalogue.CHARGER_WARNING, reach))
 		var notice := _rows.mark_guard().notice_within()
 		print("== robber notice %.0fpx (reach %.2f) ==" % [notice, reach])
 		_on_screen(t)

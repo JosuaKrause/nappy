@@ -953,7 +953,7 @@ func _test_a_hunting_van_waits_for_its_men(t: TestRunner) -> void:
 	t.check(not van.is_gone() and not van.is_on_its_way_out(),
 			"%.0fs after its notice, past its own %.0fs, it still stands with its men out"
 			% [elapsed, hot.telegraphs_for() + hot.lasts_for()])
-	var events := EventManager.new(EventSurroundings.new().reading(Shipped.rows()))
+	var events := EventManager.new(Shipped.rows(), EventSurroundings.new())
 	events.retire(men[0])
 	van.step(STEP)
 	t.check(not van.is_gone() and not van.is_on_its_way_out(), "with one man still out it still stands")

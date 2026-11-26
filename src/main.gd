@@ -287,8 +287,9 @@ class Worlds extends DayWorldSource:
 func configure(run_config: RunConfig) -> void:
 	config = run_config
 	# Before anything is built from a catalogue row: every row as this run plays its chargers,
-	# built once here and handed to every reader of a row.
-	_rows = EventCatalogue.for_run(config.charger_timing())
+	# built once here and handed to every reader of a row. A second configure() at the same
+	# timing (a recipe's boot) keeps the catalogue the first one built.
+	_rows = EventCatalogue.of_run(_rows, config.charger_timing())
 	_escape_scene_requested = config.starts_in_the_escape()
 	_no_focus_pause = config.skips_the_focus_pause()
 	_touch_available = TouchInput.available(config)

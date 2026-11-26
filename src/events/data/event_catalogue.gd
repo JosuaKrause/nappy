@@ -200,29 +200,23 @@ var _hot: Dictionary[String, EventDef] = {}
 var _building_fire: EventDef = null
 var _explosion_outside: EventDef = null
 
-## The catalogue at the shipped timing, built once from constants on first ask and never written.
-## See `for_run()`.
-static var _shipped: EventCatalogue = null
-
 ## **A catalogue whose every row is built from `chargers`**, each row built and validated on the
-## first ask. The composition root makes the run's once (`for_run()`) and hands it to every
-## reader of a row; a suite makes one at a timing of its own to ask what that timing builds.
+## first ask. The composition root (`main.configure()`) makes the run's once, from
+## `RunConfig.charger_timing()`, and hands it to every reader of a row, since a run can play its
+## chargers at another timing (`--chargers`, `?chargers=`) and a reader that made its own would
+## play those rows at the wrong one. A suite makes one at a timing of its own to ask what it
+## builds.
 func _init(chargers: ChargerTiming) -> void:
 	_chargers = chargers
 
-## **The run's catalogue for `timing`**, which the composition root builds once at boot
-## (`main.configure()`, `RunConfig.charger_timing()`) and hands to every reader of a row: the
-## one catalogue at the shipped timing, built once a process, when the run plays every charger as
-## shipped, so a second boot builds and validates no second copy of every row, and a catalogue of
-## its own otherwise. **Nothing under `src/` but `main.gd` calls it**: a reader of a row is handed
-## the run's catalogue, since a run can play its chargers at another timing (`--chargers`,
-## `?chargers=`), and a reader that made its own would play those rows at the wrong one.
-static func for_run(timing: ChargerTiming) -> EventCatalogue:
-	if not timing.same_as(shipped_charger_timing()):
-		return EventCatalogue.new(timing)
-	if _shipped == null:
-		_shipped = EventCatalogue.new(shipped_charger_timing())
-	return _shipped
+## **The run's catalogue for `timing`**: `held` when it is built from that timing already, a new
+## one otherwise. `main.configure()` asks it, so that a recipe's boot, which configures a second
+## time at the same timing, keeps the catalogue the first built and validated, and every reader of
+## a row is handed the one catalogue.
+static func of_run(held: EventCatalogue, timing: ChargerTiming) -> EventCatalogue:
+	if held != null and held.charger_timing().same_as(timing):
+		return held
+	return EventCatalogue.new(timing)
 
 ## **The charger timing the game ships**: every charger warns for `CHARGER_WARNING` and notices her
 ## within `CHARGER_REACH` times the radius its row is written with.

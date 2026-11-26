@@ -121,7 +121,7 @@ func _manager(t: TestRunner) -> EventManager:
 	# Open ground, so no wall keeps a field from her (`ExcitementSource.contribution_at()`).
 	var map := WorldMap.open_ground()
 	var holder := WorldContext.new()
-	var manager := EventManager.new(EventSurroundings.new().reading(Shipped.rows())
+	var manager := EventManager.new(Shipped.rows(), EventSurroundings.new()
 			.on(map).drawn_in(holder))
 	manager.add_child(holder)
 	manager.setup(run)
@@ -639,7 +639,7 @@ func _test_finishing_outside_process_invalidates_the_contribution_cache(t: TestR
 	t.check(instance.source().contribution_at(nearby) > 0.0,
 			"a live source reaches a point inside its own field, which the cache now holds")
 
-	var manager := EventManager.new(EventSurroundings.new().reading(Shipped.rows()))
+	var manager := EventManager.new(Shipped.rows(), EventSurroundings.new())
 	manager.retire(instance)
 	t.check(instance.is_gone(), "retired by its manager, the way the director retires one")
 	t.close_to(instance.source().contribution_at(nearby), 0.0,

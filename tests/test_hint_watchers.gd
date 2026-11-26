@@ -279,7 +279,7 @@ func _test_cross_the_street_asks_when_her_sidewalk_is_closed_and_the_far_one_ope
 				type = GameEnums.TileType.SIDEWALK
 			map.lay(Vector2i(x0 + offset, y), type)
 	map.lay(Vector2i(x0 + 2, y0 - 8), GameEnums.TileType.CROSSING)
-	var events := _Events.new(EventSurroundings.new().reading(Shipped.rows()))
+	var events := _Events.new(Shipped.rows(), EventSurroundings.new())
 	var crossings := NearestCrossing.new(map)
 	var her := Vector2i(x0, y0)
 	var south := Vector2.DOWN
@@ -292,7 +292,7 @@ func _test_cross_the_street_asks_when_her_sidewalk_is_closed_and_the_far_one_ope
 	t.check(not watcher.asks(_frame_at(her, 0.1, Vector2.RIGHT)), "nor across the street")
 	watcher.shown()
 	t.check(not watcher.asks(_frame_at(her, 0.1, south)), "once shown it waits for the moment to pass")
-	var both := _Events.new(EventSurroundings.new().reading(Shipped.rows()))
+	var both := _Events.new(Shipped.rows(), EventSurroundings.new())
 	both.stand_a_body(map.tile_rect_to_world(Rect2i(her + Vector2i(1, 2), Vector2i.ONE)).get_center())
 	both.stand_a_body(map.tile_rect_to_world(Rect2i(her + Vector2i(4, 2), Vector2i.ONE)).get_center())
 	t.check(not CrossStreetWatcher.new(map, both, crossings).asks(_frame_at(her, 0.1, south)),
@@ -317,7 +317,7 @@ func _test_the_chalk_mark_asks_once_a_walk_when_it_comes_into_view(t: TestRunner
 	t.check(watcher.asks(_frame_at(Vector2i.ZERO)), "a retried day asks again")
 
 func _test_the_hut_asks_for_a_door_she_has_not_met(t: TestRunner) -> void:
-	var events := _Events.new(EventSurroundings.new().reading(Shipped.rows()))
+	var events := _Events.new(Shipped.rows(), EventSurroundings.new())
 	var hut := EventInstance.new()
 	var other := EventInstance.new()
 	var watcher := WalkThroughHutWatcher.new(events)

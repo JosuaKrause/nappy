@@ -281,7 +281,7 @@ func _test_a_cored_row(t: TestRunner) -> void:
 
 func _test_catalogue_and_mutations(t: TestRunner) -> void:
 	# What retires an instance from outside its tick (`EventManager.retire()`).
-	var retiring := EventManager.new(EventSurroundings.new().reading(Shipped.rows()))
+	var retiring := EventManager.new(Shipped.rows(), EventSurroundings.new())
 	var sampled := 0
 	var positive := 0
 	var flock_queries := 0
@@ -645,8 +645,7 @@ func _test_halo_and_removal(t: TestRunner) -> void:
 	player.velocity = Vector2(92.0, 0.0)
 	var baby := Baby.new()
 	for cached: bool in [true, false]:
-		var manager := EventManager.new(EventSurroundings.new()
-				.reading(Shipped.rows()))
+		var manager := EventManager.new(Shipped.rows(), EventSurroundings.new())
 		t.add_child(manager)
 		# After it enters the tree: entering turns on the tick of a node that defines one.
 		manager.set_physics_process(false)

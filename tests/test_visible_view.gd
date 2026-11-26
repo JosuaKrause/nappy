@@ -33,7 +33,7 @@ func _test_selected_controls_keep_the_badge_view_and_spawn_view_distinct(t: Test
 	var controls_scene: PackedScene = load("res://scenes/ui/touch_controls.tscn")
 	var controls: TouchControls = controls_scene.instantiate()
 	t.add_child(controls)
-	var source := _Source.new(EventSurroundings.new().reading(Shipped.rows()))
+	var source := _Source.new(Shipped.rows(), EventSurroundings.new())
 	source.use_controls(controls.covering())
 	var edge := DangerEdge.new()
 	edge.use_atlas(atlas)
@@ -307,7 +307,7 @@ func _test_the_badge_stays_up_for_a_thing_under_a_covered_corner(t: TestRunner) 
 	var corner := TouchCover.joystick().left_corner().get_center() - ScreenOrientation.DESIGN_SIZE * 0.5
 	var start := her + corner * 0.5
 	for joystick: bool in [true, false]:
-		var source := _Source.new(EventSurroundings.new().reading(Shipped.rows()))
+		var source := _Source.new(Shipped.rows(), EventSurroundings.new())
 		var player := Node2D.new()
 		t.add_child(player)
 		player.global_position = her

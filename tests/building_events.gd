@@ -17,7 +17,7 @@ static func events_in(parent: Node, scene: InteriorScene,
 			.drawn_in(scene)
 	if atlas != null:
 		surroundings.drawn_from(atlas)
-	var events := EventManager.new(surroundings)
+	var events := EventManager.new(Shipped.rows(), surroundings)
 	events.use_bus(EventBus)
 	events.stream_within(INF)
 	parent.add_child(events)

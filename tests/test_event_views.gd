@@ -828,8 +828,8 @@ func _test_the_door_guard_raises_his_hand_at_the_hut_and_charges_at_once(t: Test
 ## player: van guardsmen about to charge hold up their hands; events that spawn with the sole purpose
 ## of charging show an indicator that they are about to, with the same heads-up as off-screen
 ## chargers.)* Every copy `EventCatalogue.out_of_the_car()` makes — out of a patrol
-## car or a hunting van, the policeman through day 8 and the guardsman from day 9 — stands where
-## he got out in his alert (`policeman_alert_*` or `guard_alert_*`) for
+## car or a hunting van, the policeman through day 8 and the guardsman from day 9 — stands
+## where he got out in his alert (`policeman_alert_*` or `guard_alert_*`) for
 ## `Tuning.WARNING_ALONE_MAX` while she walks away, and then lunges.
 func _test_the_man_out_of_a_vehicle_raises_his_hand_then_charges(t: TestRunner) -> void:
 	var day_of := {"policeman_giving_chase": Tuning.REGION_WALL_FIRST_DAY - 1,
