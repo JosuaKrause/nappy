@@ -497,6 +497,30 @@ signal door_crossed(at: Vector2, axis: Vector2, inspected: bool)
 
 ## How many events are in the world right now — *what is around the player* rather than what the
 ## day contains; see `planned_count()` for the other question.
+## **Whether a solid body stands on `stretch`**, a rectangle of the world such as a stretch of
+## sidewalk: a live event that is solid now (`EventInstance.is_solid()`) and whose body
+## (`body_position()`) stops her within the stretch (`solid_reach()` of it). The thought bubble that
+## tells her to cross the street asks it of her sidewalk ahead and of the far one
+## (`CrossStreetWatcher`).
+func has_a_body_on(stretch: Rect2) -> bool:
+	for instance in world.instances():
+		if instance.is_gone() or not instance.is_solid():
+			continue
+		if stretch.grow(instance.solid_reach()).has_point(instance.body_position()):
+			return true
+	return false
+
+## **The district doors' bodies she may walk through that she can see this frame**: a checkpoint
+## hut or post, which takes her in and lets her out on its far side (`EventInstance.inspects_her()`),
+## in her view (`visible_view()`). The thought bubble that tells her she may walk through a hut asks
+## it (`WalkThroughHutWatcher`).
+func doors_in_sight() -> Array[EventInstance]:
+	var seen: Array[EventInstance] = []
+	for instance in world.instances():
+		if not instance.is_gone() and instance.inspects_her() and sees(instance.global_position):
+			seen.append(instance)
+	return seen
+
 func active_count() -> int:
 	return world.instances().size()
 

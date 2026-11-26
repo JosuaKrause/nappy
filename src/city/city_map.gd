@@ -360,6 +360,14 @@ func _is_held(segment: StreetNetwork.Segment) -> bool:
 func is_held_at(tile: Vector2i) -> bool:
 	return _is_held(_network.segment_containing(tile))
 
+## Whether the street segment a tile stands on is held today for a body across it — a closure, a
+## region wall or a hard seal — rather than only for the catalogue, as a region door and the streets
+## round the home block are (`HeldStreets.is_crossable()`). False inside a junction or a block. The
+## thought bubble that tells her to turn back asks it of a body in her way (`TurnBackWatcher`).
+func is_barred_at(tile: Vector2i) -> bool:
+	var segment := _network.segment_containing(tile)
+	return _is_held(segment) and not _held.is_crossable(segment.key())
+
 ## Whether a tile is inside the home block's own lot — the ground `_place_home` carves the notch
 ## out of. Distinct from `is_held_at`, which is about the streets *around* the block: a catalogue
 ## row or a resistance mark placed inside the block itself (its building interior, or an alley if

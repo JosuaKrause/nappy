@@ -775,6 +775,11 @@ func is_chatting() -> bool:
 func is_its_guard_inside() -> bool:
 	return _def.detains_again() and is_chatting()
 
+## Whether this is a district door's body that takes her in for an inspection and lets her out on
+## its far side, so she may walk through it: a checkpoint hut or post (`HoldSpec.detains_again()`).
+func inspects_her() -> bool:
+	return _def.detains_again()
+
 ## Whether this instance has ever held her (`EventHold.has_held()`). `CheckpointController` does
 ## not start a second hold on a row that has held her and does not `detains_again()`.
 func has_chatted() -> bool:

@@ -220,6 +220,7 @@ func _change_everything(run: RunState) -> void:
 	GivenRun.tears(run, run.posters().tears_made() + 1)
 	GivenRun.pasted_through(run, run.posters().pasted_through() + 4)
 	GivenRun.pelican_draws(run, run.pelican().draws() + 5)
+	run.hints().record_show(&"way_to_park")
 	run.run_parts().photograph()
 
 func _fake_block_plan() -> BlockPlan:

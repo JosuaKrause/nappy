@@ -60,6 +60,9 @@ var _city_map: CityMap
 var _streets: DayStreets
 var _crowd: Crowd
 var _dressing: CityDressing
+## The thought-bubble watch over her in the world being walked (`DayWorld.hints()`), or null where
+## none stands.
+var _hints: HintWatch
 ## The facts and the spend the run holds, handed in beside the calendar.
 var _facts: RunFacts
 var spend: AttemptSpendState
@@ -136,6 +139,7 @@ func use_the_world(world: DayWorld, the_resistance: ResistanceDirector,
 	_streets = world.streets() if world else null
 	_crowd = world.crowd() if world else null
 	_dressing = world.dressing() if world else null
+	_hints = world.hints() if world else null
 	if _events:
 		_events.use_player(_player)
 	if resistance:
@@ -211,6 +215,7 @@ func start(the_spec: DaySpec, started := Callable(), stood := Callable()) -> Arr
 	# parks that are still parks, not yesterday's.
 	if _in_a_city:
 		_dress_the_city(today)
+		_start_the_hints()
 	var errors: Array[String] = []
 	if _scene:
 		# Over a running clock, as a played day's sleep would come: a scene that puts the baby to
@@ -373,6 +378,15 @@ func _start_the_car_free_start() -> void:
 	_crowd.use_car_free_start(start)
 	if not _title_in_front:
 		start.hold_now()
+
+## The thought bubbles started afresh for this walk (`HintWatch.begin_walk()`), as the car-free start
+## is: handed today's tutorial route when the spec walks it, and none on every other walk, so a
+## retried day 1 is taught from its start again and a bubble the last walk left up comes down.
+func _start_the_hints() -> void:
+	if _hints == null:
+		return
+	var route: TutorialRoute = _streets.tutorial_route() if _streets else null
+	_hints.begin_walk(route if _spec.walks_the_tutorial() else null)
 
 ## **The one place a day ends, the escape's sections included**: the won last night's fire, what
 ## ended it, the charges still running closed, `day_ended` with its cause — which the run log and the

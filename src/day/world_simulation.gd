@@ -42,6 +42,11 @@ func hold_the_city_parts(crowd: Crowd, posters: PosterWalls, blackout: Blackout)
 func hold_the_hints(hints: HintWatch) -> void:
 	_hints = hints
 
+## The thought-bubble watch over her in a city (`HintWatch`), or null in a world with none, which
+## `main` hands the day director with the walk's world (`DayWorld.use_hints()`).
+func hints() -> HintWatch:
+	return _hints
+
 ## The day's events in this world.
 func events() -> EventManager:
 	return _events

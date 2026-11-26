@@ -41,6 +41,7 @@ func run(t: TestRunner) -> void:
 	_test_a_city_section_won_carries_the_way_out(t)
 	_test_a_day_starts_in_its_order(t)
 	_test_day_one_starts_car_free_on_the_tutorial_route(t)
+	_test_each_walk_starts_the_thought_bubbles_afresh(t)
 	_test_the_city_section_starts_on_its_settings(t)
 	_test_the_building_section_starts_with_no_city(t)
 	_test_an_authored_scene_installs_in_place_of_the_plan(t)
@@ -446,6 +447,32 @@ func _test_day_one_starts_car_free_on_the_tutorial_route(t: TestRunner) -> void:
 			"day 2 has no car-free start and starts with its cars let in")
 	_put_the_start_away(rig)
 
+## **Each walk in a city starts the thought bubbles afresh** (`HintWatch.begin_walk()`), as the
+## car-free start is started: handed today's tutorial route on a day that walks it, a retry of it
+## included, and none on any other day. The watch is a fake that records what it is handed.
+func _test_each_walk_starts_the_thought_bubbles_afresh(t: TestRunner) -> void:
+	var home := StreetNetwork.Segment.new(Vector2i(0, 0), true)
+	var streets: Array[StreetNetwork.Segment] = [StreetNetwork.Segment.new(Vector2i(1, 0), true)]
+	var route := TutorialRoute.new(null, home, streets, [] as Array[Vector2i], Vector2i.ZERO, Rect2i())
+	var day_one := DaySpec.for_day(1, 210.0)
+	var hints := _FakeHints.new()
+	var rig := _start_rig(t, day_one, false, null, route)
+	var world: DayWorld = rig["world"]
+	world.use_hints(hints)
+	_start(rig["director"], day_one)
+	_start(rig["director"], day_one)
+	t.check(hints.walks() == [route, route], "every walk of day 1, a retry too, hands the watch the route")
+	_put_the_start_away(rig)
+	var day_two := DaySpec.for_day(2, 210.0)
+	rig = _start_rig(t, day_two, false, null, route)
+	world = rig["world"]
+	world.use_hints(hints)
+	_start(rig["director"], day_two)
+	t.check(hints.walks().size() == 3 and hints.walks()[2] == null,
+			"day 2 starts the watch with no route")
+	_put_the_start_away(rig)
+	hints.free()
+
 ## The escape's city starts on the city section's settings: no photograph, no resistance, nobody on
 ## its streets, the baby asleep, its events planned on the escape's stream with none of the run's
 ## one-shots, and its handed-in walk tinted and written to the run log; announced begun and stood
@@ -839,3 +866,14 @@ class _FakeScene extends AuthoredScene:
 		installed_with = [world, spec, resistance]
 		_asked.append("install %s" % ("running" if clock.is_running() else "stopped"))
 		return problems
+
+## A thought-bubble watch that records the routes each walk hands it.
+class _FakeHints extends HintWatch:
+	var _walks: Array = []
+
+	func walks() -> Array:
+		return _walks
+
+	## Overrides HintWatch.begin_walk.
+	func begin_walk(route: TutorialRoute) -> void:
+		_walks.append(route)

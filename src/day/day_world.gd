@@ -36,6 +36,7 @@ var _posters: PosterWalls
 var _plan_rng: RandomNumberGenerator
 var _home_map: CityMap
 var _exits := {}
+var _hints: HintWatch = null
 
 ## A city's world: its map `map`, today's streets `streets`, its crowd `crowd`, the walls its
 ## posters are pasted on `posters`, what dresses the city for the day `dressing` and its events,
@@ -147,6 +148,15 @@ func plan_rng() -> RandomNumberGenerator:
 ## against (`DayController.use_the_walk()`): the city's map on a walk home, null on any other.
 func home_map() -> CityMap:
 	return _home_map
+
+## Hands a city's world the thought-bubble watch that stands in it (`HintWatch`), which the day
+## director starts afresh at every walk. A world handed none (the building's, a suite's) has none.
+func use_hints(hints: HintWatch) -> void:
+	_hints = hints
+
+## The thought-bubble watch of the world, or null where none stands.
+func hints() -> HintWatch:
+	return _hints
 
 ## The ways out of the world by `CityExit.Kind`, each the world point a walk out of it ends at, which
 ## the spec is handed (`DaySpec.use_exits()`): the escape city's two, empty in any other world.

@@ -123,7 +123,7 @@ static func _her(t: TestRunner, at: Vector2) -> Stroller:
 
 ## **A city's simulation stands under the city as one node, its five parts its children in the
 ## order they tick** (posters, events, crowd, blackout, the thought-bubble watch), and answers each
-## part but the blackout and the watch, which nothing reads back; its events site what they send at her.
+## part but the blackout, which nothing reads back; its events site what they send at her.
 func _test_a_city_stands_its_four_parts_in_its_tree(t: TestRunner) -> void:
 	var made := _city(t)
 	var simulation := _simulation(made)
@@ -134,7 +134,8 @@ func _test_a_city_stands_its_four_parts_in_its_tree(t: TestRunner) -> void:
 			"its five parts are its children, in the order they tick (%s)" % [_children_of(simulation)])
 	t.check(simulation.poster_walls() == simulation.get_child(0)
 			and simulation.events() == simulation.get_child(1)
-			and simulation.crowd() == simulation.get_child(2),
+			and simulation.crowd() == simulation.get_child(2)
+			and simulation.hints() == simulation.get_child(4),
 			"and it answers the walls, the events and the crowd it stood")
 	t.check(simulation.events().spawn_siting() != null,
 			"a city's events site what is sent at her")

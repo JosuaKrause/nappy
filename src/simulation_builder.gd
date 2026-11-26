@@ -47,6 +47,10 @@ var _forced_row := ""
 var _forced_interval := 0.0
 ## `--blackout`: a city counts as sabotaged.
 var _blackout_forced := false
+## Where today's chalk mark is, or `Vector2.INF` for none: takes nothing. The resistance stands after
+## the city's simulation, so `main` hands this narrow reader of it (`use_the_mark()`) for the thought
+## bubble that hints at the mark; none until then.
+var _the_mark := func() -> Vector2: return Vector2.INF
 
 ## Hands the builder what every part is equipped with: the trace it writes to, the atlas pages it
 ## draws from and the frame record's sink the events charge their time to.
@@ -54,6 +58,11 @@ func equip(trace: RunTrace, atlas: AtlasLibrary, timing: FrameTiming) -> void:
 	_trace = trace
 	_atlas = atlas
 	_timing = timing
+
+## Hands the builder where today's chalk mark is (`where`: takes nothing, answers a `Vector2`, or
+## `Vector2.INF` for none), for the thought bubble that hints at the mark in every city it stands.
+func use_the_mark(where: Callable) -> void:
+	_the_mark = where
 
 ## Hands the builder the bus the events, the crowd, the poster walls and the blackout report on.
 func use_bus(bus: _BUS) -> void:
@@ -147,9 +156,13 @@ func in_the_city(world: CityDressing, map: CityMap, navigator: Navigator, street
 
 	var hints := HintWatch.new()
 	hints.name = "Hints"
-	hints.equip(_trace, _atlas)
+	hints.equip(_trace)
+	var bubble := ThoughtBubble.new()
+	bubble.name = "ThoughtBubble"
+	bubble.use_atlas(_atlas)
+	bubble.draw_through(SceneryDrawer.new())
 	var sources: Array[ExcitementSources] = [events.excitement_sources(), crowd.sources()]
-	hints.setup(run.hints(), _hint_watchers(map, streets, sources))
+	hints.setup(run.hints(), _hint_watchers(map, events, sources), bubble)
 	simulation.add_child(hints)
 
 	simulation.hold_the_events(events)
@@ -175,13 +188,20 @@ func in_the_building(world: WorldContext, map: WorldMap, navigator: Navigator,
 	return simulation
 
 ## **The thought-bubble watchers of a city, in the order they win in**: back to day 1's tutorial
-## route, use the zebra crossing, walk wide of the noise, the way to the park. The two about the
-## route ask `streets` for today's tutorial route and apply only on a day that has one.
-func _hint_watchers(map: CityMap, streets: DayStreets, sources: Array[ExcitementSources]) \
+## route; use the zebra crossing; turn back; cross the street; walk wide of the noise; the way to
+## the park; the chalk mark; walk through the hut. Back to the route goes first because it is the
+## one the player asked to show every time (gentle-owl #1253) and the others are about a street it
+## tells her to leave; the zebra next because it is the one about a car. The two about the route
+## are handed today's tutorial route at each walk's start (`HintWatch.begin_walk()`) and apply only
+## on a walk that has one.
+func _hint_watchers(map: CityMap, events: EventManager, sources: Array[ExcitementSources]) \
 		-> Array[HintWatcher]:
-	var watchers: Array[HintWatcher] = [BackToRouteWatcher.new(streets, map),
-			UseZebraWatcher.new(map), WalkWideWatcher.new(sources),
-			WayToParkWatcher.new(streets, map)]
+	var crossings := NearestCrossing.new(map)
+	var watchers: Array[HintWatcher] = [BackToRouteWatcher.new(map),
+			UseZebraWatcher.new(map, crossings), TurnBackWatcher.new(map),
+			CrossStreetWatcher.new(map, events, crossings), WalkWideWatcher.new(sources),
+			WayToParkWatcher.new(map), ChalkMarkWatcher.new(events.visible_view(), _the_mark),
+			WalkThroughHutWatcher.new(events)]
 	return watchers
 
 ## The simulation's own node, under the world it stands in. A builder handed no atlas makes one
