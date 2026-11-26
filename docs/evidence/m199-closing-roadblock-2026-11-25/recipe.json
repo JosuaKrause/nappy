@@ -1,6 +1,6 @@
 {
  "version": 1,
- "name": "Open and closing roadblocks",
+ "name": "Open and closing roadblocks on both axes",
  "seed": 11,
  "extent": {
   "scope": "full"
@@ -48,6 +48,14 @@
     "at": [
      2352,
      1648
+    ]
+   },
+   {
+    "name": "closing_east_west",
+    "row": "closing_roadblock",
+    "at": [
+     2576,
+     1904
     ]
    }
   ],
