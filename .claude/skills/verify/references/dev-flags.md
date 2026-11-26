@@ -9,10 +9,14 @@ are built around her, and the director only puts something in front of her while
 somewhere.
 
 - **`--walk north|south|east|west`** holds a direction down for the whole run. `tools/shot.sh`
-  forwards every dev flag. **From the doorstep, only south moves at all**: the home is a notch with
-  one exit, cut into the south edge of its lot, so a rig walking any other way stands against the
-  notch wall for the whole run — and its log looks exactly like a run. If a `--walk` rig is meant
-  to meet something, check it actually travelled before reading anything else off the run.
+  forwards every dev flag. **From the doorstep, north goes nowhere**: the home is a notch two
+  tiles deep, cut into the south edge of its lot, and the doorstep is the sidewalk tile just south
+  of it, so a rig walking north climbs the front step, reaches the door within a second and stands
+  there for the rest of the run — and its log looks exactly like a run. East and west walk along
+  the sidewalk in front of the home toward the junction corners, a few tiles each way; south
+  crosses that sidewalk straight into the carriageway of the street outside her door, where the
+  crowd's cars drive. If a `--walk` rig is meant to meet something, check it actually travelled
+  before reading anything else off the run.
 - **`--walk 1s5e` and `--walk 3@45@2e`** walk a script of timed steps instead, left to right: one
   second south then five east, or three seconds at a bearing of 45° then two east. **A bearing is
   what a player's route actually looks like** — a press sets an arbitrary unit vector, so most

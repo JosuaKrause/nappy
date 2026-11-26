@@ -82,6 +82,14 @@ const key = async (key, code, virtualKey) => {
   await pause(100);
   await call('Input.dispatchKeyEvent', { type: 'keyUp', key, code, windowsVirtualKeyCode: virtualKey });
 };
+// Every walk stays on her front step, the 2-by-2-tile notch north of the doorstep that every
+// city cuts the same way: south of the doorstep is the street, where a crowd car is lethal and
+// whether one is passing depends on the frame rate the runner happens to give the page.
+const hold = async (key, code, virtualKey, milliseconds) => {
+  await call('Input.dispatchKeyEvent', { type: 'keyDown', key, code, windowsVirtualKeyCode: virtualKey });
+  await pause(milliseconds);
+  await call('Input.dispatchKeyEvent', { type: 'keyUp', key, code, windowsVirtualKeyCode: virtualKey });
+};
 const saved = () => evaluate(`(async () => {
   const databases = await indexedDB.databases();
   if (!databases.some(db => db.name === '/userfs')) return null;
@@ -203,9 +211,7 @@ try {
   await key(' ', 'Space', 32);
   const firstSave = await until(saved, 'persisted day save');
   assert.equal(firstSave.day_under_way, true);
-  await call('Input.dispatchKeyEvent', { type: 'keyDown', key: 'ArrowDown', code: 'ArrowDown', windowsVirtualKeyCode: 40 });
-  await pause(2000);
-  await call('Input.dispatchKeyEvent', { type: 'keyUp', key: 'ArrowDown', code: 'ArrowDown', windowsVirtualKeyCode: 40 });
+  await hold('ArrowUp', 'ArrowUp', 38, 2000);
   await snapshot('walking');
   await load('resume', '?debug=1', '[Main] day 1 started');
   const resumedSave = await until(async () => { const value = await saved(); return value && !value.day_under_way ? value : null; }, 'resumed dawn persisted');
@@ -215,17 +221,19 @@ try {
   results.push({ save: { first: firstSave, resumed: resumedSave } });
   await load('transition-setup', '?debug=1&seed=4242&meters=99.9,0', '[Main] day 1 started');
   const transitionStart = logs.length;
-  // A nearly settled baby makes the real walk home and summary bounded. The game still
-  // handles movement, sleep, the win and next-day construction through ordinary input.
-  await call('Input.dispatchKeyEvent', { type: 'keyDown', key: 'ArrowDown', code: 'ArrowDown', windowsVirtualKeyCode: 40 });
-  await pause(1500);
-  await call('Input.dispatchKeyEvent', { type: 'keyUp', key: 'ArrowDown', code: 'ArrowDown', windowsVirtualKeyCode: 40 });
-  await call('Input.dispatchKeyEvent', { type: 'keyDown', key: 'ArrowUp', code: 'ArrowUp', windowsVirtualKeyCode: 38 });
-  await pause(2000);
-  await call('Input.dispatchKeyEvent', { type: 'keyUp', key: 'ArrowUp', code: 'ArrowUp', windowsVirtualKeyCode: 38 });
+  // A nearly settled baby makes the win and summary bounded. The game still handles movement,
+  // sleep, the win and next-day construction through ordinary input. She walks north into her
+  // own front step and falls asleep on it, which wins the day on the spot.
+  await hold('ArrowUp', 'ArrowUp', 38, 2000);
   await snapshot('day-summary');
   await key(' ', 'Space', 32);
-  await until(() => logs.slice(transitionStart).some(line => line.includes('[Main] day 2 started')), 'summary to day 2');
+  // A second day 1 is the lost day's retry: said at once rather than as a two-minute timeout.
+  await until(() => {
+    const since = logs.slice(transitionStart);
+    assert(!since.some(line => line.includes('[Main] day 1 started')),
+      'day 1 restarted: the scripted walk lost the day (see day-summary.png)');
+    return since.some(line => line.includes('[Main] day 2 started'));
+  }, 'summary to day 2');
   await snapshot('day-2');
   results.push({ name: 'summary-to-day-2', boot: logs.slice(transitionStart).filter(line => line.includes('[Main]')) });
   for (const day of [8, 14]) await load(`day-${day}`, `?debug=1&seed=4242&day=${day}`, `[Main] day ${day} started`);
