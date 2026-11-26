@@ -287,7 +287,8 @@ func _test_the_manager_sees_her_only_once_she_is_handed_in(t: TestRunner) -> voi
 	manager.walk_events().take([plan] as Array[EventPlan])
 	var her := _her(t)
 	# Off the robber's own heading and beyond his notice, so he stands as he was sited, and the side
-	# a man would get out of him on is hers once he knows where she is (`door_for_its_officer()`).
+	# a man would get out of him on is hers once he knows where she is
+	# (`where_its_officer_may_get_out()`).
 	var off := Vector2(def.notice_within(), def.notice_within())
 	her.global_position = at + off
 	await t.get_tree().physics_frame
@@ -316,7 +317,7 @@ func _test_the_manager_sees_her_only_once_she_is_handed_in(t: TestRunner) -> voi
 ## Which side of `event` a man would get out on, toward where it was last told she was: positive
 ## for the side of `at + off` in `_test_the_manager_sees_her_only_once_she_is_handed_in()`.
 func _her_side(event: EventInstance, row: EventDef) -> float:
-	var door := event.door_for_its_officer(row) - event.global_position
+	var door := event.where_its_officer_may_get_out(row, 0, 1)[0] - event.global_position
 	return door.dot(Vector2.ONE)
 
 ## A director that hands the day-3 dog out once, then nothing, and counts the time it is given: a

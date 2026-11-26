@@ -32,8 +32,8 @@ Every charger in the catalogue and the escape, by the kind its way into play mak
 | `alley_robbery`, the chalk-mark guard (the same row), day 13's waiting `task_guard` | on screen | The same view-gated radius warning | fits |
 | `roadblock`'s hunting guard, a day's and the escape's (`escape_roadblock()`) | on screen | The same, with the guard at his post on her side as the warning picture (`warning_guard_rect()`) | fits |
 | Day 13's task guard set on her by the done task | on screen in her view, off screen out of it | In view, his hand raised for 1s, then a charge; out of view, retired unseen and sent as `task_guard_sent` under a badge, arriving charging (`ResistanceDirector._set_the_task_guard_on_her()`) | fits |
-| The men an investigating patrol car, a hunting unmarked van or a hunting night raid lets out | on screen | Hand raised for 1s where he got out, then a charge whatever she does | **fixed**: the vehicle stopped for her on distance and a clear line alone, and its notice (187.5px for the patrol, 225px for the vans, at the shipped charger reach) is past the view's 180px half-height, so a man could get out, raise his hand and charge all out of her sight. With tawny-wombat's badge gone he would have fit neither kind. A vehicle now stops only where it and its men at its door would stand whole in her view (`EventInvestigation`, `EventInstance._would_stand_in_her_view()`); `tests/test_heat.gd`'s `_test_a_hunting_van_lets_its_men_out_only_in_her_view` fails without the check. A man who raised his hand in view and whose charge begins after she walked out of it carries no badge: he warned her on screen |
-| `door_guard` at a checkpoint door | on screen | The guard of the hut across the road, or the alley post's, raises his hand from the frame she crosses the door's line; he steps out and charges only if she stays across | fits; no code gates it on the view, since the hut stands across the road from the line she crosses |
+| The men an investigating patrol car, a hunting unmarked van or a hunting night raid lets out | on screen | Hand raised for 1s where he got out, then a charge whatever she does | **fixed**: the vehicle stopped for her on distance and a clear line alone, and its notice (187.5px for the patrol, 225px for the vans, at the shipped charger reach) is past the view's 180px half-height, so a man could get out, raise his hand and charge all out of her sight. With tawny-wombat's badge gone he would have fit neither kind. A vehicle now stops only on a frame she is within its notice along a clear line, clear of every junction box, and where it and its men at every place one may get out (its door on her side, the other door, its own place) would stand whole in her view (`EventInvestigation`, `EventInstance._would_stand_in_her_view()`); `tests/test_heat.gd`'s `_test_a_hunting_van_lets_its_men_out_only_in_her_view` fails without the view check, and `_test_a_van_that_saw_her_out_of_view_never_stops_past_its_notice` without the notice on the stopping frame. A man who raised his hand in view and whose charge begins after she walked out of it carries no badge: he warned her on screen |
+| `door_guard` at a checkpoint door | on screen | The guard of the hut across the road, or the alley post's, raises his hand from the frame she crosses the door's line; he steps out and charges only if she stays across | fits, by a reading open to the player's overturn: his warning starts in her view, the hut standing across the road from the line she crosses, so no code gates it on the view; but she may run on across the line for his whole 1.75s warning, about 290px at a run, so he can step out of a hut that is out of her view by then and come at her charging with no badge. Read as the men a vehicle lets out are: he warned her on screen |
 | `masked_pursuer` on the escape's stairs | off screen | Set off by a place: his badge, then he exists out of her sight at the foot of his shaft, running his line from his first tick | fits |
 | The day-3 `charging_dog`, and the dogs sent the same way later | off screen | Half-second badge, then created just out of sight on its running approach at her | fits |
 | `robber_giving_chase`, `van_guard_giving_chase`, `policeman_giving_chase`, `guardsman_giving_chase`, `task_guard_sent` | off screen | Badge alone, then created just out of sight arriving chasing (`ARRIVES_CHASING`) | fits |
@@ -46,11 +46,19 @@ only at its core), `reversing_lorry`.
 
 ## Weighed
 
-- **The vehicle's view test** asks for its whole drawn box and its men's raised hands at its door on
-  her side, widened along its flank by the spacing two men get out at, all inside the view. The
-  plainer test, the vehicle's own box alone, can leave a man standing past the view's edge beside
-  a low car. A man's picture is the guard's raised hand (`EventFootprints.raised_hand_size()`),
-  which every man let out draws.
-- **The vehicle latches having seen her** (as before) and now stops at the first frame it is also
-  clear of a junction box and in her view, so a car that saw her out of view drives on until both
-  hold.
+- **The vehicle's view test** asks for its whole drawn box and, for every man it lets out, his
+  raised hand at each of the three places he may get out (`EventInstance.where_its_officer_may_get_out()`:
+  its door on her side, the door on the other side, its own place), all inside the view. Which place
+  he takes is his ground's to say only as he gets out (`EventsAhead.let_the_officers_out()`, which
+  asks the spawn siting), so the test covers all three rather than guess. The places are worked out
+  once, from his own row's body, which `EventsAhead` hands the vehicle every tick
+  (`EventInstance.lets_out_as()`). The plainer tests, the vehicle's own box alone or the door on her
+  side alone, can leave a man standing past the view's edge beside a low car or behind it. A man's
+  picture is the guard's raised hand (`EventFootprints.raised_hand_rect()`), which every man let out
+  draws.
+- **The vehicle stops only on a frame she is within its notice**, clear of a junction box and in her
+  view. The review of the first version found the latch it had (having seen her once, it stopped at
+  the first later frame clear of a box and in view) let a van that noticed her 215px off, out of
+  view, stop with her 322px away once she saw it, and two men whose catch ends the day get out past
+  its notice. The latch is gone: a car that notices her from inside a box drives on out of it and
+  stops if she is still within its notice and in view.

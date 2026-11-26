@@ -1,11 +1,16 @@
 class_name EventInvestigation
 extends EventBehaviour
-## **A vehicle that investigates** (`EventDef.investigates()`): while it waits, a car drives its route,
-## and from the frame she is within its notice along a clear line it has seen her. It stops — where
-## it is, on its route — as soon as its body is clear of every junction box **and it and the men it
-## lets out would stand whole in her view** (`Figure.would_stand_in_her_view()`), and owes those men; it stands while they are out, and once every one is back in it is done: a car drives on
-## along its route, standing first while she is in its way, and a van stands where it is. The
-## vehicle itself never chases (merry-stork; inbox #669 in coral-lark).
+## **A vehicle that investigates** (`EventDef.investigates()`): while it waits, a car drives its route.
+## It stops — where it is, on its route — on the first frame that has all three: she is within its
+## notice along a clear line, its body is clear of every junction box, **and it and the men it lets
+## out would stand whole in her view** (`Figure.would_stand_in_her_view()`); and it owes those men.
+## So a car that notices her with its body in a box drives on out of it and stops if she is still
+## within its notice and in view, and a vehicle that noticed her out of her view never stops later
+## past its notice, wherever she then sees it (merry-stork: it stops if close to her; bouncy-owl
+## #1774: an on-screen charger warns her when she comes too close). It stands while its men are out,
+## and once every one is back in it is done: a car drives on along its route, standing first while
+## she is in its way, and a van stands where it is. The vehicle itself never chases (merry-stork;
+## inbox #669 in coral-lark).
 ##
 ## **It is handed what never changes under it** as its event is set up: the figure it moves
 ## (`EventInstance.Figure`), where she is, its row (its notice, how many men it lets out, its body's
@@ -16,9 +21,6 @@ extends EventBehaviour
 ## patrol's 42px, so no tile under it is stepped over.
 const JUNCTION_SAMPLES := 8
 
-## Whether it has noticed her along a clear line, from that frame on — its notice waits until it
-## has also stopped, which a car with its body in a junction box does only once the body is clear.
-var _seen_her := false
 ## How many men it has stopped for and still owes: `EventDef.lets_out()` from the frame it stops until
 ## `EventManager` has put them all down (`let_out()`).
 var _officers_owed := 0
@@ -78,15 +80,12 @@ func _investigate() -> void:
 			_left_her_once = true
 		return
 	if _figure.is_waiting():
-		var her: Vector2 = _where.at()
-		if not _seen_her and her != Vector2.INF \
-				and _figure.place().distance_to(her) <= _row.notice_within() \
-				and _figure.clear_line_to(her):
-			_seen_her = true
 		# **In her view, or not yet** (velvet-marten #699, #705; bouncy-owl #1774): a man let out is a
 		# charger already in the world, who warns her in her view with his hand raised before any
-		# charge and carries no badge, so he never gets out where she cannot see him.
-		if _seen_her and not _stands_in_a_junction() and _figure.would_stand_in_her_view():
+		# charge and carries no badge, so he never gets out where she cannot see him. And only on a
+		# frame she is within its notice: what it noticed on an earlier frame stops nothing once she
+		# is past it.
+		if _notices_her() and not _stands_in_a_junction() and _figure.would_stand_in_her_view():
 			_figure.notice_her()
 			_officers_owed = _row.lets_out()
 		return
@@ -110,6 +109,12 @@ func _investigate() -> void:
 ## drives. *Chosen while building, open to overturn.*
 func is_quiet_for_its_man() -> bool:
 	return _row.drives() and not _figure.is_waiting() and not _left_her_once
+
+## Whether she is within its notice (`EventDef.notice_within()`) along a clear line this frame.
+func _notices_her() -> bool:
+	var her: Vector2 = _where.at()
+	return her != Vector2.INF and _figure.place().distance_to(her) <= _row.notice_within() \
+			and _figure.clear_line_to(her)
 
 ## Whether she is outside this car's field from where it is: further than its outer radius past its
 ## own body, or nobody to be near.
@@ -165,12 +170,11 @@ func its_officers() -> Array[EventInstance]:
 
 ## Overrides EventBehaviour.save.
 func save() -> Dictionary:
-	return {"seen_her": _seen_her, "officers_owed": _officers_owed, "investigated": _investigated,
+	return {"officers_owed": _officers_owed, "investigated": _investigated,
 			"left_her_once": _left_her_once}
 
 ## Overrides EventBehaviour.restore.
 func restore(state: Dictionary) -> void:
-	_seen_her = bool(state.get("seen_her", false))
 	_officers_owed = int(state.get("officers_owed", 0))
 	_investigated = bool(state.get("investigated", false))
 	_left_her_once = bool(state.get("left_her_once", false))

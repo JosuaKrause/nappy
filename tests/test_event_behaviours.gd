@@ -188,7 +188,7 @@ func _test_the_investigation_round_trips(t: TestRunner) -> void:
 	var hot := EventCatalogue.heated(EventCatalogue.by_id("police_patrol"), Tuning.RESISTANCE_GOAL)
 	var first := _instance(t, hot)
 	first.restore(EventSave.aged(2.0))
-	var state := {"seen_her": true, "officers_owed": 1, "investigated": true, "left_her_once": true}
+	var state := {"officers_owed": 1, "investigated": true, "left_her_once": true}
 	_put_back(first, "EventInvestigation", state)
 	var second := _round_trip(t, first, "investigation", &"EventInvestigation")
 	t.check(second.save().state_of("EventInvestigation") == state,

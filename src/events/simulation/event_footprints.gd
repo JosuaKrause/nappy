@@ -211,19 +211,18 @@ static var _warning_sizes := {}
 ## (`RoadblockLook._chaser_pictures()`), at the widest and tallest of its views, standing on his
 ## feet.
 static func warning_guard_rect(vertical: bool, band_at: Vector2, her: Vector2) -> Rect2:
-	var feet := band_at + guard_post_offset(vertical, guard_side_toward(vertical, her - band_at))
-	var size := raised_hand_size()
-	return Rect2(feet - Vector2(size.x * 0.5, size.y), size)
+	return raised_hand_rect(band_at
+			+ guard_post_offset(vertical, guard_side_toward(vertical, her - band_at)))
 
-## The size a man on foot fills drawn standing with his hand raised (`GUARD_ALERT_BY_VIEW`), at the
-## widest and tallest of its views: a roadblock's guard warning at his post, and the men a vehicle
-## lets out (`EventInstance._would_stand_in_her_view()`).
-static func raised_hand_size() -> Vector2:
+## The world rect a man on foot fills drawn standing on `feet` with his hand raised
+## (`GUARD_ALERT_BY_VIEW`), at the widest and tallest of its views: a roadblock's guard warning at
+## his post, and a man a vehicle lets out (`EventInstance._would_stand_in_her_view()`).
+static func raised_hand_rect(feet: Vector2) -> Rect2:
 	if _warning_guard == Vector2.ZERO:
 		for view: String in EventPictures.GUARD_ALERT_BY_VIEW:
 			_warning_guard = _warning_guard.max(
 					EventPictures.native_size(EventPictures.GUARD_ALERT_BY_VIEW[view]))
-	return _warning_guard
+	return Rect2(feet - Vector2(_warning_guard.x * 0.5, _warning_guard.y), _warning_guard)
 
 static var _warning_guard := Vector2.ZERO
 

@@ -26,6 +26,9 @@ var _age := 0.0
 ## (`was_warned_of()`) to carry the warning's badge on to the thing itself until it comes into
 ## view, and `restore()` reads it to tell a fresh instance from one streamed back in.
 var _came_under_a_warning := false
+## The man this vehicle lets out, as `EventsAhead` hands it (`lets_out_as()`); null until then,
+## and for a row that lets out none.
+var _its_officer: EventDef = null
 ## Whether it has handed over what it leaves where it goes off (`take_what_it_leaves()`).
 var _left_what_it_leaves := false
 
@@ -416,32 +419,39 @@ func body_position() -> Vector2:
 ## directly), where the notice is the radius alone.
 ##
 ## **And whether a vehicle that lets men out would let them out in her view** (`EventInvestigation`
-## stops for her only then): all it draws (`drawn_box()`) and its men standing at its door on her
-## side with a hand raised, spread along its flank as they get out, wholly inside the view. So a man
-## let out warns her in her view before his charge, and is never a charger already in the world
-## coming at her unseen and with no badge (velvet-marten #699, #705; bouncy-owl #1774).
+## stops for her only then): all it draws (`drawn_box()`) and, for every man it lets out, his
+## picture with a hand raised (`EventFootprints.raised_hand_rect()`) on his feet at **every** place
+## he may get out (`where_its_officer_may_get_out()`: its door on her side, the door on the other
+## side, its own place), wholly inside the view. Which of them he takes is his ground's to say when he
+## gets out (`EventsAhead.let_the_officers_out()`), so the test holds wherever that is. So a man let
+## out warns her in her view before his charge, and is never a charger already in the world coming
+## at her unseen and with no badge (velvet-marten #699, #705; bouncy-owl #1774). A vehicle not yet
+## handed the man it lets out (`lets_out_as()`) cannot say where he would stand, and is not in her
+## view yet.
 func _would_stand_in_her_view() -> bool:
 	var view := _where.view()
 	if not view.has_area():
 		return true
 	if _composed.investigation():
-		var box := drawn_box()
-		return view.encloses(_men_at_the_door()) \
-				and (not box.has_area() or view.encloses(Rect2(global_position + box.position,
-						box.size)))
+		return _would_let_its_men_out_in(view)
 	if not _def.pursues() or not warns_by_radius():
 		return true
 	return view.encloses(warning_rect())
 
-## The world rect the men this vehicle lets out fill with a hand raised, standing at its door on her
-## side (`door_for_its_officer()`): a man on foot's raised hand (`EventFootprints.raised_hand_size()`)
-## on his feet there, widened along its flank by the spacing two men get out at.
-func _men_at_the_door() -> Rect2:
-	var size := EventFootprints.raised_hand_size()
-	var feet := _door_at(FIGURE_RADIUS, 1.0, 0.0)
-	var men := Rect2(feet - Vector2(size.x * 0.5, size.y), size)
-	var spread := _heading * OFFICER_SPACING * 0.5 * float(maxi(_def.lets_out() - 1, 0))
-	return men.merge(Rect2(men.position + spread, size)).merge(Rect2(men.position - spread, size))
+## Whether this vehicle and every place each of its men may get out stand whole in `view`
+## (`_would_stand_in_her_view()`).
+func _would_let_its_men_out_in(view: Rect2) -> bool:
+	if _its_officer == null:
+		return false
+	var box := drawn_box()
+	if box.has_area() and not view.encloses(Rect2(global_position + box.position, box.size)):
+		return false
+	var count := _def.lets_out()
+	for i in count:
+		for feet: Vector2 in where_its_officer_may_get_out(_its_officer, i, count):
+			if not view.encloses(EventFootprints.raised_hand_rect(feet)):
+				return false
+	return true
 
 ## The world rect his warning picture fills, at the widest and tallest of its views, standing on his
 ## feet: a roadblock's guard at the post on her side of the band
@@ -882,16 +892,36 @@ func call_back_its_officers(stopped_by: EventInstance) -> void:
 			if officer != stopped_by:
 				officer._be_done()
 
-## Where a man gets out: beside the body's flank on her side, clear of it by his own reach, `along`
-## px from its middle along its length — `side` 1 for her side, -1 for the other.
-func door_for_its_officer(row: EventDef, side := 1.0, along := 0.0) -> Vector2:
-	return _door_at(row.ground_shape().reach() if row.ground_shape() else 0.0, side, along)
+## **Takes the man this vehicle lets out** (`EventCatalogue.out_of_the_car()`: the day's pursuer on
+## foot, whose catch is a stop out of the patrol car and ends the day out of a hunting van), as
+## `EventsAhead.let_the_officers_out()` hands it every tick. Where he gets out
+## (`where_its_officer_may_get_out()`) is worked out from his own row, both for whether the vehicle
+## may stop in her view and for where he is put down.
+func lets_out_as(row: EventDef) -> void:
+	_its_officer = row
+
+## Whether this is a vehicle that stops for her and lets men out (`EventInvestigation`).
+func lets_men_out() -> bool:
+	return _composed.investigation() != null
+
+## **Where the `i`th of the `count` men `row` describes may get out, in the order they are tried**:
+## at its door on her side, at the door on the other side, then at the vehicle's own place. A door
+## is beside the body's flank, clear of it by his own reach (`row`'s body), and `OFFICER_SPACING`
+## apart along its length from the next man's. `EventsAhead.let_the_officers_out()` puts him at
+## the first his ground allows; `_would_stand_in_her_view()` asks every one, so the vehicle stops
+## only where each of them is in her view.
+func where_its_officer_may_get_out(row: EventDef, i: int, count: int) -> PackedVector2Array:
+	var along := (float(i) - float(count - 1) * 0.5) * OFFICER_SPACING
+	var his_reach := row.ground_shape().reach() if row.ground_shape() else 0.0
+	return PackedVector2Array([_door_at(his_reach, 1.0, along), _door_at(his_reach, -1.0, along),
+			global_position])
 
 ## How far apart along a vehicle's flank its men get out when it lets out more than one, in px:
 ## a body and a half of a man apart, so neither stands in the other.
 const OFFICER_SPACING := 28.0
 
-## Where a man whose body reaches `his_reach` round his feet gets out (`door_for_its_officer()`).
+## Where a man whose body reaches `his_reach` round his feet gets out beside the body's flank,
+## `along` px from its middle along its length — `side` 1 for her side, -1 for the other.
 func _door_at(his_reach: float, side: float, along: float) -> Vector2:
 	var across := _heading.orthogonal()
 	var her := _where.at()

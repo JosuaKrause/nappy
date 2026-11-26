@@ -32,6 +32,7 @@ func run(t: TestRunner) -> void:
 	_test_a_patrol_that_never_notices_drives_off_its_route(t)
 	_test_the_patrol_stops_once_it_notices(t)
 	_test_a_hunting_van_lets_its_men_out_only_in_her_view(t)
+	_test_a_van_that_saw_her_out_of_view_never_stops_past_its_notice(t)
 	_test_a_streamed_patrol_resumes_where_it_left_off(t)
 	_test_a_streamed_patrol_mid_chase(t)
 	_test_every_waiting_row_resumes_the_notice(t)
@@ -373,7 +374,8 @@ func _test_the_patrol_stops_once_it_notices(t: TestRunner) -> void:
 	var officer_where := WhereSheIs.nowhere()
 	var officer := EventInstance.new()
 	var out := EventCatalogue.out_of_the_car(DaySpec.for_day(6))
-	officer.setup(out, instance.door_for_its_officer(out), PackedVector2Array(), Vector2.RIGHT,
+	officer.setup(out, instance.where_its_officer_may_get_out(out, 0, 1)[0], PackedVector2Array(),
+			Vector2.RIGHT,
 			EventSurroundings.new().hearing(officer_where))
 	instance.let_out(officer)
 	for i in int(round(3.0 / STEP)):
@@ -413,17 +415,14 @@ func _test_the_patrol_stops_once_it_notices(t: TestRunner) -> void:
 ## velvet-marten #699, #705; bouncy-owl #1774): a man let out is a charger already in the world, who
 ## warns her in her view with his hand raised and carries no badge, so he never gets out unseen. The
 ## fully heated unmarked van, parked, with her straight below it inside its notice along a clear
-## line: with the camera's view about her, the van and its door are past the view's top edge and it
-## does not stop for her; with a view that holds the van, its door and her, it does, and owes its men.
+## line: with the camera's view about her, the van and its doors are past the view's top edge and it
+## does not stop for her; with a view that holds the van, both its doors and her, it does, and owes
+## its men.
 func _test_a_hunting_van_lets_its_men_out_only_in_her_view(t: TestRunner) -> void:
 	var hot := EventCatalogue.heated(EventCatalogue.by_id("abduction"), Tuning.RESISTANCE_GOAL)
 	t.check(hot.investigates() and hot.lets_out() == 2, "the fully heated van lets out two men")
 	var instance_where := WhereSheIs.nowhere()
-	var instance := EventInstance.new()
-	instance.setup(hot, Vector2.ZERO, PackedVector2Array(), Vector2.RIGHT,
-			EventSurroundings.new().hearing(instance_where))
-	t.add_child(instance)
-	instance.set_process(false)
+	var instance := _parked_van(t, hot, instance_where)
 	var her := Vector2(0.0, hot.notice_within() - 10.0)
 	var about_her := Rect2(her - Tuning.VIEW_HALF_EXTENT, Tuning.VIEW_HALF_EXTENT * 2.0)
 	for i in int(round(1.0 / STEP)):
@@ -437,8 +436,56 @@ func _test_a_hunting_van_lets_its_men_out_only_in_her_view(t: TestRunner) -> voi
 	instance_where.tell(her, Vector2.INF, holding_it)
 	instance.step(STEP)
 	t.check(not instance.is_waiting() and instance.officers_owed() == 2,
-			"with it and its door in her view, it stops for her and owes its two men")
+			"with it and its doors in her view, it stops for her and owes its two men")
 	instance.free()
+
+## **A vehicle that noticed her out of her view never stops later once she is past its notice**
+## (`EventInvestigation`; merry-stork: it stops if close to her; bouncy-owl #1774: an on-screen
+## charger warns her when she comes too close). The fully heated unmarked van, parked, notices her
+## 215px straight below it with the view about her, which leaves it out, so it does not stop. She
+## walks off to 322px, past its 225px notice, and the view now holds the van, both its doors and her:
+## it still does not stop and owes no men. Back inside its notice under the same view, it stops.
+func _test_a_van_that_saw_her_out_of_view_never_stops_past_its_notice(t: TestRunner) -> void:
+	var hot := EventCatalogue.heated(EventCatalogue.by_id("abduction"), Tuning.RESISTANCE_GOAL)
+	var instance_where := WhereSheIs.nowhere()
+	var instance := _parked_van(t, hot, instance_where)
+	var her := Vector2(0.0, 215.0)
+	t.check(her.length() <= hot.notice_within(), "215px is inside its notice (%.0fpx)"
+			% hot.notice_within())
+	for i in int(round(1.0 / STEP)):
+		instance_where.tell(her, Vector2.INF,
+				Rect2(her - Tuning.VIEW_HALF_EXTENT, Tuning.VIEW_HALF_EXTENT * 2.0))
+		instance.step(STEP)
+	t.check(instance.is_waiting() and instance.officers_owed() == 0,
+			"it notices her out of her view and does not stop")
+	her = Vector2(290.0, 140.0)
+	var holding_it := Rect2(Vector2(-150.0, -140.0), Tuning.VIEW_HALF_EXTENT * 2.0)
+	t.check(her.length() > hot.notice_within() and holding_it.has_point(her),
+			"she walks off to %.0fpx, past its notice, with it in her view" % her.length())
+	for i in int(round(1.0 / STEP)):
+		instance_where.tell(her, Vector2.INF, holding_it)
+		instance.step(STEP)
+	t.check(instance.is_waiting() and instance.officers_owed() == 0,
+			"past its notice it does not stop, though she now sees it and its doors")
+	her = Vector2(150.0, 140.0)
+	instance_where.tell(her, Vector2.INF, holding_it)
+	instance.step(STEP)
+	t.check(not instance.is_waiting() and instance.officers_owed() == 2,
+			"back inside its notice (%.0fpx) under the same view, it stops and owes its two men"
+			% her.length())
+	instance.free()
+
+## The fully heated unmarked van `hot`, parked at the origin facing right, hearing where she is from
+## `where`, and handed the man it lets out the way `EventsAhead.let_the_officers_out()` hands
+## him: day 10's, out of a hunting van.
+func _parked_van(t: TestRunner, hot: EventDef, where: WhereSheIs) -> EventInstance:
+	var instance := EventInstance.new()
+	instance.setup(hot, Vector2.ZERO, PackedVector2Array(), Vector2.RIGHT,
+			EventSurroundings.new().hearing(where))
+	t.add_child(instance)
+	instance.set_process(false)
+	instance.lets_out_as(EventCatalogue.out_of_the_car(DaySpec.for_day(10), false))
+	return instance
 
 ## `EventInstance.restore()` restores age and distance travelled so a streamed-out event picks up
 ## where it left off rather than rewinding — checked here because a heated patrol is the first
