@@ -318,13 +318,13 @@ func atlas() -> AtlasLibrary:
 func use_ground_recipe(recipe: GroundRecipe) -> void:
 	_ground_recipe = recipe
 
-## The run the city stands in; `build()` refuses a city never handed one.
 ## Hands the city the run's tutorial route (`TutorialRoute.for_city()`), before `build()`: the
 ## dawn of a day whose spec walks the tutorial grows the day's tree with it and hands it on in the
 ## day's `DayStreets`. A city handed none (a rig, a suite not about the tutorial) carries none.
 func use_tutorial_route(route: TutorialRoute) -> void:
 	_tutorial = route
 
+## The run the city stands in; `build()` refuses a city never handed one.
 func use_run(the_run: RunState) -> void:
 	_run = the_run
 

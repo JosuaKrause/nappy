@@ -27,7 +27,9 @@ extends RefCounted
 ##
 ## and keeps, of the rest, one whose tutorial park is a park or a calm zone where one fits, a square
 ## or a courtyard otherwise, whose side streets past the first block open onto no open ground
-## between the route and their seal (the park aside, at the last street's ends), and from
+## between the route and their seal (the park aside, at the last street's ends), whose junction
+## boxes past the first open onto nothing past the pavement left of a street the city does not
+## have (`CityMap.has_street()`), which no seal or wall closes, and from
 ## whose first block a second calm area stays reachable. A through-alley with a mouth on a lesson
 ## street or a side street's mouth half refuses nothing: the seals wall that mouth.
 
@@ -260,11 +262,67 @@ class _Chooser extends RefCounted:
 
 	## Whether a junction box between two lesson streets opens onto no open ground.
 	func _box_keeps(junction: Vector2i) -> bool:
+		var border := _box_border(junction)
+		return not bool(border["open"]) and (border["areas"] as Dictionary).is_empty()
+
+	## What borders a junction box past the first block, as `_border_of()` answers, with the
+	## pavement left of a street the city does not have (`CityMap.has_street()`) taken as part of
+	## the box: no seal stands on such a stub and no wall closes an alley opening onto it, so
+	## anything walkable past it but its own pavement and the box is a way off the route.
+	func _box_border(junction: Vector2i) -> Dictionary:
 		if not _boxes.has(junction):
-			var border := _border_of(TutorialRoute._box(junction))
-			_boxes[junction] = not bool(border["open"]) \
-					and (border["areas"] as Dictionary).is_empty()
-		return bool(_boxes[junction])
+			var box := TutorialRoute._box(junction)
+			var border := _border_of(box)
+			var past := _border_of_stubs(junction, box)
+			(border["areas"] as Dictionary).merge(past["areas"] as Dictionary)
+			border["open"] = bool(border["open"]) or bool(past["open"])
+			_boxes[junction] = border
+		return _boxes[junction]
+
+	## What borders the pavement left of each absent street at `junction` that the box opens onto,
+	## from outside that pavement and the box: the calm areas, by index, and whether any other
+	## walkable ground does, a through-alley or another street's ground included.
+	func _border_of_stubs(junction: Vector2i, box: Rect2i) -> Dictionary:
+		var stub := {}
+		var queue: Array[Vector2i] = []
+		for arm in _map.street_network().at_junction(junction):
+			if _map.has_street(arm.key()):
+				continue
+			var rect := arm.tile_rect()
+			for tile in _map.rect_tiles(rect):
+				if _map.is_street(tile) and not stub.has(tile) and _beside_rect(tile, box):
+					stub[tile] = rect
+					queue.append(tile)
+		var head := 0
+		while head < queue.size():
+			var tile := queue[head]
+			head += 1
+			var rect: Rect2i = stub[tile]
+			for offset: Vector2i in [Vector2i.RIGHT, Vector2i.LEFT, Vector2i.UP, Vector2i.DOWN]:
+				var next: Vector2i = tile + offset
+				if rect.has_point(next) and not stub.has(next) and _map.is_street(next):
+					stub[next] = rect
+					queue.append(next)
+		var areas := {}
+		var open := false
+		for tile: Vector2i in stub:
+			for offset: Vector2i in [Vector2i.RIGHT, Vector2i.LEFT, Vector2i.UP, Vector2i.DOWN]:
+				var beside: Vector2i = tile + offset
+				if stub.has(beside) or box.has_point(beside) or not _map.in_bounds(beside) \
+						or not Tile.is_walkable(_map.tile_at(beside)):
+					continue
+				if _area_of.has(beside):
+					areas[_area_of[beside]] = true
+				else:
+					open = true
+		return {"areas": areas, "open": open}
+
+	## Whether `tile` stands just outside `rect`, beside one of its edge tiles.
+	static func _beside_rect(tile: Vector2i, rect: Rect2i) -> bool:
+		for offset: Vector2i in [Vector2i.RIGHT, Vector2i.LEFT, Vector2i.UP, Vector2i.DOWN]:
+			if rect.has_point(tile + offset):
+				return true
+		return false
 
 	func _street_facts(segment: StreetNetwork.Segment) -> Dictionary:
 		var key := segment.key()
@@ -306,7 +364,7 @@ class _Chooser extends RefCounted:
 		var park: int = areas.keys()[0]
 		if _is_a_park(_areas[park]) != parks_first:
 			return null
-		var far := _border_of(TutorialRoute._box(junctions[junctions.size() - 1]))
+		var far := _box_border(junctions[junctions.size() - 1])
 		var at_far: Dictionary = far["areas"]
 		if bool(far["open"]) or at_far.size() > 1 or (at_far.size() == 1 and not at_far.has(park)):
 			return null

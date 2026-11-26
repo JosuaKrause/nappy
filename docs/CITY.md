@@ -1637,10 +1637,13 @@ junction box that keeps its bodies, and hers beside them, out of the box, past a
 Every through-alley mouth on a lesson street or a side street's mouth half is walled, with no
 roll. `TutorialRoute.for_city()` takes only a route these seals can close, checked before it is
 accepted: past the first junction no lesson street runs along or ends at the main road, none is a
-precinct, none borders open ground but the park on the last street or the home block, no open
-ground opens onto a side street's stub between the box and its seal, and a second calm area stays
-reachable from the first block. `tests/test_seals.gd` holds the guarantee on the full walkable tile
-graph, the main road's sidewalks, the alleys and the open ground included.
+precinct, none borders the home block, or open ground other than the park on the last street, no
+open ground opens onto a side street's stub between the box and its seal, no junction box opens
+past the pavement left of a street the city does not have, which no seal stands on and no wall
+closes, and a second calm area stays reachable from the first block. `tests/test_seals.gd` holds
+the guarantee on the full walkable tile graph, the main road's sidewalks, the alleys and the open
+ground included, over the city suites' seeds, and takes each mouth seal away in turn to show the
+flood would see it missing.
 
 **A final pass thins the seals.** A small `SealPlanner.SEAL_THINNING_FRACTION` of the day's soft pairs
 lose one body — never a hard seal, never an alley mouth — so a wrong turn stays open long enough to
