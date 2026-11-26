@@ -389,8 +389,10 @@ func _access_nodes(map: CityMap, area: ClosurePlanner.CalmArea) -> Array[int]:
 ## branch merges into the route past its first block, crosses a side street's mouth (the half of it
 ## nearest the route) or reaches the park another way, so the seal at each mouth past the first
 ## block stands off the tree by construction (`SealPlanner`). The route is the shortest way on the growth's own graph from the
-## park to the doorstep's street through the route's walked ground, which runs down the lesson
-## streets in order because they are the only ground it may take.
+## park to the doorstep's street along the route's line (`TutorialRoute.line_ground()`: the sidewalk
+## she walks along each lesson street and the junction boxes), which runs down the lesson streets in
+## order because it is the only ground it may take. So the sidewalk the branch walks is the line's,
+## and the far one is where a lesson's row stands (`DawnTutorial`).
 ##
 ## Returns the park's block, or `(-1, -1)` where there is no route, its park is not one of today's
 ## growable areas, or no way along it is found; the park is then grown like any area.
@@ -404,7 +406,7 @@ func _grow_the_tutorial(map: CityMap, areas: Array[ClosurePlanner.CalmArea]) -> 
 			park = area
 	if not park:
 		return none
-	var walked := _tutorial.walked_ground()
+	var walked := _tutorial.line_ground()
 	var previous := {}
 	var queue: Array[int] = []
 	for node in _access_nodes(map, park):

@@ -57,6 +57,7 @@ test_day13_guard.gd 40738
 test_day6_yeller_met.gd 12059
 test_day7_van.gd 15363
 test_dawn_context.gd 1250
+test_dawn_tutorial.gd 33358
 test_day_controller.gd 76
 test_day_director.gd 162
 test_day_loop.gd 2903
@@ -211,6 +212,7 @@ test_trailer_flags.gd 31
 test_tuning_fairness.gd 30
 test_turns.gd 8631
 test_tutorial_dog.gd 41173
+test_tutorial_dog_walkers.gd 98000
 test_visible_view.gd 391
 test_visit_counter.gd 154
 test_visuals.gd 138

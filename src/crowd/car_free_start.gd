@@ -1,8 +1,9 @@
 class_name CarFreeStart
 extends RefCounted
 ## Day 1's car-free start: no new car comes into the crowd's box from the moment play begins until
-## she is past the crossing taught with no cars (the fourth street of the tutorial route, a street
-## before the crossing with cars) or is a full block from the tutorial route, whichever comes first (`docs/MECHANICS.md`, "The car-free start"). Simulation layer, ticked once a tick with her
+## she is past the crossing taught with no cars (lesson (4)'s zebra, a street before the crossing
+## with cars) or is a full block from the tutorial route, whichever comes first
+## (`docs/MECHANICS.md`, "The car-free start"). Simulation layer, ticked once a tick with her
 ## position by the crowd it was handed to (`Crowd.use_car_free_start()`).
 ##
 ## **The first tick holds the cars**: the crowd is handed her, and so ticks this, only when play
@@ -33,25 +34,21 @@ func _init(route: Array[Rect2], past_the_crossing: Array[Rect2], block: float,
 	_hold_cars = hold_cars
 	_let_cars_in = let_cars_in
 
-## The start for day 1's `route`: the cars are let in once she stands on the fourth street's
-## ground or beyond (the first lesson street that follows the crossing with no cars, which opens
-## the fourth street: `TutorialRoute.lesson_streets()` index 2) or is one street's length
-## (`CityMap.period()` tiles, a block and its road) from the route.
+## The start for day 1's `route`: the cars are let in once she stands on the ground past the
+## crossing with no cars, as the route answers it (`TutorialRoute.ground_past_the_crossing_with_no_cars()`:
+## the sidewalk the line leaves lesson (4)'s zebra on and everything after it, never the sidewalk
+## she arrives on before the van), or is one street's length (`CityMap.period()` tiles, a block and
+## its road) from the route.
 static func for_route(route: TutorialRoute, hold_cars: Callable, let_cars_in: Callable) \
 		-> CarFreeStart:
 	var ground: Array[Rect2] = [_world_rect(route.doorstep_street().run_rect())]
+	for segment in route.lesson_streets():
+		ground.append(_world_rect(segment.run_rect()))
 	var past: Array[Rect2] = []
-	var streets := route.lesson_streets()
-	for i in streets.size():
-		ground.append(_world_rect(streets[i].run_rect()))
-		if i >= FIRST_STREET_PAST_THE_CROSSING:
-			past.append(_world_rect(streets[i].tile_rect()))
+	for rect in route.ground_past_the_crossing_with_no_cars():
+		past.append(_world_rect(rect))
 	return CarFreeStart.new(ground, past, float(CityMap.period() * Tuning.TILE_SIZE),
 			hold_cars, let_cars_in)
-
-## The index among `TutorialRoute.lesson_streets()` of the street lesson (4)'s zebra leads onto: the
-## fourth street of the walk, the doorstep's being the first.
-const FIRST_STREET_PAST_THE_CROSSING := 2
 
 static func _world_rect(tiles: Rect2i) -> Rect2:
 	return Rect2(Vector2(tiles.position) * Tuning.TILE_SIZE, Vector2(tiles.size) * Tuning.TILE_SIZE)

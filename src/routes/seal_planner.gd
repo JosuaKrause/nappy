@@ -374,10 +374,11 @@ static func plan_day(map: CityMap, spec: DaySpec, route: RouteSource,
 ## and the burst water main is a day-1 picture that closes the whole width.
 const TUTORIAL_PRECINCT_SEAL_ID := "burst_main_seal"
 
-## The soft pairs a side street's mouth on the tutorial route is never sealed with: the delivery
-## van is the row that blocks her sidewalk for day 1's first crossing lesson, and a side street
-## sealed with it would blur that lesson. Every other soft pair offered that day may seal a mouth.
-const TUTORIAL_MOUTH_LEFT_OUT := ["delivery_pair"]
+## The soft pairs a side street's mouth on the tutorial route is never sealed with: each is a row
+## that teaches one of day 1's lessons on the route (`DawnTutorial`), the market stall the noise she
+## passes wide and the delivery van the sidewalk that makes her cross, and a side street sealed with
+## one would blur that lesson. Every other soft pair offered that day may seal a mouth.
+const TUTORIAL_MOUTH_LEFT_OUT := ["delivery_pair", "market_pair"]
 
 ## `tutorial`'s side streets past its first block (`TutorialRoute.side_street_mouths()`), by
 ## segment key, each with the ends of it that open onto the route (`true` for its `a` end).

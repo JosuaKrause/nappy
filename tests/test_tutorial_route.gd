@@ -1,7 +1,7 @@
 extends RefCounted
 ## `TutorialRoute`'s questions about a route laid by hand on a map of nothing but streets
-## (`StreetMap`): which side streets open onto it past its first block, and which ground the day's
-## other branches may not use. How `for_city()` chooses a route on a generated city, and what the
+## (`StreetMap`): which side streets open onto it past its first block, which ground the day's
+## other branches may not use, and on a longer one the lessons' streets and the line she walks. How `for_city()` chooses a route on a generated city, and what the
 ## seals make of it, is `tests/test_seals.gd`'s, on day 1's whole plan.
 
 ## The route: the doorstep's street runs west from junction (2, 2), the first lesson street south
@@ -22,6 +22,10 @@ func run(t: TestRunner) -> void:
 	_test_the_kept_ground(t, map, route)
 	_test_the_park_among_the_blocks_she_settled_in(t, route)
 	_test_a_zone_block_of_the_park(t)
+	_test_the_lessons_count_back_from_the_parks_street(t, map)
+	_test_the_line_crosses_lesson_fours_street_and_keeps_the_park_side(t, map)
+	_test_the_ground_past_the_crossing_with_no_cars(t, map)
+	_test_a_route_of_six_lesson_streets_leaves_its_first_empty(t, map)
 
 func _arm(map: CityMap, junction: Vector2i, toward: Vector2i) -> StreetNetwork.Segment:
 	for segment in map.street_network().at_junction(junction):
@@ -67,7 +71,7 @@ func _test_the_kept_ground(t: TestRunner, map: CityMap, route: TutorialRoute) ->
 	t.check(_all_in(map, _box(FAR), kept) and _all_in(map, _box(TURN), kept),
 			"the junction boxes past the first are kept")
 	t.check(_none_in(map, _box(FIRST), kept), "the first junction box is not kept")
-	t.check(route.walked_ground().has(_box(FIRST).position),
+	t.check(route.runs_over(_box(FIRST).position),
 			"the route walks the first junction box all the same")
 	t.check(_all_in(map, _park(), kept), "the park is kept")
 	for mouth in route.side_street_mouths():
@@ -117,3 +121,121 @@ func _test_a_zone_block_of_the_park(t: TestRunner) -> void:
 	zoned.record_zone_member(beside, FAR)
 	t.check(_route(zoned).has_its_park_among(settled),
 			"in a two-block park, a settled block that is not its anchor is the park")
+
+# ------------------------------------------------------------------- lessons ---
+
+## A route of five lesson streets: south from (2, 2), east twice, south, east, the park south of
+## the last street; `first` puts one more lesson street before them, south from (2, 1).
+static func _lesson_route(map: CityMap, first := false) -> TutorialRoute:
+	var junctions: Array[Vector2i] = [Vector2i(2, 2), Vector2i(2, 3), Vector2i(3, 3),
+			Vector2i(4, 3), Vector2i(4, 4), Vector2i(5, 4)]
+	if first:
+		junctions.push_front(Vector2i(2, 1))
+	var streets: Array[StreetNetwork.Segment] = []
+	for i in range(1, junctions.size()):
+		streets.append(_arm_of(map, junctions[i - 1], junctions[i]))
+	var park := Rect2i(Vector2i(4, 4) * CityMap.period() + Vector2i(0, Tuning.STREET_WIDTH),
+			Vector2i(CityMap.period(), CityMap.period() - Tuning.STREET_WIDTH))
+	return TutorialRoute.new(map, _arm_of(map, junctions[0], junctions[0] + Vector2i.LEFT),
+			streets, junctions, Vector2i(4, 4), park)
+
+static func _arm_of(map: CityMap, junction: Vector2i, toward: Vector2i) -> StreetNetwork.Segment:
+	for segment in map.street_network().at_junction(junction):
+		if segment.other_end(junction) == toward:
+			return segment
+	return null
+
+## Which side of `segment`'s rect `band` is: 0 for its first, 1 for its second.
+static func _side(segment: StreetNetwork.Segment, band: Rect2i) -> int:
+	return 0 if band.position == segment.tile_rect().position else 1
+
+## **The lessons count back from the park's street**, which carries none: the yeller the street
+## before it, the crossing with no cars at the start of the street before his, the dog walker's and
+## the stall's before that.
+func _test_the_lessons_count_back_from_the_parks_street(t: TestRunner, map: CityMap) -> void:
+	var route := _lesson_route(map)
+	var streets := route.lesson_streets()
+	t.check(route.lesson_street(TutorialRoute.Lesson.NOISE_PASSED_WIDE) == streets[0]
+			and route.lesson_street(TutorialRoute.Lesson.NOISE_WITH_LESS_ROOM) == streets[1]
+			and route.lesson_street(TutorialRoute.Lesson.CROSSING_WITH_NO_CARS) == streets[2]
+			and route.lesson_street(TutorialRoute.Lesson.TIMING_THE_YELLER) == streets[3],
+			"the lessons stand on the four streets before the park's, in order")
+	t.check(route.lesson_street(TutorialRoute.Lesson.CROSSING_WITH_CARS) == null,
+			"the crossing with cars is a junction, not a street")
+	t.check(route.crossing_with_no_cars() == Vector2i(3, 3),
+			"lesson (4) is crossed at the start of its street (%s)" % route.crossing_with_no_cars())
+	t.check(route.is_on_lesson(TutorialRoute.Lesson.NOISE_WITH_LESS_ROOM,
+			streets[1].tile_rect().get_center())
+			and not route.is_on_lesson(TutorialRoute.Lesson.NOISE_WITH_LESS_ROOM,
+			streets[0].tile_rect().get_center()),
+			"she is on lesson (3)'s street on its tiles alone")
+	t.check(_route(map).lesson_street(TutorialRoute.Lesson.NOISE_PASSED_WIDE) == null
+			and _route(map).crossing_with_no_cars() == TutorialRoute.NO_JUNCTION,
+			"a route too short for the first lessons has none of them")
+
+## **The line changes side across lesson (4)'s street at its start**, so the sidewalk she arrives
+## toward is the far one, which the van shuts, **crosses a carriageway again at that street's far
+## end** for lesson (5), **and keeps to the park's side on the last street**,
+## where the tree's branch reaches the park; the line's ground holds the line's sidewalks and not
+## the far ones.
+func _test_the_line_crosses_lesson_fours_street_and_keeps_the_park_side(t: TestRunner,
+		map: CityMap) -> void:
+	var route := _lesson_route(map)
+	var streets := route.lesson_streets()
+	t.check(_side(streets[2], route.far_sidewalk(streets[2]))
+			== _side(streets[1], route.line_sidewalk(streets[1])),
+			"lesson (4)'s far sidewalk is on the side she arrives on from lesson (3)'s street")
+	# Lesson (4)'s street runs east into (4, 3) and the next leaves it south: the line goes round
+	# the box without a crossing only from that street's south sidewalk onto the next's west one.
+	t.check(not (_side(streets[2], route.line_sidewalk(streets[2])) == 1
+			and _side(streets[3], route.line_sidewalk(streets[3])) == 0),
+			"lesson (5): the line crosses a carriageway at the far end of lesson (4)'s street")
+	t.check(_side(streets[4], route.line_sidewalk(streets[4])) == 1,
+			"the line keeps to the park's side of the last street")
+	var ground := route.line_ground()
+	var line_held := true
+	var far_left := true
+	for segment in streets:
+		for tile in map.rect_tiles(route.line_sidewalk(segment)):
+			line_held = line_held and ground.has(tile)
+		for tile in map.rect_tiles(route.far_sidewalk(segment)):
+			far_left = far_left and not ground.has(tile)
+	t.check(line_held and far_left, "the line's ground is the line's sidewalks, not the far ones")
+
+## **The ground past the crossing with no cars starts on the sidewalk the line leaves lesson (4)'s
+## junction on**: the sidewalk she arrives toward, which the van shuts just past the box, and the
+## street's carriageway are not past it; the streets after it and the boxes past the junction are.
+func _test_the_ground_past_the_crossing_with_no_cars(t: TestRunner, map: CityMap) -> void:
+	var route := _lesson_route(map)
+	var streets := route.lesson_streets()
+	var past := route.ground_past_the_crossing_with_no_cars()
+	var line_in := true
+	for tile in map.rect_tiles(route.line_sidewalk(streets[2])):
+		line_in = line_in and _in_any(past, tile)
+	var far_out := true
+	for tile in map.rect_tiles(route.far_sidewalk(streets[2])):
+		far_out = far_out and not _in_any(past, tile)
+	t.check(line_in, "the sidewalk the line leaves lesson (4)'s junction on is past the crossing")
+	t.check(far_out, "the sidewalk she arrives toward, before the van, is not")
+	t.check(not _in_any(past, streets[2].tile_rect().get_center()),
+			"nor is lesson (4)'s carriageway")
+	t.check(not _in_any(past, _box(FAR).position) and not _in_any(past, streets[1].tile_rect().get_center()),
+			"nor the junction she crosses at, or the street before it")
+	t.check(_in_any(past, streets[3].tile_rect().get_center())
+			and _in_any(past, streets[4].tile_rect().get_center())
+			and _in_any(past, _box(Vector2i(4, 3)).position),
+			"the streets after it and lesson (5)'s box are")
+
+static func _in_any(rects: Array[Rect2i], tile: Vector2i) -> bool:
+	for rect in rects:
+		if rect.has_point(tile):
+			return true
+	return false
+
+## **A route of six lesson streets leaves its first one empty**: the lessons still count back from
+## the park's street.
+func _test_a_route_of_six_lesson_streets_leaves_its_first_empty(t: TestRunner,
+		map: CityMap) -> void:
+	var route := _lesson_route(map, true)
+	t.check(route.lesson_street(TutorialRoute.Lesson.NOISE_PASSED_WIDE) == route.lesson_streets()[1],
+			"the stall stands on the second lesson street of six")

@@ -521,6 +521,10 @@ func _a_mark_puts_a_place_on_her_route(t: TestRunner, day: int, row: String, siz
 	var camera := Camera2D.new()
 	camera.name = "Camera2D"
 	camera.process_callback = Camera2D.CAMERA2D_PROCESS_PHYSICS
+	# Not the viewport's current camera, so what she sees is drawn from her own position
+	# (`Stroller.view_centre_of()`): no frame runs here to move a current one off the origin,
+	# which would put every place down her line out of sight.
+	camera.enabled = false
 	player.add_child(camera)
 	t.add_child(player)
 	player.set_physics_process(false)

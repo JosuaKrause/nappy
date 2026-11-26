@@ -1,0 +1,23 @@
+   0.0  shot     burst started: asked for an animation burst at (61,110) | exc 0, sleep 3 | playing | asked/burst-12932588-001
+   0.0  near     skip at (63,113), 117px, exc 0, in 0.0/s (crowd 0.0, events 6.5), sleep 3
+   0.0  path     off the corridor at (61,114), after 0.0s on it
+   0.0  cross    stepped into the road at (61,114), at a zebra
+   0.0  near     scaffolding at (63,117), 123px, exc 0, in 0.0/s (crowd 0.0, events 0.0), sleep 3
+   0.0  near     moving_van at (60,119), 119px, exc 0, in 0.0/s (crowd 0.0, events 0.0), sleep 4
+   0.0  near     moving_van at (60,119), 62px, exc 0, in 0.0/s (crowd 0.0, events 0.0), sleep 4
+   0.0  near     moving_van at (57,119), 121px, exc 0, in 0.0/s (crowd 0.0, events 0.0), sleep 4
+   0.0  shot     burst complete: 25 frames | duration
+   0.0  cross    stepped into the road at (59,117), at a zebra
+   0.0  near     moving_van at (57,119), 65px, exc 0, in 0.0/s (crowd 0.0, events 0.0), sleep 4
+   0.0  path     onto the corridor at (57,117), after 0.0s off it
+   0.0  near     delivery_van at (55,113), 149px, exc 0, in 0.0/s (crowd 0.0, events 0.0), sleep 4
+   0.0  shot     burst started: asked for an animation burst at (51,117) | exc 0, sleep 5 | playing | asked/burst-18936637-002
+   0.0  near     homeless_yeller at (42,117), 212px, exc 0, in 0.0/s (crowd 0.0, events 1.9), sleep 6
+   0.0  near     cafe_tables at (47,119), 60px, exc 0, in 0.0/s (crowd 0.0, events 9.3), sleep 6
+   0.0  crowd    walked into somebody at (46,117) | exc 0, in 0.0/s (crowd 22.2, events 11.3), sleep 6
+   0.0  near     homeless_yeller at (42,117), 107px, exc 0, in 0.0/s (crowd 20.2, events 7.1), sleep 6
+   0.0  cross    stepped into the road at (45,117), at a zebra
+   0.0  near     homeless_yeller at (43,117), 49px, exc 0, in 0.0/s (crowd 0.0, events 5.4), sleep 6
+   0.0  near     homeless_yeller at (43,117), 24px, exc 0, in 0.0/s (crowd 0.0, events 5.0), sleep 6
+   0.0  shot     burst complete: 24 frames | duration
+   0.0  near     cafe_tables at (43,119), 64px, exc 0, in 0.0/s (crowd 0.0, events 5.9), sleep 6

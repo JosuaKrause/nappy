@@ -12,7 +12,8 @@ extends RefCounted
 ## **It is handed everything it asks**, by whoever makes it: the day's planner (`DayPlanner`), or
 ## `tests/game_dawn.gd` for a suite. What every dawn has comes with the constructor. What a walk
 ## may be without is handed in after it (`use_the_run()`, `use_the_doors()`, `use_what_stands()`,
-## `use_mast_sites()`, `use_trace()`, `use_the_roadblock_row()`, `use_the_walk_left_open()`), all
+## `use_mast_sites()`, `use_trace()`, `use_the_roadblock_row()`, `use_the_walk_left_open()`,
+## `use_the_tutorial_route()`), all
 ## before the dawn is planned:
 ## no phase calls one.
 ##
@@ -41,6 +42,8 @@ var _trace: RunTrace = null
 var _roadblock_row: EventDef = null
 ## The lesson streets of day 1's walk on the day that leaves it open, else none.
 var _walk_left_open: Array[StreetNetwork.Segment] = []
+## Day 1's tutorial route on the day whose spec walks it, else null.
+var _tutorial: TutorialRoute = null
 
 var _corridor: Corridor = null
 ## Whether `_corridor` was asked of the walk yet: a walk that is not a tree answers null.
@@ -104,6 +107,12 @@ func use_the_roadblock_row(row: EventDef) -> void:
 ## sidewalk of each of its lesson streets open, as on a route's street (`OneSidewalkOpenRule`).
 func use_the_walk_left_open(route: TutorialRoute) -> void:
 	_walk_left_open = route.lesson_streets() if route else ([] as Array[StreetNetwork.Segment])
+
+## Hands the dawn day 1's tutorial route on the day whose spec walks it
+## (`DayStreets.tutorial_route()`), null on every other day: the lessons stand on it
+## (`DawnTutorial`).
+func use_the_tutorial_route(route: TutorialRoute) -> void:
+	_tutorial = route
 
 # ------------------------------------------------------------ what it was handed ---
 
@@ -200,6 +209,10 @@ func spent_one_shots() -> Array[String]:
 ## The run's mast sites, worked out once on the city as built (`EventWorld.mast_sites()`).
 func mast_sites() -> Array[MastSites.Site]:
 	return _mast_sites
+
+## Day 1's tutorial route on the day whose spec walks it (`use_the_tutorial_route()`), else null.
+func tutorial_route() -> TutorialRoute:
+	return _tutorial
 
 ## Builds every plan the dawn sites at a tile.
 func builder() -> PlanBuilder:

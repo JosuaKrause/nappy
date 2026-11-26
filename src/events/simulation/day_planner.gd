@@ -238,6 +238,8 @@ func _plan_a_day(spec: DaySpec, rng: RandomNumberGenerator, consumed: Array[Stri
 	# Day 1's walk, on the day that leaves it unsealed and unclosed: the rows keep one sidewalk of
 	# each of its streets open, or a café's tables and a van could shut it between them.
 	dawn.use_the_walk_left_open(streets.tutorial_walk_left_open())
+	# Day 1's tutorial route, on the day whose spec walks it: the lessons stand on it at dawn.
+	dawn.use_the_tutorial_route(streets.tutorial_route())
 	EventScheduler.build_day(dawn)
 	var placements := dawn.events().placements()
 	placements.append_array(seals)

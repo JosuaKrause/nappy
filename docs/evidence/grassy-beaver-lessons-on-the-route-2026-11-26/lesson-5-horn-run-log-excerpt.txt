@@ -1,0 +1,14 @@
+   0.0  start    doorstep (55,116), facing 180°
+   0.0  near     delivery_van (telegraph) at (55,113), 96px, exc 0, in 0.0/s (crowd 0.0, events 0.0), sleep 0
+   0.0  near     moving_van (telegraph) at (57,119), 115px, exc 0, in 0.0/s (crowd 0.0, events 0.0), sleep 0
+   0.0  shot     burst started: asked for an animation burst at (52,117) | exc 0, sleep 1 | playing | asked/burst-7335698-001
+   0.0  near     homeless_yeller at (43,117), 218px, exc 0, in 0.0/s (crowd 0.0, events 1.2), sleep 1
+   0.0  near     homeless_yeller at (44,117), 116px, exc 0, in 0.0/s (crowd 0.0, events 13.1), sleep 1
+   0.0  near     cafe_tables at (47,119), 61px, exc 0, in 0.0/s (crowd 0.0, events 14.6), sleep 2
+   0.0  near     homeless_yeller at (45,117), 64px, exc 0, in 0.0/s (crowd 0.0, events 15.2), sleep 2
+   0.0  near     homeless_yeller at (45,117), 31px, exc 0, in 0.0/s (crowd 0.0, events 10.4), sleep 2
+   0.0  cross    stepped into the road at (45,117), at a zebra
+   0.0  near     homeless_yeller at (45,117), 12px, exc 0, in 0.0/s (crowd 0.0, events 7.7), sleep 2
+   0.0  crowd    a car sounded its horn at her in the road at (44,117) | exc 0, in 0.0/s (crowd 0.0, events 5.2), sleep 2
+   0.0  shot     burst complete: 36 frames | duration
+   0.0  cue      the mark over her head: soon for 0.0s (0.1s of it on the road) | a car, and she is in the road

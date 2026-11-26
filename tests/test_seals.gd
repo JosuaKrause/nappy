@@ -1173,7 +1173,7 @@ func _test_nothing_leaves_the_tutorial_route_past_its_first_block(t: TestRunner)
 		# The route's walked ground: its lesson streets and junction boxes (the first box, the
 		# doorstep's, is taken out with the doorstep's street).
 		var sources: Array[Vector2i] = []
-		sources.assign(tutorial.walked_ground().keys())
+		sources.assign(_route_ground(map, tutorial).keys())
 		var blocked := _blocked_on_day_one(map, closed, soft, seals)
 		var leak := _first_leak(map, sources, blocked, doorstep, park, allowed)
 		asked += 1
@@ -1244,11 +1244,22 @@ func _leak_without(map: CityMap, sources: Array[Vector2i], closed: Dictionary, s
 	return _first_leak(map, sources, _blocked_on_day_one(map, unclosed, without, kept), out, park,
 			allowed)
 
-## What the day-1 flood may reach: the route's walked ground, the tutorial park, each side street's
-## stub short of the row its mouth seal stands on, and the pavement of a street the city does not
-## have (`CityMap.has_street()`), a dead end allowed as such, with anything past it still asked.
+## The route's ground past the doorstep's street, as a set: its lesson streets, sidewalks and
+## carriageway, and the junction box at each end of each, the one it leaves the doorstep's
+## street at among them.
+static func _route_ground(map: CityMap, tutorial: TutorialRoute) -> Dictionary:
+	var found := {}
+	for unit in tutorial.units_past_the_first_block():
+		for tile in map.rect_tiles(unit):
+			found[tile] = true
+	return found
+
+## What the day-1 flood may reach: the route's walked ground (`_route_ground()`), the tutorial
+## park, each side street's stub short of the row its mouth seal stands on, and the pavement of a
+## street the city does not have (`CityMap.has_street()`), a dead end allowed as such, with
+## anything past it still asked.
 func _allowed_on_day_one(map: CityMap, tutorial: TutorialRoute, park: Rect2i) -> Dictionary:
-	var allowed := tutorial.walked_ground()
+	var allowed := _route_ground(map, tutorial)
 	for tile in map.rect_tiles(park):
 		allowed[tile] = true
 	var trees := StreetTrees.footprint_tiles(map)

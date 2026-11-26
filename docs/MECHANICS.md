@@ -899,8 +899,9 @@ started with no title in front of it (a retry, a checkpoint) populates its morni
 parked.
 
 The cars are let in once, for good (`Crowd.let_cars_in()`), at whichever comes first: she stands
-on the fourth street of the tutorial route (the first street past the crossing taught with no
-cars, which the lessons on the route lay) or she is one street's length (`CityMap.period()` tiles, a
+past the crossing taught with no cars, lesson (4)'s zebra, as the tutorial route answers it
+(`TutorialRoute.ground_past_the_crossing_with_no_cars()`: the sidewalk the line leaves that zebra
+on and everything after it, never the sidewalk she arrives on before the delivery van) or she is one street's length (`CityMap.period()` tiles, a
 block and its road) from the tutorial route, wherever she left it. The parked cars re-enter through
 the ordinary recycle at the box's edge, one after another over `Crowd.LET_IN_OVER` seconds. Coming
 back to the route holds nothing again. Every other day lets the cars in before its morning is
@@ -1368,6 +1369,13 @@ an instruction.
 weight of 1.4. The hint says nothing again for the rest of the run: it is the lesson, not a running
 commentary on the mechanic, so every later pursuit — a second dog the same day, `alley_robbery`
 from day 8 — telegraphs in silence.
+
+**Day 1 teaches the same way, at its own scale.** The day is named by its spec
+(`DaySpec.walks_the_tutorial()`), its lessons are placed at dawn outside the bags on the way to the
+tutorial park (`DawnTutorial`), the director's handouts are held on that route on her way to the
+park and on her walk home as far as the third lesson's street, but for day one's two dog walkers,
+which that street sends her, and a retried day 1 replays them.
+`docs/EVENTS.md`, "Day 1's lessons on the tutorial route", has the lessons and their rows.
 
 ## Tearing a poster down
 

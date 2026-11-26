@@ -1,0 +1,8 @@
+16:   0.0  plan     day 1's tutorial: market_stall at (57,94)
+17:   0.0  plan     day 1's tutorial: delivery_van at (55,113)
+18:   0.0  plan     day 1's tutorial: homeless_yeller at (41,117)
+22:   0.0  plan     events: alley_mouse x4, burst_water_main x35, cafe_tables x79, cat_dash x8, chatting_mother x4, delivery_van x50, dog_walker x9, fallen_tree x3, homeless_yeller x12, leaf_blower x24, loose_dog x9, market_stall x71, moving_van x61, pigeon_flock x13, playground, scaffolding x40, skip x30
+35:   0.0  ahead    dog_walker comes at her from 277px in front of her at (61,104), unannounced
+38:   0.0  near     dog_walker at (61,111), 107px, exc 0, in 0.0/s (crowd 0.0, events 1.5), sleep 2
+40:   0.0  near     dog_walker at (61,110), 57px, exc 0, in 0.0/s (crowd 0.0, events 17.8), sleep 3
+41:   0.0  near     dog_walker at (61,110), 24px, exc 0, in 0.0/s (crowd 4.0, events 25.9), sleep 3

@@ -18,7 +18,10 @@ extends RefCounted
 ## `WalkSiting.lay_just_ahead()` where the rig asked for that and by `lay_ahead()` where it did
 ## not, joins the day's plan as a place from her route (`is_from_her_route()`), and is not
 ## rigged under `--force`; and the route a scene rigs (`start_recipe_route()`): it is owed the
-## count the scene says, and the marbles it puts in the bag first are drawn first.
+## count the scene says, and the marbles it puts in the bag first are drawn first; and, on day 1
+## handed a tutorial route (`use_tutorial_route()`, a fake whose answers the test sets), only
+## lesson (3)'s dog walker is sent on the route before the park, the second dog walker first after
+## it, and an ordinary day 1 is not held.
 ##
 ## On a hand-drawn map, one street running the whole length of the map (`_street()`, north-south or
 ## the same map turned; `_crossroads()` adds a street crossing it at the box ahead of her), with
@@ -105,6 +108,10 @@ func run(t: TestRunner) -> void:
 	_test_a_walk_that_sends_its_own_trucks_is_owed_the_ones_its_plan_left_unplaced(t)
 	_test_a_walk_lets_the_share_of_the_wait_it_names_pass_between_handouts(t)
 	_test_a_walk_that_sends_nothing_has_nothing_to_hand_out(t)
+	_test_on_the_tutorial_route_only_lesson_threes_dog_walker_comes(t)
+	_test_after_the_park_the_second_dog_walker_comes_first(t)
+	_test_coming_to_lesson_three_the_dog_walker_comes_from_the_streets_far_end(t)
+	_test_an_ordinary_day_one_is_not_held(t)
 
 ## One street a period wide running north-south: its west sidewalk, its carriageway and its east
 ## sidewalk (`CityMap.corridor_offset()` 0 to 5), and building east of it. Turned where `vertical`
@@ -1070,3 +1077,149 @@ static func _rigged_walk(just_ahead: bool) -> Dictionary:
 		if tick == ticks - 1:
 			asked_before = siting.asked.size()
 	return {"siting": siting, "director": director, "moved": moved, "asked_before": asked_before}
+
+# ------------------------------------------------------------ the tutorial route ---
+
+## **A tutorial route whose answers the test sets** (`TutorialRoute`): the whole street is the
+## route, the tiles north of `PARK_ROW` are its park, and lesson (3)'s street is the stretch from
+## `LESSON_ROWS.x` to `LESSON_ROWS.y`, which she comes to on that stretch alone either way she
+## walks, and past which, north, the route runs on toward the park. It has no way along the street
+## (`way_toward_her_along()` answers empty), so the dog walker is sent down her line, unless a test
+## hands it one (`way`), from the street's far end to its near end; then she comes to the street
+## from anywhere south of it on her way to the park.
+class FakeTutorialRoute extends TutorialRoute:
+	var way := PackedVector2Array()
+
+	func _init() -> void:
+		super(null, null, [] as Array[StreetNetwork.Segment], [] as Array[Vector2i],
+				Vector2i(-1, -1), Rect2i())
+	## Overrides TutorialRoute.runs_over.
+	func runs_over(_tile: Vector2i) -> bool:
+		return true
+	## Overrides TutorialRoute.has_in_its_park.
+	func has_in_its_park(tile: Vector2i) -> bool:
+		return tile.y < PARK_ROW
+	## Overrides TutorialRoute.is_on_lesson.
+	func is_on_lesson(lesson: TutorialRoute.Lesson, tile: Vector2i) -> bool:
+		return lesson == TutorialRoute.Lesson.NOISE_WITH_LESS_ROOM \
+				and tile.y >= LESSON_ROWS.x and tile.y < LESSON_ROWS.y
+	## Overrides TutorialRoute.is_coming_to_lesson.
+	func is_coming_to_lesson(lesson: TutorialRoute.Lesson, tile: Vector2i,
+			homeward := false) -> bool:
+		return is_on_lesson(lesson, tile) or (not way.is_empty() and not homeward
+				and lesson == TutorialRoute.Lesson.NOISE_WITH_LESS_ROOM and tile.y >= LESSON_ROWS.y)
+	## Overrides TutorialRoute.lies_toward_the_park.
+	func lies_toward_the_park(lesson: TutorialRoute.Lesson, tile: Vector2i) -> bool:
+		return lesson == TutorialRoute.Lesson.NOISE_WITH_LESS_ROOM and tile.y < LESSON_ROWS.y
+	## Overrides TutorialRoute.way_toward_her_along.
+	func way_toward_her_along(_lesson: TutorialRoute.Lesson,
+			_homeward := false) -> PackedVector2Array:
+		return way
+
+## The row north of which the fake route's park lies.
+const PARK_ROW := 6
+## The rows of lesson (3)'s street on the fake route: her tile (`HER`) lies in it.
+const LESSON_ROWS := Vector2i(30, 40)
+
+## A director on day 1 owing three moments from her route's bag, handed `route` (none for an
+## ordinary day 1) before its day starts, as `EventsAhead.start_day()` hands it.
+static func _day_one(map: CityMap, route: TutorialRoute) -> EventDirector:
+	var director := EventDirector.new(map)
+	director.use_way_on(FakeWayOn.new())
+	director.use_tutorial_route(route)
+	var plans: Array[EventPlan] = []
+	for _i in 3:
+		plans.append(EventPlan.new(EventCatalogue.by_id("cat_dash"), Vector2.INF))
+	var rng := RandomNumberGenerator.new()
+	rng.seed = 7
+	director.start_day(1, plans, rng, DaySpec.DirectorSends.THE_DAYS_ROWS)
+	return director
+
+## What the director hands out with her at `tile` walking `way` (north unless given), after
+## `seconds` of walking.
+static func _handed_at(director: EventDirector, tile: Vector2i, seconds := 30.0,
+		way := Vector2.UP) -> String:
+	var due := director.due(seconds, _turned(tile, true), way * Tuning.WALK_SPEED)
+	return (due[0] as EventDef).id() if due.size() >= 2 else ""
+
+## **On the tutorial route before the park, the director sends lesson (3)'s dog walker and nothing
+## else**, however long she walks: nothing on the route short of lesson (3)'s street, the dog walker
+## the moment she is on it, and nothing after it while she is still on the route.
+func _test_on_the_tutorial_route_only_lesson_threes_dog_walker_comes(t: TestRunner) -> void:
+	var director := _day_one(_street(), FakeTutorialRoute.new())
+	var before := ""
+	for _i in 5:
+		before += _handed_at(director, Vector2i(4, 70))
+	t.check(before == "", "nothing is handed out on the route before lesson (3)'s street (%s)"
+			% before)
+	t.check(_handed_at(director, HER, 0.1) == "dog_walker",
+			"the dog walker is sent the moment she is on lesson (3)'s street")
+	var after := ""
+	for _i in 5:
+		after += _handed_at(director, Vector2i(4, 20))
+	t.check(after == "", "and nothing else on the route before the park (%s)" % after)
+
+## **Once she has stood in the tutorial park, the first handout on her walk home is the rig's
+## second dog walker, on lesson (3)'s street**: the route between the park and that street is still
+## held, so nothing comes before it, and homeward of it the hold is over. Day one's two dog walkers
+## (PLAYTEST-05 6) are lesson (3)'s and that one.
+func _test_after_the_park_the_second_dog_walker_comes_first(t: TestRunner) -> void:
+	var director := _day_one(_street(), FakeTutorialRoute.new())
+	_handed_at(director, HER, 0.1)
+	director.due(0.1, _turned(Vector2i(4, PARK_ROW - 2), true), Vector2.ZERO)
+	var between := ""
+	for _i in 5:
+		between += _handed_at(director, Vector2i(4, 20), 30.0, Vector2.DOWN)
+	t.check(between == "", "nothing is handed out between the park and lesson (3)'s street (%s)"
+			% between)
+	t.check(_handed_at(director, HER, 0.1, Vector2.DOWN) == "dog_walker",
+			"the first handout on the walk home is the second dog walker, on lesson (3)'s street")
+	t.check(_handed_at(director, Vector2i(4, 60), 30.0, Vector2.DOWN) != "",
+			"and homeward of that street the bag runs on the clock")
+
+## **Coming to lesson (3)'s street, its dog walker comes down the line's sidewalk from the street's
+## far end** (`EventDirector._down_the_lessons_street()`): sent the moment that end is out of her
+## sight and within reach of the centre of her view, so with her view leading her by a tile, as her
+## camera leads her in play, it is sent a tile sooner than with the view on her. Created at the far
+## end, it walks toward her and on past the street's near end.
+func _test_coming_to_lesson_three_the_dog_walker_comes_from_the_streets_far_end(
+		t: TestRunner) -> void:
+	var on_her := _first_sent_from_the_far_end(0.0)
+	var leading := _first_sent_from_the_far_end(float(Tuning.TILE_SIZE))
+	t.check(on_her[0] >= LESSON_ROWS.y and leading[0] == on_her[0] + 1,
+			"with her view a tile ahead of her it is sent a tile sooner (rows %d, %d)"
+			% [on_her[0], leading[0]])
+	var far := _turned(Vector2i(4, LESSON_ROWS.x), true)
+	var near := _turned(Vector2i(4, LESSON_ROWS.y - 1), true)
+	for sent: Array in [on_her, leading]:
+		var due: Array = sent[1]
+		if due.size() < 2:
+			continue
+		var path := due[1] as PackedVector2Array
+		t.check((due[0] as EventDef).id() == "dog_walker" and path[0].distance_to(far) < TILE,
+				"it is the dog walker, created at the street's far end (%v)" % path[0])
+		t.check(path[path.size() - 1].y > near.y,
+				"and it walks toward her, on past the street's near end (%v)" % path[path.size() - 1])
+
+## The row she is on, walking north toward lesson (3)'s street on a route with a way along it, when
+## its dog walker is first sent, with her view centred `lead` px ahead of her, and what was handed
+## then: `[row, due]`, or `[-1, []]` where it is never sent short of the street.
+static func _first_sent_from_the_far_end(lead: float) -> Array:
+	var route := FakeTutorialRoute.new()
+	route.way = PackedVector2Array([_turned(Vector2i(4, LESSON_ROWS.x), true),
+			_turned(Vector2i(4, LESSON_ROWS.y - 1), true)])
+	var director := _day_one(_street(), route)
+	for row in range(LENGTH - 10, LESSON_ROWS.y - 1, -1):
+		var her := _turned(Vector2i(4, row), true)
+		var due := director.due(30.0, her, Vector2.UP * Tuning.WALK_SPEED,
+				VisibleView.around(her + Vector2.UP * lead, null))
+		if due.size() >= 2:
+			return [row, due]
+	return [-1, []]
+
+## **An ordinary day 1, with no tutorial route, is not held**: the first handout comes on the
+## clock's turn wherever she walks.
+func _test_an_ordinary_day_one_is_not_held(t: TestRunner) -> void:
+	var director := _day_one(_street(), null)
+	t.check(_handed_at(director, Vector2i(4, 70)) != "",
+			"a handout comes on the clock with no tutorial route")

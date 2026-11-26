@@ -86,15 +86,6 @@ func turning_junction() -> Vector2i:
 func lesson_streets() -> Array[StreetNetwork.Segment]:
 	return _streets.duplicate()
 
-## Every tile of the route past the doorstep's street, as a set: the junction it leaves that street
-## at, the lesson streets, and the junction boxes between and after them. `RouteTree` grows the
-## park's branch on this ground alone.
-func walked_ground() -> Dictionary:
-	var found := _ground_past_the_first_block()
-	for tile in _map.rect_tiles(_box(_junctions[0])):
-		found[tile] = true
-	return found
-
 ## The ground no other branch of the day's tree may use: the lesson streets, every junction box
 ## past the first, the half of each side street past the first block nearest the route (its
 ## mouth, where `SealPlanner` stands its seal), and the tutorial park. So no other branch merges
@@ -164,6 +155,18 @@ func alley_mouths() -> Array[Array]:
 				found.append([rect, at_start])
 	return found
 
+## **The units the route runs through past the first block**, as tile rects, which is how
+## `Location.part_of()` names a unit: each lesson street's, and the junction box at each end of
+## one, the box where the route leaves the doorstep's street included. What day 1's lessons are
+## stood among and every other location of is drawn empty (`DawnTutorial`).
+func units_past_the_first_block() -> Array[Rect2i]:
+	var units: Array[Rect2i] = []
+	for segment in _streets:
+		units.append(segment.tile_rect())
+	for junction in _junctions:
+		units.append(_box(junction))
+	return units
+
 func _ground_past_the_first_block() -> Dictionary:
 	var found := {}
 	for segment in _streets:
@@ -176,6 +179,304 @@ func _ground_past_the_first_block() -> Dictionary:
 
 static func _box(junction: Vector2i) -> Rect2i:
 	return Rect2i(junction * CityMap.period(), Vector2i(Tuning.STREET_WIDTH, Tuning.STREET_WIDTH))
+
+# ------------------------------------------------------------------- lessons ---
+
+## **The lessons along the route, numbered as the progression numbers them** (gentle-owl #1253):
+## (1) get to the park is the walk itself, then (2) a noise source she can pass wide, (3) one with
+## less room, (4) crossing the road with no cars about, (5) crossing the road with cars, and (6)
+## timing the yeller. Four stand on a lesson street of their own (`lesson_street()`); the two
+## crossings are junctions: (4)'s at the start of its street (`crossing_with_no_cars()`), and (5)'s
+## the far end of that street, where the line crosses a carriageway again (`_lay_the_line()`).
+enum Lesson { NOISE_PASSED_WIDE = 2, NOISE_WITH_LESS_ROOM = 3, CROSSING_WITH_NO_CARS = 4,
+		CROSSING_WITH_CARS = 5, TIMING_THE_YELLER = 6 }
+
+## Where none is: a junction for a lesson the route is too short to lay.
+const NO_JUNCTION := Vector2i(-1, -1)
+
+## **The lesson street `lesson` stands on**, or null for a crossing or on a route too short for it.
+## The streets count back from the last, the park's, which carries no lesson: a field on it would
+## reach the park she has not used yet, which no row may (`UnusedCalmRule`). So the yeller is on
+## the street before the park's, the crossing with no cars at the start of the street before his,
+## the dog walker's street before that and the market stall's before that, and a route of six lesson
+## streets leaves its first one empty. *Proposed, not asked for:* the street each lesson takes is
+## the builder's reading of the progression on a route whose last street runs along the park.
+func lesson_street(lesson: Lesson) -> StreetNetwork.Segment:
+	var index := _index_of(lesson)
+	return _streets[index] if index >= 0 else null
+
+## **Whether `tile` is on the street `lesson` stands on** (`lesson_street()`): what the director
+## asks before it sends lesson (3)'s dog walker. False for a crossing, or on a route too short for
+## the lesson.
+func is_on_lesson(lesson: Lesson, tile: Vector2i) -> bool:
+	var street := lesson_street(lesson)
+	return street != null and street.tile_rect().has_point(tile)
+
+## **Whether `tile` is on her way to `lesson`'s street or on it**, going to the park or
+## `homeward`: the street before it on that way (the doorstep's, for the first on her way out), the
+## junction box she comes onto it by, or the street itself. Where the director asks to send lesson
+## (3)'s dog walkers, which may set off before she turns the corner (`way_toward_her_along()`). False
+## for a crossing, or on a route too short for it.
+func is_coming_to_lesson(lesson: Lesson, tile: Vector2i, homeward := false) -> bool:
+	var index := _index_of(lesson)
+	if index < 0:
+		return false
+	if _streets[index].tile_rect().has_point(tile):
+		return true
+	var box := _box(_junctions[index + 1] if homeward else _junctions[index])
+	var before: StreetNetwork.Segment = null
+	if homeward:
+		before = _streets[index + 1] if index + 1 < _streets.size() else null
+	else:
+		before = _streets[index - 1] if index > 0 else _home
+	return box.has_point(tile) or (before != null and before.tile_rect().has_point(tile))
+
+## **Whether `tile` is on `lesson`'s street or on the route past it toward the park**: its street,
+## the junction box she comes onto it by from home, and every lesson street and junction box after
+## it. On her walk home the director holds its route bag here until lesson (3)'s street has sent her
+## its dog walker (`EventDirector`). False for a crossing, or on a route too short for it.
+func lies_toward_the_park(lesson: Lesson, tile: Vector2i) -> bool:
+	var index := _index_of(lesson)
+	if index < 0:
+		return false
+	for i in range(index, _streets.size()):
+		if _streets[i].tile_rect().has_point(tile):
+			return true
+	for i in range(index, _junctions.size()):
+		if _box(_junctions[i]).has_point(tile):
+			return true
+	return false
+
+## **The way along the line's sidewalk of `lesson`'s street toward her**, going to the park or
+## `homeward`, as two world points down the middle of that sidewalk: the end she has still to come
+## to, then the end she comes onto it at. A thing that walks it comes down her sidewalk toward her,
+## round the corner she has still to turn, where the line straight on from her has no ground past the
+## street's far end (a T, a calm zone, the map's edge). Empty for a crossing, or on a route too short
+## for it.
+func way_toward_her_along(lesson: Lesson, homeward := false) -> PackedVector2Array:
+	var street := lesson_street(lesson)
+	if street == null:
+		return PackedVector2Array()
+	var band := _map.tile_rect_to_world(line_sidewalk(street))
+	var middle := band.get_center()
+	var half := Vector2(band.size.x * 0.5 - Tuning.TILE_SIZE * 0.5, 0.0) if street.horizontal \
+			else Vector2(0.0, band.size.y * 0.5 - Tuning.TILE_SIZE * 0.5)
+	var from_home := _map.tile_rect_to_world(_box(arrives_at(street))).get_center()
+	var one := middle - half
+	var other := middle + half
+	var near := one if one.distance_squared_to(from_home) < other.distance_squared_to(from_home) \
+			else other
+	var far := other if near == one else one
+	return PackedVector2Array([near, far]) if homeward else PackedVector2Array([far, near])
+
+## **The sidewalk she walks along `segment`**, a lesson street: the band of its tile rect
+## (`Corridor.sidewalk_bands()`) the line keeps to, which the day's tree walks
+## (`line_ground()`). An empty rect for a street the route does not run down.
+func line_sidewalk(segment: StreetNetwork.Segment) -> Rect2i:
+	var index := _streets.find(segment)
+	if index < 0:
+		return Rect2i()
+	return Corridor.sidewalk_bands(segment.tile_rect(), segment.horizontal)[_line()[index]]
+
+## **The sidewalk across the carriageway from the line on `segment`**, a lesson street: where the
+## market stall stands, and the one the delivery van shuts. An empty rect for a street the route
+## does not run down.
+func far_sidewalk(segment: StreetNetwork.Segment) -> Rect2i:
+	var index := _streets.find(segment)
+	if index < 0:
+		return Rect2i()
+	return Corridor.sidewalk_bands(segment.tile_rect(), segment.horizontal)[1 - _line()[index]]
+
+## **The junction where lesson (4) is crossed**, at the start of its street: the line arrives there
+## on the sidewalk the van shuts just past the box and leaves on the other, so it crosses the
+## street's carriageway. `NO_JUNCTION` on a route too short for it.
+func crossing_with_no_cars() -> Vector2i:
+	var index := _index_of(Lesson.CROSSING_WITH_NO_CARS)
+	return _junctions[index] if index >= 0 else NO_JUNCTION
+
+## **The ground past the crossing with no cars**, as tile rects: the sidewalk the line leaves lesson
+## (4)'s junction on (`line_sidewalk()` of its street), every lesson street after it, and every
+## junction box past that junction, lesson (5)'s at the street's far end first. The sidewalk she
+## arrives toward, which the van shuts just past the box, is not on it, nor is the street's
+## carriageway: she has not crossed yet. It is where the car-free start lets the cars in
+## (`CarFreeStart`), so the lesson and the release read one answer. Empty on a route too short for
+## lesson (4).
+func ground_past_the_crossing_with_no_cars() -> Array[Rect2i]:
+	var rects: Array[Rect2i] = []
+	var index := _index_of(Lesson.CROSSING_WITH_NO_CARS)
+	if index < 0:
+		return rects
+	rects.append(line_sidewalk(_streets[index]))
+	for i in range(index + 1, _streets.size()):
+		rects.append(_streets[i].tile_rect())
+	for i in range(index + 1, _junctions.size()):
+		rects.append(_box(_junctions[i]))
+	return rects
+
+## **The junction where she comes onto `segment`**, a lesson street: its end nearer the doorstep
+## along the route. `NO_JUNCTION` for a street the route does not run down.
+func arrives_at(segment: StreetNetwork.Segment) -> Vector2i:
+	var index := _streets.find(segment)
+	return _junctions[index] if index >= 0 else NO_JUNCTION
+
+## **Whether `tile` is on the route**: the doorstep's street, a lesson street, either of its
+## sidewalks or its carriageway, or one of the junction boxes along it. The director asks it on
+## each of her steps on day 1, so it reads the rects rather than building the route's tiles.
+func runs_over(tile: Vector2i) -> bool:
+	if _home.tile_rect().has_point(tile):
+		return true
+	for segment in _streets:
+		if segment.tile_rect().has_point(tile):
+			return true
+	for junction in _junctions:
+		if _box(junction).has_point(tile):
+			return true
+	return false
+
+## **Whether `tile` is in the tutorial park**: its own ground.
+func has_in_its_park(tile: Vector2i) -> bool:
+	return _park_rect.has_point(tile) and Tile.is_calm(_map.tile_at(tile))
+
+## **The line she is meant to walk, as ground**: the sidewalk she walks along each lesson street
+## (`line_sidewalk()`) and every junction box the route passes. The day's tree grows the park's
+## branch on this alone (`RouteTree`), so the sidewalk the tree walks, which the day's rules keep
+## free of bodies (`RouteSidewalkRule`), is the line's, and the far sidewalk is where a lesson's
+## row may stand.
+func line_ground() -> Dictionary:
+	var found := {}
+	for segment in _streets:
+		for tile in _map.rect_tiles(line_sidewalk(segment)):
+			found[tile] = true
+	for junction in _junctions:
+		for tile in _map.rect_tiles(_box(junction)):
+			found[tile] = true
+	return found
+
+## The index into `_streets` of the street `lesson` stands on, counted back from the park's; -1
+## for a crossing with cars, which is a junction, or on a route too short for it.
+func _index_of(lesson: Lesson) -> int:
+	if lesson == Lesson.CROSSING_WITH_CARS:
+		return -1
+	var order: Array[Lesson] = [Lesson.NOISE_PASSED_WIDE, Lesson.NOISE_WITH_LESS_ROOM,
+			Lesson.CROSSING_WITH_NO_CARS, Lesson.TIMING_THE_YELLER]
+	var index := _streets.size() - 1 - order.size() + order.find(lesson)
+	return index if index >= 0 else -1
+
+## The side of each lesson street the line keeps to, in `_streets`' order, as an index into
+## `Corridor.sidewalk_bands()` of the street's rect: laid on the first ask (`_lay_the_line()`).
+var _sides: Array[int] = []
+
+func _line() -> Array[int]:
+	if _sides.size() != _streets.size():
+		_sides = _lay_the_line()
+	return _sides
+
+## **The line, chosen among every choice of sides**, the route's few streets making that a few
+## dozen: on the last street the sidewalk along the park, where the tree's branch reaches it; at
+## lesson (4)'s junction a change of side across its street, so the sidewalk she arrives toward is
+## the one the van shuts; a carriageway crossed at lesson (5)'s junction where any line crosses one
+## there; and, of the rest, the fewest crossings before lesson (4), where crossing is not yet
+## taught, then the fewest in all.
+func _lay_the_line() -> Array[int]:
+	var count := _streets.size()
+	var best: Array[int] = []
+	if count == 0:
+		return best
+	var park := _park_side(_streets[count - 1])
+	var crossing := _index_of(Lesson.CROSSING_WITH_NO_CARS)
+	var best_cost := INF
+	for bits in 1 << count:
+		var sides: Array[int] = []
+		for i in count:
+			sides.append((bits >> i) & 1)
+		if park >= 0 and sides[count - 1] != park:
+			continue
+		var cost := _cost_of(sides, crossing)
+		if cost < best_cost:
+			best_cost = cost
+			best = sides
+	if best.is_empty():
+		best.resize(count)
+		best.fill(0)
+	return best
+
+## What a choice of `sides` costs (`_lay_the_line()`): `INF` where it does not cross lesson
+## (4)'s street at `crossing`'s junction.
+func _cost_of(sides: Array[int], crossing: int) -> float:
+	var cost := 0.0
+	for i in sides.size():
+		var junction := _junctions[i]
+		var leaving := _corner(_streets[i], sides[i], junction)
+		var crossed := 0
+		if i == 0:
+			crossed = mini(_crossings(junction, _corner(_home, 0, junction), leaving),
+					_crossings(junction, _corner(_home, 1, junction), leaving))
+		else:
+			var arriving := _corner(_streets[i - 1], sides[i - 1], junction)
+			crossed = _crossings(junction, arriving, leaving)
+			if i == crossing and _across(_streets[i], arriving) == sides[i]:
+				return INF
+		if i < crossing:
+			cost += 10.0 * crossed
+		elif i == crossing + 1 and crossed == 0:
+			cost += 1000.0
+		else:
+			cost += crossed
+	return cost
+
+## The corner of `junction`'s box where side `side` of `segment`, a street meeting there,
+## meets it: `Vector2i(0 west or 1 east, 0 north or 1 south)`.
+static func _corner(segment: StreetNetwork.Segment, side: int, junction: Vector2i) -> Vector2i:
+	var other := segment.other_end(junction)
+	if segment.horizontal:
+		return Vector2i(0 if other.x < junction.x else 1, side)
+	return Vector2i(side, 0 if other.y < junction.y else 1)
+
+## The side of `segment` a corner of a box it meets is on, across the street.
+static func _across(segment: StreetNetwork.Segment, corner: Vector2i) -> int:
+	return corner.y if segment.horizontal else corner.x
+
+## How many carriageways she crosses going round `junction`'s box from corner `from` to corner
+## `to`, the fewer way round: one for each arm between them that is a street the city has
+## (`CityMap.has_street()`), the pavement left of one it does not have crossed for nothing.
+func _crossings(junction: Vector2i, from: Vector2i, to: Vector2i) -> int:
+	if from == to:
+		return 0
+	if from.y == to.y:
+		return _arm(junction, Vector2i(0, -1 if from.y == 0 else 1))
+	if from.x == to.x:
+		return _arm(junction, Vector2i(-1 if from.x == 0 else 1, 0))
+	var by_row := _crossings(junction, from, Vector2i(to.x, from.y)) \
+			+ _crossings(junction, Vector2i(to.x, from.y), to)
+	var by_column := _crossings(junction, from, Vector2i(from.x, to.y)) \
+			+ _crossings(junction, Vector2i(from.x, to.y), to)
+	return mini(by_row, by_column)
+
+## One where the street leaving `junction` toward `direction` is one the city has, else none.
+func _arm(junction: Vector2i, direction: Vector2i) -> int:
+	for segment in _map.street_network().at_junction(junction):
+		if segment.other_end(junction) - junction == direction:
+			return 1 if _map.has_street(segment.key()) else 0
+	return 0
+
+## The side of `segment` whose sidewalk the park lies along, or -1 where it lies along neither or
+## both.
+func _park_side(segment: StreetNetwork.Segment) -> int:
+	var rect := segment.tile_rect()
+	var found := -1
+	for side in 2:
+		var bands := Corridor.sidewalk_bands(rect, segment.horizontal)
+		var band: Rect2i = bands[side]
+		var step := (Vector2i.UP if side == 0 else Vector2i.DOWN) if segment.horizontal \
+				else (Vector2i.LEFT if side == 0 else Vector2i.RIGHT)
+		var outer := band.position + (step if side == 0 else step * band.size)
+		var row := Rect2i(outer, Vector2i(band.size.x, 1) if segment.horizontal
+				else Vector2i(1, band.size.y))
+		if row.intersects(_park_rect):
+			if found >= 0:
+				return -1
+			found = side
+	return found
 
 # ------------------------------------------------------------------ choosing ---
 

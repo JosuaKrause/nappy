@@ -54,19 +54,38 @@ func run(t: TestRunner) -> void:
 
 	_test_the_route_it_is_made_for(t)
 
+## A route whose ground past the crossing with no cars is the one rect it is handed, as
+## `TutorialRoute.ground_past_the_crossing_with_no_cars()` answers it.
+class _PastRoute extends TutorialRoute:
+	var _past: Rect2i
+
+	func _init(home: StreetNetwork.Segment, streets: Array[StreetNetwork.Segment],
+			past: Rect2i) -> void:
+		super(null, home, streets, [] as Array[Vector2i], Vector2i.ZERO, Rect2i())
+		_past = past
+
+	## Overrides TutorialRoute.ground_past_the_crossing_with_no_cars.
+	func ground_past_the_crossing_with_no_cars() -> Array[Rect2i]:
+		var rects: Array[Rect2i] = [_past]
+		return rects
+
+## **Made for a route, it lets the cars in on the ground the route says is past the crossing**, and
+## nowhere else on the route: here the half of the third lesson street away from its start, so its
+## near half, the sidewalk she arrives on before the van in the game, holds.
 func _test_the_route_it_is_made_for(t: TestRunner) -> void:
 	var home := StreetNetwork.Segment.new(Vector2i(0, 0), true)
 	var streets: Array[StreetNetwork.Segment] = []
 	for i in 5:
 		streets.append(StreetNetwork.Segment.new(Vector2i(i + 1, 0), true))
-	var junctions: Array[Vector2i] = []
-	var route := TutorialRoute.new(null, home, streets, junctions, Vector2i.ZERO, Rect2i())
-	var start := CarFreeStart.for_route(route, _hold, _release)
+	var street := streets[2].tile_rect()
+	var half := Rect2i(street.position + Vector2i(street.size.x / 2, 0),
+			Vector2i(street.size.x - street.size.x / 2, street.size.y))
+	var start := CarFreeStart.for_route(_PastRoute.new(home, streets, half), _hold, _release)
 	_held = 0
 	_let_in = 0
-	var second := streets[1].tile_rect()
-	var fourth := streets[2].tile_rect()
-	start.watch_her(Vector2(second.get_center()) * Tuning.TILE_SIZE)
+	start.watch_her(Vector2(streets[1].tile_rect().get_center()) * Tuning.TILE_SIZE)
 	t.check(_held == 1 and _let_in == 0, "standing on the second lesson street is not past the crossing")
-	start.watch_her(Vector2(fourth.get_center()) * Tuning.TILE_SIZE)
-	t.check(_let_in == 1, "standing on the fourth street lets the cars in")
+	start.watch_her((Vector2(street.position) + Vector2(1.5, 1.5)) * Tuning.TILE_SIZE)
+	t.check(_let_in == 0, "nor is the street's near end, short of what the route says is past it")
+	start.watch_her(Vector2(half.get_center()) * Tuning.TILE_SIZE)
+	t.check(_let_in == 1, "standing on the ground the route says is past the crossing lets the cars in")

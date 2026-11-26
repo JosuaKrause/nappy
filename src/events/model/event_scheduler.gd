@@ -164,8 +164,8 @@ static func build_day(context: DawnContext) -> void:
 ## own"): the ambient rows, the masts and the region wall's bodies stand where their planners put
 ## them and each holds its location, so the draw passes over it; the run's scars stand between
 ## them. Then the calm area the day keeps clean is decided, before the first judge asks the
-## day's rules; then day 13's roadblocks. Then the rows the day places for a reason of its own (the
-## scripted rows), the one-shots owed to her walk, the spoilers in the parks she used, the moments
+## day's rules; then day 13's roadblocks; then day 1's lessons on the tutorial route, its other
+## locations drawn empty. Then the rows the day places for a reason of its own (the scripted rows), the one-shots owed to her walk, the spoilers in the parks she used, the moments
 ## she is owed and the draw of every open location, a unit at a time from the bag of the unit's
 ## most permissive view; the run lesson is added
 ## after the draw, where the day owes no pursuit, and the last phase counts for the run log what
@@ -178,6 +178,7 @@ static func _phases() -> Array[DawnPhase]:
 		DawnWallBodies.new(),
 		DawnCalmKeptClean.new(),
 		DawnRoadblocks.new(),
+		DawnTutorial.new(),
 		DawnScripted.new(),
 		DawnOneShots.new(),
 		DawnSpoilers.new(),

@@ -84,6 +84,8 @@ func start_day(day: int, tree: RouteTree) -> void:
 	for plan in _walk.plans():
 		if plan.is_sited_from_her_walk() and not plan.is_placed():
 			_siting_for(day, plan)
+	# Day 1's tutorial route on the day whose spec walks it, which the director holds its bag on.
+	_director.use_tutorial_route(world.streets().tutorial_route() if world.streets() else null)
 	_director.start_day(day, _walk.plans(), world.run().calendar().day_rng(day, "ahead"),
 			_spec.director_sends(), _siting, world.run().resistance().progress(),
 			_spec.handout_wait_share())
@@ -129,6 +131,7 @@ func start_a_given_walk(day: int, tree: RouteTree = null) -> void:
 	_siting = null
 	_day_tree = tree
 	if _director:
+		_director.use_tutorial_route(null)
 		_director.start_day(day, _walk.plans(),
 				world.run().calendar().day_rng(day, "finale-ahead"),
 				_spec.director_sends(), null, 0, _spec.handout_wait_share())
@@ -490,7 +493,7 @@ func place_what_is_owed_ahead(delta: float) -> void:
 		_warn_down_her_line(def, body.global_position, (path[0] - path[1]).normalized())
 		return
 	if def.comes_down_her_line():
-		_send_down_her_line(def, body.global_position, (path[0] - path[1]).normalized())
+		_send_down_her_line(def, body.global_position, path)
 		return
 	if def.pursues():
 		_warn_down_her_heading(def, body.global_position, path[0])
@@ -627,23 +630,21 @@ func _route_down_her_line(def: EventDef, place: Vector2, her: Vector2,
 
 ## A row the director sends down her own line that does not telegraph its coming (`loose_dog`, the
 ## dog walker it sends ahead of her; `EventDef.telegraphs_its_coming()`): no badge and no warning, so it is created
-## at once just out of sight down her line on its own ground (`PendingWarning.down_her_line()`,
-## against what she can see), its telegraph spent. **Where its beat is as it is created differs.**
+## at once on `path`, the route the director sited it on (`EventDirector.due()`): just out of sight
+## down her line on its own ground (`PendingWarning.down_her_line()`, against what she can see), cut
+## to the ground it runs on and clear of the region doors and a placed plan's room
+## (`EventDirector.clear_to_send()`), its telegraph spent. **It is created on that route, never
+## sited again**: the director has spent its slot and its marble on it, so a second siting from
+## another heading that found no ground would lose the moment unseen, day 1's two dog walkers on the
+## tutorial route among them (PLAYTEST-05 6: the dog-walker decision is made at least twice on day
+## one). **Where its beat is as it is created differs.**
 ## The dog walker is the row she would come upon, put just ahead of her, so its bark is at a point
 ## drawn on the director's stream (`EventDirector.age_it_is_sent_at()`) and a pass costs the row's
 ## price in `docs/COSTS.md` whichever way the street runs. The loose dog is aged as a warned row would
 ## be (`EventSpawner.age_when_warned()`), so it meets her at the loud of its beat, the figure its line
-## in that table prices. Nothing is created where there is no such ground, or its route would come
-## through a region door or a placed plan's room (`EventDirector.clear_to_send()`); the director has
-## already spent the moment either way. The dog walker's route is then worked out as it goes
+## in that table prices. The dog walker's route is then worked out as it goes
 ## (`EventInstance.go_on_by()`): it walks on down the street while she can see it.
-func _send_down_her_line(def: EventDef, her: Vector2, direction: Vector2) -> void:
-	var place := PendingWarning.down_her_line(world.city_map(), def, her, direction, world.visible_view())
-	if place == Vector2.INF:
-		return
-	var path := _route_down_her_line(def, place, her, direction)
-	if path.size() < 2 or not _director.clear_to_send(path, def):
-		return
+func _send_down_her_line(def: EventDef, her: Vector2, path: PackedVector2Array) -> void:
 	var instance := _spawner.spawn(def, path[0], path)
 	if def.is_sent_ahead():
 		instance.restore(EventSave.aged(_director.age_it_is_sent_at(def)))
@@ -651,7 +652,7 @@ func _send_down_her_line(def: EventDef, her: Vector2, direction: Vector2) -> voi
 	else:
 		instance.restore(EventSave.aged(EventSpawner.age_when_warned(def)))
 	world.trace().note("ahead", "%s comes at her from %.0fpx in front of her at %s, unannounced"
-			% [def.id(), place.distance_to(her), RunTrace.tile(world.map().world_to_tile(her))])
+			% [def.id(), path[0].distance_to(her), RunTrace.tile(world.map().world_to_tile(her))])
 
 ## A pursuer the director sends at her down her heading — `charging_dog`, on the day it teaches the
 ## run and when it is sprinkled into a later one — warned first *(M226, PLAYTEST-145: "the new
