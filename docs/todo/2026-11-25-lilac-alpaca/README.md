@@ -17,12 +17,13 @@ tiny-newt).
 which is the `/rc/` below; `https://nappy.josuakrause.com/` keeps serving the newest release; a
 release candidate (RC) is a second build, online beside it, that a person reaches by a different
 address and that counts nothing ("etc" read as every counting the page does, not GoatCounter alone);
-a minor release, and so a major one, takes `/rc/` down, so the deploy publishes no candidate until
-the next RC is cut, while a patch release leaves the current candidate in place.
+any minor release, and so any major one, takes `/rc/` down, so the deploy publishes no candidate
+until the next RC is cut (the player's rule, unconditional).
 
-**Filed band and order: `now`, `upnext: true`** (the player's "before releasing the patch" puts
-it first; the marker is the filer's way to say so). The queue move that starts the work drops the
-marker.
+**Filed band and order: `now`, `upnext: true`, the filer's proposal alone.** #1779's deadline is
+moot, since v0.29.3 was published on the player's word (inbox #1780 in tiny-newt); the band and the
+first place rest on the tutorial's wait (below) and on nothing the player said about order. The queue
+move that starts the work drops the marker.
 
 **How a release works today** (`.claude/skills/committing/references/releasing.md`,
 `.github/workflows/deploy.yml`, `tools/release.sh`): a `v*` tag fires one workflow that checks
@@ -55,9 +56,10 @@ cost, and the items below build them; none is a reading of the player's words):
 - **A deploy always builds both and publishes both**: the newest release tag at the root and the
   newest RC under `/rc/` while its target number (the `X.Y.Z` of `vX.Y.Z-rc.N`) is above the
   release's. Pages keeps nothing between deploys, so an RC deploy must rebuild the release it sits
-  beside. A patch release (`v0.30.1` under a candidate for `v0.31.0`) leaves the candidate's target
-  above it and the candidate stays; a minor or major release reaches or passes every candidate's
-  target, so the deploy publishes none, which is the player's rule (inbox #1783 in tiny-newt). Plainer: fetch the live site and overlay (fragile) or a branch holding the built site
+  beside. **A minor or major release publishes no candidate, whatever its target** (the player's
+  rule, inbox #1783 in tiny-newt). **A patch release removes a candidate only when it reaches that
+  candidate's target number**: `v0.30.1` under a candidate for `v0.31.0` leaves it, and a
+  candidate for `v0.30.1` is gone once `v0.30.1` is out. Plainer: fetch the live site and overlay (fragile) or a branch holding the built site
   (a second thing to keep true). Cost: two exports and two browser checks in one run, so a deploy
   takes about twice as long.
 - **An RC counts nothing, twice over**: its export drops `count.js` from the page (so not even the
@@ -82,8 +84,8 @@ cost, and the items below build them; none is a reading of the player's words):
 - **The notes.** An RC's GitHub Release is marked a prerelease, its notes the commits since the
   last release (not since the last RC), so the final release's notes are unchanged.
 - **The go-ahead: cutting an RC needs none; a release still needs its own, as today.** The
-  orchestrating session told the player it would propose this: an RC changes nothing at `/`, which
-  keeps serving the release, and counts nothing. Cost: any tag is published at once, so a wrong RC
+  proposal rests on an RC changing nothing at `/`, which keeps serving the release, and counting
+  nothing. Cost: any tag is published at once, so a wrong RC
   is online (at `/rc/`, linked from nowhere) until the next one replaces it; an RC tag cannot be
   deleted (the `version tags` ruleset blocks deletion), only superseded. **The alternative is the
   player's word for each RC**, as for a release. Cost: a question for a build only the player opens,
