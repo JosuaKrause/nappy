@@ -1,6 +1,6 @@
 # minty-quail — Check the frame-record save button and a held restart on the published page · 2026-11-24
 
-**What to do.** On the published page, once a release carries minty-quail, open it with
+**What to do.** On the published page, which v0.29.3 carries minty-quail on, open it with
 `?debug=1&framerecord=1`, play a minute and press the `save frames` button at the top of the page;
 a local export from `tools/export-web.sh` served with `tools/serve-web.sh` does the same before a
 release. Then, on the same page without the frame-record query, play to a point where the game has
