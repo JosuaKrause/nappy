@@ -82,6 +82,7 @@ func run(t: TestRunner) -> void:
 		_test_the_patrol_comes_down_the_lane_that_drives_toward_her(t, vertical)
 		_test_the_convoy_comes_in_the_lane_beside_her_toward_her(t, vertical)
 	_test_a_convoy_is_sited_only_where_the_ground_holds_while_its_badge_is_up(t)
+	_test_the_convoys_leg_crosses_the_box_behind_her_from_short_of_it(t)
 	_test_the_convoy_comes_down_the_crossing_street_where_her_lane_has_no_room(t)
 	_test_the_convoy_turns_round_the_corner_toward_her(t)
 	_test_the_convoy_comes_for_her_standing_in_a_box(t)
@@ -284,6 +285,34 @@ func _test_a_convoy_is_sited_only_where_the_ground_holds_while_its_badge_is_up(
 				% [absf(margin), "further" if margin > 0.0 else "nearer",
 				"sited" if margin > 0.0 else "refused"])
 
+## **The convoy's leg past her crosses the box behind her from short of it** where the point level
+## with her lies in that box or past it (`EventDirector.leg_in_the_lane()`): she may have walked back
+## that far while its badge was up, and a walk that turned at that box has nothing straight on past
+## it but a sealed street, so the way on is asked for the leg out of that box from just short of it,
+## where it may turn, rather than from inside it or past it, where it can only drive straight on.
+## With her where she was sited, the leg is asked from the point level with her.
+func _test_the_convoys_leg_crosses_the_box_behind_her_from_short_of_it(t: TestRunner) -> void:
+	var map := _street()
+	var plain := _due(_director(map, "military_convoy", _no_plans()))
+	if plain.size() < 2:
+		t.check(false, "the convoy is sited on the plain street")
+		return
+	var def := plain[0] as EventDef
+	var place := (plain[1] as PackedVector2Array)[0]
+	var entry := float(3 * CityMap.period() * TILE)
+	for case: Array in [[HER.y, _her().y], [3 * CityMap.period() + 2, entry - 1.0],
+			[3 * CityMap.period() + Tuning.STREET_WIDTH + 2, entry - 1.0]]:
+		var way := FakeWayOn.new()
+		var director := _director(map, "military_convoy", _no_plans(), 1, way)
+		var her := _turned(Vector2i(HER.x, int(case[0])), true)
+		way.asked_on_from.clear()
+		var leg := director.leg_in_the_lane(def, place, her, Vector2.DOWN, _her())
+		var from: Vector2 = way.asked_on_from[0][0] if not way.asked_on_from.is_empty() \
+				else Vector2.INF
+		t.check(not leg.is_empty() and from.is_equal_approx(Vector2(place.x, float(case[1]))),
+				"with her on tile row %d, the leg out of the box is asked from y %.0f (%s)"
+				% [int(case[0]), float(case[1]), from])
+
 ## A way on that lets a car start only at or north of `cutoff` (up the road, away from her) and
 ## drive from there, as on a plain street.
 class _StartsAboveWayOn extends FakeWayOn:
@@ -301,8 +330,10 @@ class _StartsAboveWayOn extends FakeWayOn:
 ## junction box ahead of her** (`EventDirector._across_the_next_box()`): on a street running
 ## north-south and its crossing street at the box north of her (`_crossroads()`), a way on that
 ## refuses every leg setting off in her own street (a crater or a seal there) sites it in the
-## crossing street's lane out of sight up it, its leg crossing her street in the box ahead of her
-## and going on where the way on lets it turn nowhere there; with the box ahead further than her view reaches along her street, none is sited.
+## crossing street's lane out of sight up it, its leg crossing her street in the box ahead of her,
+## asked of the way on from the edge of that box (the box she is beside, `_short_of_her_box()`), and
+## going on where the way on lets it turn nowhere there; with the box ahead further than her view
+## reaches along her street, none is sited.
 func _test_the_convoy_comes_down_the_crossing_street_where_her_lane_has_no_room(
 		t: TestRunner) -> void:
 	var map := _crossroads()
@@ -313,8 +344,9 @@ func _test_the_convoy_comes_down_the_crossing_street_where_her_lane_has_no_room(
 		var going := (path[1] - path[0]).normalized()
 		var lane := CrowdLanes.lane_centre(CROSSING, CrowdLanes.road_lane(false, going.x))
 		var out_of_sight := absf(path[0].x - _her().x) > Tuning.VIEW_HALF_EXTENT.x
+		var box_edge := float(Tuning.STREET_WIDTH * TILE) + 1.0 if going.x < 0.0 else -1.0
 		t.check(is_equal_approx(absf(going.x), 1.0) and is_equal_approx(path[0].y, lane) and out_of_sight
-				and path[1].is_equal_approx(Vector2(_her().x, lane)),
+				and path[1].is_equal_approx(Vector2(box_edge, lane)),
 				"down the crossing street's lane from out of sight, its leg crossing her street in "
 				+ "the box ahead of her (%s)" % path)
 	var far := _turned(Vector2i(HER.x, HER.y + 4), true)

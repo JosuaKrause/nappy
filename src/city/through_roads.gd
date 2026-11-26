@@ -12,7 +12,8 @@ extends RefCounted
 ## Worked out once for a walk (`over()`), from the map as it stands then: its ground, a precinct's
 ## paving and posts, today's closures and the bodies standing on it, as the mover it is handed is
 ## stopped by them. Nothing it answers changes afterwards: a body put down later in the walk is asked
-## of the ground itself, leg by leg (`WayOn.drives_clear()`).
+## of the ground itself, leg by leg (`WayOn.driven()`), and of the ways out of a box the first whose
+## next leg can be driven too is taken.
 ##
 ## Model: a function of the map, no node.
 

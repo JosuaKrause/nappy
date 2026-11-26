@@ -9,9 +9,13 @@ extends RefCounted
 ## through the next box where the street beyond it is a through road (`ThroughRoads`), and otherwise
 ## round the corner in that box onto the crossing street, the turn that leads away from her first.
 ## It never takes a street it could not go on from, so it never comes to a precinct's paving, a
-## closed street, a street a calm zone absorbed or the map's edge, and it never turns round. **A row
-## on foot walks straight on** down the street it is on (`_on_foot()`), and has no way on where it
-## cannot.
+## closed street, a street a calm zone absorbed or the map's edge, and it never turns round; and of
+## the ways out of a box it takes the first whose street beyond the box it could drive on through
+## the box after (`_down_the_road()`), so a body put down across a street since the through roads
+## were worked out (the escape's seals across the streets off its walk, which stand only as they
+## stream in, since its walk records no body at dawn) turns it at the box before rather than sending
+## it up to the body. **A row on foot walks straight on** down the street
+## it is on (`_on_foot()`), and has no way on where it cannot.
 ##
 ## **One reading says how a car drives a stretch of road, or that it may not** (`driven()`), asked of
 ## every leg here and of the first leg the director lays (`EventDirector.leg_in_the_lane()`): round
@@ -129,8 +133,16 @@ func _drives_clear(row: EventDef, path: PackedVector2Array) -> bool:
 ## is left by a through road, whose far box has another that is not the way back, so a car that has
 ## taken one never runs out of road, and asking that the stretch it is on be one too would only
 ## refuse a car driving off a stub into the through roads.
+##
+## **A way out is taken where the leg after it goes on too** (`looks_on`): the through roads are the
+## map's and know nothing of a body put down since, so a street beyond the box with a seal across it
+## is a through road that ends at the seal. Each way out is asked whether a leg from where it leaves
+## the box exists (one leg further, not asking that one's own way on), and the first that has one is
+## taken; where none has, the first that drives clear is, as before, and whoever asks for a leg it
+## can go on from refuses it (`EventDirector.leg_in_the_lane()`).
 func _down_the_road(row: EventDef, at: Vector2, heading: Vector2,
-		her: Vector2, may_take: Callable, only := Vector2i.ZERO) -> PackedVector2Array:
+		her: Vector2, may_take: Callable, only := Vector2i.ZERO,
+		looks_on := true) -> PackedVector2Array:
 	var vertical := absf(heading.y) > absf(heading.x)
 	var way := Vector2i(0, 1 if heading.y > 0.0 else -1) if vertical \
 			else Vector2i(1 if heading.x > 0.0 else -1, 0)
@@ -156,13 +168,19 @@ func _down_the_road(row: EventDef, at: Vector2, heading: Vector2,
 	outs.append_array(turns)
 	if only != Vector2i.ZERO:
 		outs = [only]
+	var dead_end := PackedVector2Array()
 	for out in outs:
 		if not _roads.goes_on(box, out):
 			continue
 		var leg := driven(row, _through(at, way, box, out))
-		if not leg.is_empty() and (not may_take.is_valid() or bool(may_take.call(leg, row))):
+		if leg.is_empty() or (may_take.is_valid() and not bool(may_take.call(leg, row))):
+			continue
+		if not looks_on or not _down_the_road(row, leg[leg.size() - 1], Vector2(out), her,
+				may_take, Vector2i.ZERO, false).is_empty():
 			return leg
-	return PackedVector2Array()
+		if dead_end.is_empty():
+			dead_end = leg
+	return dead_end
 
 ## **`path` with each straight stretch of it taken round what stands in its lane**: a stretch is the
 ## points that run on along one axis, and where one or more tiles of its lane stop `row`, it leaves

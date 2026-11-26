@@ -23,6 +23,7 @@ func run(t: TestRunner) -> void:
 	_test_a_leg_out_of_the_next_box_by_a_given_way(t)
 	_test_a_closed_street_has_no_leg_and_a_stub_goes_on(t)
 	_test_a_body_straight_on_takes_the_turn(t)
+	_test_a_body_past_the_box_straight_on_takes_the_turn(t)
 	_test_the_days_rule_asks_a_live_leg_and_not_a_leaving_one(t)
 	_test_what_a_car_may_drive(t)
 	_test_a_car_drives_round_a_body_in_its_lane(t)
@@ -170,6 +171,29 @@ func _test_a_body_straight_on_takes_the_turn(t: TestRunner) -> void:
 			_lane(1, Vector2i.LEFT))),
 			"straight on with the box clear (%s), round the corner away from her with a body on its "
 			% clear + "lanes (%s)" % round)
+
+## **A way out is taken where the leg after it goes on too**: a body put down across both lanes of
+## the street past the middle box, a few tiles beyond the box's far edge (as a seal stands across a
+## street off the escape's walk once it streams in), leaves the leg straight through the box clear,
+## though nothing can drive on past the body. It turns in the box away from her instead; and asked to
+## go straight on out of the box (`leg_out_by()`), where it has no way out that goes on, it gives the
+## leg that drives clear.
+func _test_a_body_past_the_box_straight_on_takes_the_turn(t: TestRunner) -> void:
+	var map := _lattice()
+	var way_on := _way_on(map)
+	var at := Vector2(_lane(1, Vector2i.DOWN), 9.5 * TILE)
+	var her := Vector2(25.0, 9.0) * TILE
+	var body: Array[Vector2i] = [map.world_to_tile(Vector2(at.x, 23.5 * TILE)),
+			map.world_to_tile(Vector2(_lane(1, Vector2i.UP), 23.5 * TILE))]
+	map.obstruct_tiles(1, body)
+	var round := way_on.next_leg(_patrol, at, Vector2.DOWN, her)
+	t.check(round.size() > 3 and round[round.size() - 1].is_equal_approx(Vector2(14.0 * TILE,
+			_lane(1, Vector2i.LEFT))),
+			"with a body across the street past the box, round the corner away from her (%s)"
+			% round)
+	var straight := way_on.leg_out_by(_patrol, at, Vector2.DOWN, Vector2.DOWN, her)
+	t.check(straight.size() == 2 and straight[1].is_equal_approx(Vector2(at.x, 20.0 * TILE)),
+			"and asked straight on, the leg to the box's far edge that drives clear (%s)" % straight)
 
 ## A day's rule that refuses the leg straight on (a field kept clear over the street past the box,
 ## handed in as the director hands its own): a live row turns, and a row that is leaving, which the
