@@ -1058,8 +1058,9 @@ func _bodies_at_mouth(map: CityMap, seals: Array[EventPlan], segment: StreetNetw
 ## both its sidewalks blocked and the street open *(gentle-owl #1253, the player: "doesn't have to
 ## be a full hard seal -- street can be open -- just both sidewalks need to be blocked")*. Each
 ## side street's mouth on the route carries a whole soft pair (never thinned, never the delivery
-## van, lesson (4)'s row), or across a precinct the burst water main, standing far enough in that
-## no body, with her own beside it, reaches the route's junction box.
+## van, lesson (4)'s row, nor a pair reaching past one sidewalk lane across her line, such as the
+## café tables, which can refuse a lesson's tiles), or across a precinct the burst water main,
+## standing far enough in that no body, with her own beside it, reaches the route's junction box.
 func _test_day_one_seals_each_side_street_at_its_mouth(t: TestRunner) -> void:
 	var mouths := 0
 	for map in _maps:
@@ -1092,6 +1093,11 @@ func _test_day_one_seals_each_side_street_at_its_mouth(t: TestRunner) -> void:
 				t.check(plan.row_id() != "delivery_van",
 						"seed %d: no side street of the route is sealed with the delivery van (%s)"
 						% [map.city_seed(), segment.key()])
+				if not TutorialRoute.is_a_precinct(map, segment):
+					t.check(plan.line_reach() <= float(Tuning.TILE_SIZE),
+							"seed %d: the %s at %s's mouth reaches %.0fpx across her line, no more "
+							% [map.city_seed(), plan.row_id(), segment.key(), plan.line_reach()]
+							+ "than a lane, so it cannot refuse a lesson's tiles")
 				var at := plan.body_at()
 				var nearest := Vector2(clampf(at.x, box.position.x, box.end.x),
 						clampf(at.y, box.position.y, box.end.y))

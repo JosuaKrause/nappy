@@ -380,11 +380,27 @@ static func plan_day(map: CityMap, spec: DaySpec, route: RouteSource,
 ## and the burst water main is a day-1 picture that closes the whole width.
 const TUTORIAL_PRECINCT_SEAL_ID := "burst_main_seal"
 
-## The soft pairs a side street's mouth on the tutorial route is never sealed with: each is a row
-## that teaches one of day 1's lessons on the route (`DawnTutorial`), the market stall the noise she
-## passes wide and the delivery van the sidewalk that makes her cross, and a side street sealed with
-## one would blur that lesson. Every other soft pair offered that day may seal a mouth.
-const TUTORIAL_MOUTH_LEFT_OUT := ["delivery_pair", "market_pair"]
+## The rows that teach one of day 1's lessons on the route (`DawnTutorial`): the market stall the
+## noise she passes wide and the delivery van the sidewalk that makes her cross.
+const _TUTORIAL_LESSON_ROWS := [DawnTutorial.NOISE_PASSED_WIDE, DawnTutorial.SHUTS_HER_SIDEWALK]
+
+## How far across her line a soft pair at a side street's mouth may reach before it can refuse a
+## lesson's tiles: the distance between the two lanes of a sidewalk (32px), which is the construction
+## pair's reach and so the widest that stays. A row reaching past it (the café tables' 56px, the
+## market stall's 58px) beside a lesson's crossing can take both lanes, and `RouteLineRule` then
+## refuses the lesson's row and removes it from the day.
+const _TUTORIAL_MOUTH_MOST_REACH := float((Tuning.SIDEWALK_WIDTH - 1) * Tuning.TILE_SIZE)
+
+## Whether a side street's mouth on the tutorial route is never sealed with `candidate`, a soft
+## pair: it holds a row that teaches one of the lessons, so a side street sealed with it would blur
+## that lesson, or one whose reach across her line (`EventDef.line_reach()`) passes
+## `_TUTORIAL_MOUTH_MOST_REACH`. Every other soft pair offered that day may seal a mouth.
+static func _is_left_out_of_a_mouth(candidate: Candidate) -> bool:
+	for id in candidate.def_ids:
+		if _TUTORIAL_LESSON_ROWS.has(id) \
+				or EventCatalogue.by_id(id).line_reach() > _TUTORIAL_MOUTH_MOST_REACH:
+			return true
+	return false
 
 ## `tutorial`'s side streets past its first block (`TutorialRoute.side_street_mouths()`), by
 ## segment key, each with the ends of it that open onto the route (`true` for its `a` end).
@@ -406,8 +422,8 @@ static func _mouths_of(tutorial: TutorialRoute) -> Dictionary:
 ## "doesn't have to be a full hard seal -- street can be open -- just both sidewalks need to be
 ## blocked -- no valid route goes off of the tutorial route past the first block")*:
 ##
-## - **a soft pair**, drawn from the day's soft pictures less `TUTORIAL_MOUTH_LEFT_OUT`, on an
-##   ordinary side street. It is **never thinned**: a thinned pair would open the one way off the
+## - **a soft pair**, drawn from the day's soft pictures less those left out
+##   (`_is_left_out_of_a_mouth()`), on an ordinary side street. It is **never thinned**: a thinned pair would open the one way off the
 ##   route the seal is there to close;
 ## - **the burst water main** (`TUTORIAL_PRECINCT_SEAL_ID`) across a precinct side street, whose
 ##   paved middle no sidewalk pair closes. A seal need not be a full hard seal, so where a soft
@@ -432,11 +448,11 @@ static func _seal_a_mouth(map: CityMap, segment: StreetNetwork.Segment, at_a: bo
 	return SitedSeal.new(segment, picked, along, _place(map, segment, picked, along))
 
 ## Whether `candidate` may seal a side street's mouth on the tutorial route: the burst water main
-## across a precinct, a soft pair less `TUTORIAL_MOUTH_LEFT_OUT` anywhere else.
+## across a precinct, a soft pair not left out (`_is_left_out_of_a_mouth()`) anywhere else.
 static func _seals_a_tutorial_mouth(candidate: Candidate, precinct: bool) -> bool:
 	if precinct:
 		return candidate.id == TUTORIAL_PRECINCT_SEAL_ID
-	return candidate.strength == Strength.SOFT and not TUTORIAL_MOUTH_LEFT_OUT.has(candidate.id)
+	return candidate.strength == Strength.SOFT and not _is_left_out_of_a_mouth(candidate)
 
 ## How far from a body's centre `candidate` keeps her centre: its widest row's
 ## `obstructs_within()` and her own body.
