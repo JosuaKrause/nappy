@@ -211,6 +211,25 @@ static func press_continue(t: TestRunner, main: Node) -> void:
 	UI.push(screen, UI.touch_at(UI.centre(UI.button(screen, "Continue")), true))
 	await UI.frames(t)
 
+## **Skips the beat a lost day holds on its cause** (`LossHold`) the way a player does, with a key
+## pushed through the viewport, when one is running under `main`; does nothing otherwise. A suite
+## that loses a day to a hard fail or to her crying and reads the outcome screen at once calls this
+## first, since the screen comes up only when the beat ends. The skip and the screen happen inside the
+## push, so nothing has to be waited for.
+static func skip_the_loss_beat(main: Node) -> void:
+	for found: Node in main.find_children("*", "LossHold", false, false):
+		var hold := found as LossHold
+		if hold == null or not hold.is_running():
+			continue
+		var key := InputEventKey.new()
+		key.keycode = KEY_SPACE
+		key.pressed = true
+		UI.push(main, key)
+		var release := InputEventKey.new()
+		release.keycode = KEY_SPACE
+		UI.push(main, release)
+		return
+
 ## The mode's name the title draws, or `""` while its `ModeName` label is hidden (a new game, where
 ## the checkbox asks): the label's own text and visibility.
 static func mode_name_drawn(title: TitleScreen) -> String:

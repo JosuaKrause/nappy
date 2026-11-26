@@ -296,6 +296,7 @@ func _test_a_tap_then_a_key_continue_once(t: TestRunner) -> void:
 	var day := Boot.day(main)
 	t.check(day != null and day.is_running(), "the boot reached day 1")
 	EventBus.hard_fail_triggered.emit("car_strike")
+	Boot.skip_the_loss_beat(main)
 	t.check(Boot.summary(main).is_showing(), "the lost day's summary is up")
 
 	var before := _walks_begun()
@@ -336,6 +337,7 @@ func _test_a_tap_then_a_key_on_the_run_over_screen_show_the_ending(t: TestRunner
 	_run.calendar().choose_mode(true)
 	_run.header().set_nerves(1)
 	EventBus.hard_fail_triggered.emit("car_strike")
+	Boot.skip_the_loss_beat(main)
 	var summary := Boot.summary(main)
 	t.check(summary.is_showing() and _continue_shown(main) and _run.header().nerves() == 0,
 			"the run-over screen is up")
@@ -368,6 +370,7 @@ func _test_a_tap_then_a_key_on_a_lost_section_show_the_retry_brief(t: TestRunner
 			"and its continue walks the section")
 	t.get_tree().paused = true
 	EventBus.hard_fail_triggered.emit("car_strike")
+	Boot.skip_the_loss_beat(main)
 	t.check(summary.is_showing() and not day.is_running(), "the lost section's screen is up")
 	var before := _walks_begun()
 	await _tap_then_key(t, main)

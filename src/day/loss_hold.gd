@@ -83,6 +83,11 @@ func begin(drawing: Camera2D, her: Vector2, cause: Vector2, view_size: Vector2) 
 	_camera.reset_physics_interpolation()
 	_start()
 
+## Whether the beat is running: begun and neither run out nor skipped. While it is, the window losing
+## focus opens no pause over it (`Main._pause_on_focus_lost()`).
+func is_running() -> bool:
+	return _running
+
 ## Stops the world and holds the view where it is, for a loss no one thing caused.
 func hold_on_her() -> void:
 	_start()

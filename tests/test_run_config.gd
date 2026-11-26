@@ -602,6 +602,7 @@ func _the_screens_answer(t: TestRunner, flagged: bool) -> void:
 	# The day summary, raised by a lost day: a mouse click on its continue, then a finger on it.
 	var summary := Boot.summary(main)
 	EventBus.hard_fail_triggered.emit("car_strike")
+	Boot.skip_the_loss_beat(main)
 	t.check(summary.is_showing(), "%s, a lost day raises the summary" % label)
 	await UI.frames(t)
 	UI.push(summary, UI.mouse_at(UI.centre(UI.button(summary, "Continue")), true))
