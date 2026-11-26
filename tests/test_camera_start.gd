@@ -83,10 +83,18 @@ func _test_a_boot_camera_stands_on_the_doorstep_before_she_exists(t: TestRunner)
 			"on the first drawn frame with the run started, the camera is already within a tile "
 			+ "of her")
 
-	await Boot.press_title(t, main, "Tap")
+	# Day 1's first attempt plays the opening shot from the title's press: the view is on the park, not
+	# on her, until the shot is skipped, and then it is within a tile of her again.
+	await Boot.press_title(t, main, "Tap", true)
+	var view_during_the_shot := main.get_viewport().get_camera_2d().get_screen_center_position()
+	t.check(view_during_the_shot.distance_to(player.global_position) > Tuning.TILE_SIZE * 4.0,
+			"the first frame after the title's disc is pressed is the opening shot's, away from her")
+	await Boot.UI.frames(t)
+	Boot.skip_the_opening_shot(main)
+	await Boot.UI.frames(t)
 	t.check(Stroller.view_centre_of(player).distance_to(player.global_position)
 				< Tuning.TILE_SIZE,
-			"and the same holds on the first frame after the title's disc is pressed")
+			"and once the shot is skipped the view is back within a tile of her")
 	# A dawn after finishing far away must prepare home before the next process callback: she is
 	# put far from home, the day is lost and its summary continued, and the home's ground is read
 	# the moment the next attempt has been placed and its clock started — the clock's first reading

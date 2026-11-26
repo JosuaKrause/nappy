@@ -197,11 +197,34 @@ static func touch_controls(main: Node) -> TouchControls:
 
 ## A press on the title's button `button_name` ("Left", "Tap", "Right"), pushed through the
 ## viewport where the layout draws it, with the frames the tap's acknowledgement takes.
-static func press_title(t: TestRunner, main: Node, button_name := "Tap") -> void:
+##
+## **Day 1's opening shot, which the press starts, is skipped the way a player taps through it**
+## unless `plays_the_shot`, so the day is being played when this returns.
+static func press_title(t: TestRunner, main: Node, button_name := "Tap",
+		plays_the_shot := false) -> void:
 	var screen := title(main)
 	await UI.frames(t)
 	UI.push(screen, UI.touch_at(UI.centre(UI.button(screen, button_name)), true))
 	await UI.frames(t)
+	if not plays_the_shot:
+		skip_the_opening_shot(main)
+
+## **Skips day 1's opening shot** the way a player does, with a key pushed through the viewport, when
+## one is running under `main`; does nothing otherwise. The shot ignores a press before its first
+## frame, so this is called a frame or two after the title's press.
+static func skip_the_opening_shot(main: Node) -> void:
+	for found: Node in main.find_children("*", "OpeningShot", false, false):
+		var shot := found as OpeningShot
+		if shot == null or not shot.is_running():
+			continue
+		var key := InputEventKey.new()
+		key.keycode = KEY_SPACE
+		key.pressed = true
+		UI.push(main, key)
+		var release := InputEventKey.new()
+		release.keycode = KEY_SPACE
+		UI.push(main, release)
+		return
 
 ## A press on the summary's continue button (a brief, a day's end, an outcome screen), the way the
 ## title's is pressed.

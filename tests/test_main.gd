@@ -529,12 +529,14 @@ func _press_on_the_title(t: TestRunner, main: Boot.MainScript, button_name: Stri
 	await UI.frames(t)
 	UI.push(title, UI.touch_at(UI.centre(UI.button(title, button_name)), true))
 	await UI.frames(t)
+	Boot.skip_the_opening_shot(main)
 
 ## What a player's keys on the title end up as: a run started by a key, in tap mode.
 func _start_by_key(t: TestRunner, main: Boot.MainScript) -> void:
 	(_one(main, "TitleScreen") as TitleScreen).start_requested.emit(
 			ControlsMode.Mode.TAP, true, ControlsMode.Side.LEFT)
 	await UI.frames(t)
+	Boot.skip_the_opening_shot(main)
 
 func _key(code: Key, pressed := true, echo := false) -> InputEventKey:
 	var event := InputEventKey.new()

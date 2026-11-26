@@ -703,6 +703,16 @@ func _test_the_joystick_scheme_shows_its_run_button_in_the_run_lines(t: TestRunn
 	t.check(teach.get_parsed_text() == "Tap to walk, double tap to run",
 			"and choosing tap says the tap one")
 
+	# With the opening shot to play, the choice says nothing: the line comes when the shot ends, in
+	# the scheme chosen.
+	teach.show_line("")
+	hud.hold_the_walking_line()
+	EventBus.controls_chosen.emit(true, false)
+	t.check(teach.get_parsed_text() == "", "with the shot to play, choosing the controls says nothing")
+	hud.say_the_walking_line()
+	t.check(teach.get_parsed_text() == _as_shown("Tap to walk, hold {run} or double tap to run"),
+			"and the shot's end says day 1's line in the scheme chosen")
+
 	teach.show_line("a [b]bracket[/b] line")
 	t.check(teach.get_parsed_text().contains("[b]"), "a line is shown literally, never parsed as BBCode")
 

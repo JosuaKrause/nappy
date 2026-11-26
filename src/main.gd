@@ -160,6 +160,9 @@ var _pause: PauseScreen
 ## The beat a lost day holds on its cause before the summary (`_show_the_day_over()`), while it
 ## runs; null otherwise. Focus loss asks it (`_pause_on_focus_lost()`).
 var _loss_hold: LossHold
+## Day 1's opening shot (`OpeningShot`) while it runs, between the title's dismissal and the first
+## step; null otherwise. Focus loss asks it (`_pause_on_focus_lost()`).
+var _opening_shot: OpeningShot
 var _title: TitleScreen
 ## The small corner symbol a change in the save state shows — see `SaveIndicator`'s own doc. Raised
 ## by `_raise_save_indicator()`: in `_ready()`, ahead of the charge that can end a resumed run, and
@@ -1376,11 +1379,16 @@ func _open_the_title() -> void:
 ## `main` already in the tree.
 ##
 ## **With no resume, this is also the moment she starts playing** — `_engage_the_day()` runs
-## immediately. **With one, it is not**: `_show_the_resume_gate()` opens instead, and it is *that*
+## immediately, except on day 1's first attempt, where the opening shot plays first
+## (`_play_the_opening_shot()`) and it is the shot's end that engages the day. **With a resume, it
+## is not**: `_show_the_resume_gate()` opens instead, and it is *that*
 ## screen's own continue that reaches `_engage_the_day()`, through `_on_summary_continued()` with
 ## the flow in `RunFlow.Mode.BRIEF`.
 func _on_title_start(mode: ControlsMode.Mode, by_key := false,
 		side := ControlsMode.Side.LEFT) -> void:
+	var shot_route := _the_opening_shot_route()
+	if shot_route != null:
+		_hud.hold_the_walking_line()
 	# Which control scheme was picked, or that a key began the run: the HUD rewords its walking
 	# lesson by it and the page counts it.
 	EventBus.controls_chosen.emit(mode == ControlsMode.Mode.JOYSTICK, by_key)
@@ -1398,7 +1406,54 @@ func _on_title_start(mode: ControlsMode.Mode, by_key := false,
 	if not _resume.is_empty():
 		_show_the_resume_gate()
 		return
+	if shot_route != null:
+		_play_the_opening_shot(shot_route)
+		return
 	_engage_the_day()
+
+## The tutorial route day 1's opening shot follows when pressing start on the title begins it, or
+## null when there is no shot: a resumed run, a day that does not walk the tutorial, a city with no
+## route. Only a title's start asks, and a title opens once per boot, so the shot is the first
+## attempt of day 1 of a run and never a retry.
+func _the_opening_shot_route() -> TutorialRoute:
+	if not _resume.is_empty() or not _flow.spec().walks_the_tutorial():
+		return null
+	return _city.streets().tutorial_route() if _city and _city.streets() else null
+
+## **Day 1's opening shot**, an experiment the player tries before it is kept (`OpeningShot`): the
+## view cuts to the tutorial park and comes back along `route` to her door before she is handed to
+## the day. The cars are held from its first frame and the crowd's box follows its camera, so none
+## is near her door when the view comes back (`Crowd.hold_new_cars()`; the car-free start's own
+## hold then finds them parked). The walking line is said when it ends (`HUD.hold_the_walking_line()`).
+## **To take it out**, delete this function, its call in `_on_title_start()`, the two functions
+## after it, the focus-loss guard and the HUD's hold; nothing else leans on it.
+func _play_the_opening_shot(route: TutorialRoute) -> void:
+	var line := OpeningShot.line_for(route, _city.map().doorstep_world_position())
+	var crowd := _crowd_now()
+	if crowd:
+		crowd.hold_new_cars()
+	# The park's ground and buildings are prepared before the cut, so its first frame draws a whole
+	# street, as the day's start does round her.
+	var view := get_viewport_rect().size / _player.camera().zoom
+	_city.prepare_scenery_in(Rect2(line[0] - view * 0.5, view))
+	var shot := OpeningShot.new()
+	shot.name = "OpeningShot"
+	_opening_shot = shot
+	add_child(shot)
+	shot.finished.connect(_on_opening_shot_finished.bind(shot))
+	shot.begin(_player.camera(), line)
+	if crowd:
+		crowd.use_focus(shot.focus())
+
+## The shot ran out or was skipped: her own camera has the view back, and play begins, which hands
+## her to the crowd (`StrollerFocus` replaces the shot's focus).
+func _on_opening_shot_finished(shot: OpeningShot) -> void:
+	shot.queue_free()
+	if _opening_shot == shot:
+		_opening_shot = null
+	_player.camera().reset_smoothing()
+	_engage_the_day()
+	_hud.say_the_walking_line()
 
 ## What pressing start on the title leads to when a save was resumed — the day brief showing what
 ## the load already paid for, or the ending directly when the load itself spent the run's last
@@ -2544,6 +2599,9 @@ func _pause_on_focus_lost() -> void:
 	# ran out behind the pause, and the beat, the newest child, would take the first press meant
 	# for the pause.
 	if _loss_hold and _loss_hold.is_running():
+		return
+	# Nor over the opening shot, which takes any key as its skip.
+	if _opening_shot and _opening_shot.is_running():
 		return
 	_pause.open()
 
