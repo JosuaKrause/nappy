@@ -30,6 +30,11 @@ const SEED := 4242
 const FORCED_INTERVAL := 2.0
 const FORCED_SCALE := 3.0
 const FORCED_WITHIN := 6.0
+## **The row the two walks force**: the loose dog, a row on foot sent down her line whose plan keeps
+## no field clear, so no placed plan along the walk refuses it room. A cyclist is sent only where no
+## placed plan stands inside his field (`EventDirector.clear_to_send()`), and the walk down the middle
+## of the arterial's sidewalk on day 1 has one in reach of him.
+const FORCED_ROW := "loose_dog"
 
 func run(t: TestRunner) -> void:
 	_test_a_release_build_reads_no_command_line_flag(t)
@@ -248,7 +253,7 @@ func _how_many_moved(agents: Array[CrowdAgent], at: Array[Vector2]) -> int:
 func _test_main_hands_the_baby_and_the_city_plain_values(t: TestRunner) -> void:
 	for invincible: bool in [false, true]:
 		var words := _words(["--skip", "shadows,motion", "--debug", "--ground-mode", "1",
-				"--blackout", "--pelican", "--force", "cyclist", str(FORCED_INTERVAL)])
+				"--blackout", "--pelican", "--force", FORCED_ROW, str(FORCED_INTERVAL)])
 		if invincible:
 			words.append("--invincible")
 		words.append_array(_words(["--no-save", "--no-telemetry"]))
@@ -321,9 +326,9 @@ func _test_main_hands_the_baby_and_the_city_plain_values(t: TestRunner) -> void:
 			await PhysicsTicks.pass_ticks(t, 2)
 			t.check(not city.traffic_signals().is_powered(),
 					"the blackout is handed --blackout: far from the station the lights go out")
-			var first := await _first_cyclist_on_a_walk(t, RunCity.events(city), her, city.map())
+			var first := await _first_forced_on_a_walk(t, RunCity.events(city), her, city.map())
 			t.check(first >= FORCED_INTERVAL - _walk_step() and first <= FORCED_WITHIN,
-					"the events are handed --force: the cyclist comes after its wait (%.1fs)" % first)
+					"the events are handed --force: the forced row comes after its wait (%.1fs)" % first)
 		booted.free_all()
 		home.free()
 
@@ -444,14 +449,14 @@ func _test_the_city_hands_each_value_to_its_part(t: TestRunner) -> void:
 ## day's own 11 to 26 seconds (`EventDirector.AHEAD_INTERVAL`). Run on the manager's own physics
 ## ticks with her walking down the street by hand, the way the loose dog's suite does, and read
 ## off the instances the manager puts in the world: a day's own first row would not come in that
-## time, and a flag the director never took up would send no cyclist on day 1.
+## time, and a flag the director never took up would send none of the forced row within the walk.
 func _test_the_forced_row_is_handed_to_the_director(t: TestRunner) -> void:
 	await PhysicsTicks.settle(t)
 	var run := RunCity.started_run(SEED)
 	var city: City = RunCity.new_city(CITY_SCENE)
 	t.add_child(city)
 	var builder := RunCity.new_builder()
-	builder.force_a_row("cyclist", FORCED_INTERVAL)
+	builder.force_a_row(FORCED_ROW, FORCED_INTERVAL)
 	RunCity.build(city, run, MapCache.of(SEED), builder)
 	RunCity.events(city).stream_within(Tuning.EVENT_STREAM_RADIUS)
 	var her := Stroller.new()
@@ -469,23 +474,23 @@ func _test_the_forced_row_is_handed_to_the_director(t: TestRunner) -> void:
 	var spec := DaySpec.for_day(1)
 	RigStreets.begin(city.streets(), city.map(), spec)
 	RunCity.events(city).start_day(spec, rng, consumed)
-	var first := await _first_cyclist_on_a_walk(t, RunCity.events(city), her, city.map())
+	var first := await _first_forced_on_a_walk(t, RunCity.events(city), her, city.map())
 	t.check(first < INF and first >= FORCED_INTERVAL - _walk_step(),
-			"the forced cyclist comes after the wait the flag names, not before (%.1fs)" % first)
+			"the forced row comes after the wait the flag names, not before (%.1fs)" % first)
 	t.check(first <= FORCED_WITHIN, "and within the walk, not after the day's own 11s or more")
 	her.free()
 	city.free()
 
-## One tick of `_first_cyclist_on_a_walk()`'s walk, in game seconds.
+## One tick of `_first_forced_on_a_walk()`'s walk, in game seconds.
 static func _walk_step() -> float:
 	return 1.0 / Engine.physics_ticks_per_second * FORCED_SCALE
 
-## **How far into a walk the first cyclist comes**, in game seconds, or INF for none: her walked
+## **How far into a walk the first of the forced row (`FORCED_ROW`) comes**, in game seconds, or INF for none: her walked
 ## south down the middle of the arterial's sidewalk by hand at `Tuning.WALK_SPEED`, on real physics
 ## ticks `FORCED_SCALE` times real time, for `FORCED_WITHIN` seconds, the way the loose dog's suite
-## walks her, and read off the cyclists `events` puts in the world that it had not before. Her own
+## walks her, and read off the instances of it `events` puts in the world that it had not before. Her own
 ## physics is off for it, so only the walk moves her.
-func _first_cyclist_on_a_walk(t: TestRunner, events: EventManager, her: Stroller,
+func _first_forced_on_a_walk(t: TestRunner, events: EventManager, her: Stroller,
 		map: CityMap) -> float:
 	her.set_physics_process(false)
 	var start := CrowdLanes.arterial_pavement(map)
@@ -498,7 +503,7 @@ func _first_cyclist_on_a_walk(t: TestRunner, events: EventManager, her: Stroller
 		her.velocity = Vector2.DOWN * Tuning.WALK_SPEED
 		her.global_position += her.velocity * step
 		for instance in events.instances():
-			if instance.row_id() == "cyclist" and not before.has(instance) \
+			if instance.row_id() == FORCED_ROW and not before.has(instance) \
 					and seen["first"] == INF:
 				seen["first"] = n * step
 	await PhysicsTicks.pass_ticks(t, PhysicsTicks.ticks_for(FORCED_WITHIN, FORCED_SCALE), each,
