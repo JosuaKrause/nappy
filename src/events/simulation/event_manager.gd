@@ -495,8 +495,6 @@ func the_instance_behind(cause: String) -> EventInstance:
 ## asks the day's events rather than the controller behind them (`ResistanceDirector`).
 signal door_crossed(at: Vector2, axis: Vector2, inspected: bool)
 
-## How many events are in the world right now — *what is around the player* rather than what the
-## day contains; see `planned_count()` for the other question.
 ## **Whether a solid body stands on `stretch`**, a rectangle of the world such as a stretch of
 ## sidewalk: a live event that is solid now (`EventInstance.is_solid()`) and whose body
 ## (`body_position()`) stops her within the stretch (`solid_reach()` of it). The thought bubble that
@@ -521,6 +519,8 @@ func doors_in_sight() -> Array[EventInstance]:
 			seen.append(instance)
 	return seen
 
+## How many events are in the world right now — *what is around the player* rather than what the
+## day contains; see `planned_count()` for the other question.
 func active_count() -> int:
 	return world.instances().size()
 

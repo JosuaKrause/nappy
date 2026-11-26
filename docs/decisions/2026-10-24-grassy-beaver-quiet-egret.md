@@ -7,8 +7,9 @@ is done, so its queue folder is gone.
 **The words.** The player: "thought bubbles -- I really like that idea for immediate feedback
 especially since it doesn't need reading", then "we should make it so it only shows a few times for
 each new lesson", and "it will become useful eg to also show that guard huts can be walked through"
-(curly-moose #819). The lessons the player listed for day one included "turn around at a dead end"
-and "cross the street when one sidewalk is blocked" (curly-moose #819); the dead end is day 2's.
+(curly-moose #819). The lessons the player listed for day one included "they should turn around when there is a deadend
+/ both sidewalks are blocked" and "they should cross the street when one sidewalk is blocked", and
+the thought bubbles included "a hint to turn around" (curly-moose #819); the dead end is day 2's.
 The chalk mark: "also a thought bubble should hint on going into the alley to get the mark"
 (minty-dolphin #868) and "when the mark becomes visible to the player for the first time it causes
 a thought bubble" (gentle-owl #1234).
@@ -28,7 +29,7 @@ Eight hints, in the order they win in: back to the tutorial route (every time; o
 nears a seal or closure that leaves no sidewalk on along her heading, `CityMap.is_barred_at()`),
 cross the street (a body closes her sidewalk ahead and the far one is open,
 `EventManager.has_a_body_on()`; points at the nearest crossing), walk wide of the noise (a source
-ahead of her within eight tiles whose `caret_strength()` is not zero), the way to the park (day 1's
+ahead of her within eight tiles whose `caret_strength()` is the amber one, not the doubled red), the way to the park (day 1's
 start and each junction the route turns at, read from `TutorialRoute.junctions()` through
 `RouteWaypoints`), the chalk mark (today's mark first comes into her view,
 `ResistanceDirector.mark_on_offer()`) and a checkpoint hut she may walk through (it first comes
