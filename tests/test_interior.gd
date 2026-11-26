@@ -55,6 +55,7 @@ func run(t: TestRunner) -> void:
 	await _test_every_vent_has_its_grate_blowing_or_not(t)
 	await _test_an_explosion_flashes_every_hallway_window(t)
 	await _test_the_far_windows_flash_between_the_bangs_and_cost_nothing(t)
+	await _test_a_flash_gap_holds_a_second_flash_back(t)
 	await _test_the_building_shows_what_the_city_shows(t)
 
 func _test_the_map_builds(t: TestRunner) -> void:
@@ -1958,6 +1959,40 @@ func _test_an_explosion_flashes_every_hallway_window(t: TestRunner) -> void:
 			"a bang from outside that comes once lights every window as it comes")
 	events.free()
 	scene.free()
+
+## `use_flash_gap()`, which `--building-flash-gap` sets: a bang some ticks after another lights the
+## windows at once with no gap, and waits for the gap, then lights them, with one. Asked of the
+## windows' own pictures, with the night of far flashes stopped so only the two bangs can light them.
+func _test_a_flash_gap_holds_a_second_flash_back(t: TestRunner) -> void:
+	for gap: float in [0.0, 2.0]:
+		var scene := InteriorScene.new()
+		t.add_child(scene)
+		var rng := RandomNumberGenerator.new()
+		rng.seed = 4242
+		var run := _rig.fresh_run()
+		var events := BuildingEvents.events_in(t, scene, rng, run)
+		scene.stop_the_night()
+		scene.use_flash_gap(gap)
+		var windows := _windows(scene)
+		scene.bang_outside()
+		t.check(_lit(windows) == windows.size(),
+				"the first bang lights the windows at once (gap %.1f)" % gap)
+		await PhysicsTicks.pass_ticks(t, 3, Callable(), FLASH_SCALE)
+		t.check(_lit(windows) == 0, "and they are dark a frame later (gap %.1f)" % gap)
+		scene.bang_outside()
+		var at_once := _lit(windows) == windows.size()
+		var lit_later := {"seen": false}
+		var watch := func(_tick: int) -> void:
+			if _lit(windows) > 0:
+				lit_later["seen"] = true
+		await PhysicsTicks.pass_ticks(t, 14, watch, FLASH_SCALE)
+		t.check(at_once == (gap == 0.0),
+				"a second bang lights them at once only with no gap (gap %.1f, at once %s)"
+				% [gap, str(at_once)])
+		t.check(at_once or lit_later["seen"],
+				"and a bang held back by the gap still lights them (gap %.1f)" % gap)
+		events.free()
+		scene.free()
 
 ## *"The flashing lights in the window are too rare"*, and *"do a biased random distribution
 ## between 100ms and 5s between flashes where the mean is 1.3s and the rest of the curve is

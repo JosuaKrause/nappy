@@ -99,6 +99,8 @@ var _pelican := false
 var _blackout_requested := false
 ## `--escape-bag`: the bag the escape's city is drawn from (`DaySpec.ESCAPE_BAGS`).
 var _escape_bag := DaySpec.DEFAULT_ESCAPE_BAG
+## `--building-flash-gap`: the least seconds between two flashes of the escape building's windows.
+var _building_flash_gap := 0.0
 
 # ------------------------------------------------------------ how it is drawn ---
 
@@ -202,6 +204,7 @@ static func parse(args: PackedStringArray, query: String, debug_build: bool,
 	config._pelican = flags.pelican()
 	config._blackout_requested = flags.blackout_requested()
 	config._escape_bag = flags.escape_bag()
+	config._building_flash_gap = flags.building_flash_gap()
 
 	var skip := flags.skip_words()
 	config._skip_words = skip
@@ -400,6 +403,11 @@ func leaves_out_the_motion() -> bool:
 ## given: a name `DaySpec.for_section()` takes.
 func escape_bag() -> String:
 	return _escape_bag
+
+## The least gap `--building-flash-gap` asks between two flashes of the escape building's windows,
+## in seconds, `0` for none when it is not given.
+func building_flash_gap() -> float:
+	return _building_flash_gap
 
 ## The city's ground mode `--ground-mode` names (`DevFlags.GROUND_MODE_DEFAULT` when none is given),
 ## as the number `SceneryGround.Mode` takes.
