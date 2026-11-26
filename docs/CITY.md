@@ -1647,9 +1647,11 @@ day 2, its picture's own first day (`SealPlanner.Candidate`), so day 1 stays lig
 there** (tiny-lark #931). A precinct is paved wall to wall and no car drives it, so a soft pair's
 open middle lanes would cost nothing to walk, and walkers would walk through them. A precinct is
 offered only the hard seals solid all across their shape (`SealPlanner._closes_a_precinct()`):
-the barricade, the fallen tree, the burst water main and the later acts' wreckage. The car
-accident is left out as well, since it is solid only at its two cars and its pavements are
-walkable; that is the reading of the player's answer, open to their overturn. A hard seal holds
+the burst water main from day 1, the burnt-out car and the collapsed frontage from day 4 and the
+barricade from day 12, so on days 1 to 3 every seal on a precinct is the burst water main. The
+fallen tree never reaches one, since no precinct is planted (`StreetTrees` plants ordinary streets
+only). The car accident is left out as well, since it is solid only at its two cars and its
+pavements are walkable; that is the reading of the player's answer, open to their overturn. A hard seal holds
 its street (`CityMap.held_streets()`), so a precinct off the tree carries no catalogue row
 either.
 

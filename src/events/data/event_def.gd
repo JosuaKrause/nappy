@@ -318,7 +318,9 @@ func solid_reach() -> float:
 
 ## Whether its body is solid only in the pieces it declares (`BodySpec.declared_pieces()`), so
 ## the ground between them inside its shape is open: the crash's two cars, with its debris and both
-## pavements walkable. False for a row solid all across its shape, or with no body.
+## pavements walkable. False for a row solid all across its shape, or with no body. A body that
+## declares pieces is taken as one with gaps between them, so a row whose pieces tiled its shape
+## whole would answer true too.
 func is_solid_in_parts() -> bool:
 	return not _body.declared_pieces().is_empty()
 
