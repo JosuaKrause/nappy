@@ -4,10 +4,10 @@ extends RefCounted
 ## unqualified.
 ##
 ## **The cache is not shared *across* suites.** `run_tests.gd` calls `.new()` once per `test_*.gd`
-## file, so `test_events_fire.gd`, `test_events_scheduler.gd`, `test_events_solid.gd`,
-## `test_events_pursuit.gd` and `test_events_scenery.gd` each build their own city and their own
-## plan cache the first time one of their tests asks for it. Sharing the *code* still matters: the
-## reasoning below is written once rather than five times, and there is one place to fix it.
+## file, so `test_events_placement.gd` and `test_events_scheduler.gd`, the two suites that extend
+## it, each build their own city and their own plan cache the first time one of their tests asks
+## for it. Sharing the *code* still matters: the reasoning below is written once, and there is one
+## place to fix it.
 
 ## The suite's shared city, generated once.
 ##
