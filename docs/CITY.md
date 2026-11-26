@@ -1078,7 +1078,10 @@ end of one route street meeting the box, through the box, to the far end of ever
 every alley mouth or park cut a route runs into beside the box or a walked sidewalk. A row that
 leaves the box a free region and the sidewalk a free line is still refused if the two do not touch:
 a free region and a free line that do not meet leave her no line, and no rule that checks one piece
-sees it. **Checked
+sees it. A street whose two sidewalks are both in that ground (the home street, or a route street
+while a man paces it and she passes him across) has a far end on each, and the walk may start from
+either, but it has to join everything else inside the box and those sidewalks: the two meet only
+across the carriageway at the next junction, which is no part of this crossing. **Checked
 before the row is accepted, never repaired after**, the same shape the closure invariant has: the
 day is asked, one row at a time, whether the city it is joining still has a line through every
 crossing, so a closed one never exists even for a moment.

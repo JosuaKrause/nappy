@@ -74,6 +74,26 @@ hard seal, since a seal need not be a soft one where a soft pair cannot close th
 - **A pavement dead end.** A street the city does not have (`CityMap.has_street()` false) can keep
   a walkable stub of pavement off a junction box; the guarantee's flood allows such pavement and
   still asks everything past it.
+- **The route line rule joined the home street's two sidewalks.** With the tutorial route on day 1's
+  tree, seed 72172's route crosses junction (5, 6), where the home street meets it, from the north
+  street's east sidewalk to the south street's. The homeless yeller (the man pacing a stretch of
+  sidewalk, yelling every 5 s) was placed pacing the box's west edge, and his lens, the ground his
+  beat never leaves free, took all of the box but its east edge and one tile of that edge, at the
+  home street's carriageway: the box's north half was joined only to the home street's north
+  sidewalk and its south half only to the south one, and nothing joined the two. test_seals' check
+  of the box (a flood inside the box joining every route street) failed. `RouteLineRule` accepted
+  him because its flood started from all the free tiles of the first far end at once, and the home
+  street's far end lies on both its sidewalks, so one flood seeded on both sides reached every
+  other far end through two halves nothing joined. The cause was in the rule, not in the tutorial
+  tree, which only put the home street's junction on the route, and not in the check. The rule now
+  floods from each free tile of the first far end one piece of free ground at a time and accepts
+  only where one piece holds a box tile, every far end and every mouth; the two sidewalks of a far
+  end meet only across the carriageway at the next junction, which is no part of the crossing.
+  The same holds for a route street while a man paces it, whose far sidewalk joins the ground.
+  `tests/test_route_line_rule.gd` holds it on a hand-drawn map: refused with the home street
+  named (allowed before the fix), and one tile longer, a beat that leaves the east edge whole
+  stands. Rejected: relaxing test_seals' check to let the home street's sidewalks join the box,
+  since the walk it would count goes a block round and across the home street's far junction.
 
 ## The tests
 
@@ -92,9 +112,4 @@ the tutorial, hand null.
 
 ## Left open
 
-- **Seed 72172, day 1: the catalogue leaves the doorstep junction closed.** test_seals' check that a
-  catalogue row's placement sees a seal at a route junction finds the homeless yeller alone
-  covering every free tile of junction (5, 6), the route's first junction, once day 1's tree
-  carries the tutorial route. The route line rule (`RouteLineRule`) accepted the yeller there; why
-  is not found in this pull request.
 - **The lessons**: the item's file holds them.
