@@ -475,7 +475,10 @@ const _STREAMS_TO_TRY := 60
 ## **Day 1's walk left open is never closed** (`ClosurePlanner.plan_day()`'s `left_open`): on day
 ## 2, none of the tutorial route's lesson streets is closed on a stream that closes one of them
 ## when the walk is not handed in. Each map tries streams until one does, so the check is asked of a
-## plan that would have closed the walk.
+## plan that would have closed the walk. The tree is day 2's as the game grows it on the day it
+## hands the walk in: she settled in the tutorial park, so the park is spent
+## (`CityMap.set_spent_calm()`, then the repaint) and off the tree. Each map is repainted with
+## nothing spent afterwards, so a case asked after this one plans the maps as before.
 func case_the_walk_left_open_is_never_closed(t: TestRunner) -> void:
 	var day := 2
 	var spec := DaySpec.for_day(day)
@@ -487,7 +490,10 @@ func case_the_walk_left_open_is_never_closed(t: TestRunner) -> void:
 		var walk := {}
 		for segment in route.lesson_streets():
 			walk[segment.key()] = true
-		var tree := _todays_tree(map, day)
+		var spent: Array[Vector2i] = [route.park_block()]
+		map.set_spent_calm(spent)
+		_repaint_for(map, day)
+		var tree := RouteTree.for_day(map, day, null)
 		for stream in _STREAMS_TO_TRY:
 			if not _closes_any(ClosurePlanner.plan_day(map, spec, _stream(map, stream), tree), walk):
 				continue
@@ -498,6 +504,8 @@ func case_the_walk_left_open_is_never_closed(t: TestRunner) -> void:
 					"seed %d stream %d: no closure stands on day 1's walk left open"
 					% [map.city_seed(), stream])
 			break
+		map.set_spent_calm([] as Array[Vector2i])
+		_repaint_for(map, day)
 	t.check(asked > 0, "there were plans that closed the walk to ask (%d)" % asked)
 
 func _stream(map: CityMap, stream: int) -> RandomNumberGenerator:

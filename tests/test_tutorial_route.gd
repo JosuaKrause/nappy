@@ -21,6 +21,7 @@ func run(t: TestRunner) -> void:
 	_test_the_side_streets_past_the_first_block(t, map, route)
 	_test_the_kept_ground(t, map, route)
 	_test_the_park_among_the_blocks_she_settled_in(t, route)
+	_test_a_zone_block_of_the_park(t)
 
 func _arm(map: CityMap, junction: Vector2i, toward: Vector2i) -> StreetNetwork.Segment:
 	for segment in map.street_network().at_junction(junction):
@@ -101,3 +102,18 @@ func _test_the_park_among_the_blocks_she_settled_in(t: TestRunner, route: Tutori
 	t.check(not route.has_its_park_among(elsewhere), "settled blocks elsewhere are not the park")
 	var nowhere: Array[Vector2i] = []
 	t.check(not route.has_its_park_among(nowhere), "and no settled block is not the park")
+
+## **A calm zone's other block is the park too**: she may settle in a block of a two-block park that
+## is not its anchor, and `has_its_park_among()` names the park by the block's anchor
+## (`CityMap.anchor_of()`). The zone is recorded on its own map the way the generator records one
+## (`CityMap.record_zone_member()`); on a map with no zone, the same block is not the park.
+func _test_a_zone_block_of_the_park(t: TestRunner) -> void:
+	var beside := FAR + Vector2i.RIGHT
+	var settled: Array[Vector2i] = [beside]
+	t.check(not _route(StreetMap.full()).has_its_park_among(settled),
+			"with no zone, the block beside the park is not the park")
+	var zoned := StreetMap.full()
+	zoned.record_zone_member(FAR, FAR)
+	zoned.record_zone_member(beside, FAR)
+	t.check(_route(zoned).has_its_park_among(settled),
+			"in a two-block park, a settled block that is not its anchor is the park")

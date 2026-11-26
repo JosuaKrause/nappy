@@ -26,8 +26,10 @@ func make(day: int, tree: RouteTree, ground: RowGround) -> WalkSiting:
 	var fronts := {}
 	if _world.poster_walls():
 		fronts = _world.poster_walls().fronts()
+	var streets := _world.streets()
+	var left_open := streets.tutorial_walk_left_open() if streets else null
 	return _assemble(day, _world.city_map(), tree, _walk, _world.plan_builder(), ground, fronts,
-			_world.day_stream(day, "siting").seed)
+			_world.day_stream(day, "siting").seed, left_open)
 
 ## **A siting from pieces** (`make()` hands it the world's). `base` seeds the streams its judge
 ## builds candidates on. Builds, in order: the corridor made of the day's tree, which its caller
@@ -40,13 +42,18 @@ func make(day: int, tree: RouteTree, ground: RowGround) -> WalkSiting:
 ## by room) and a route kept on its location's run (`DawnDraw.ROUTES_STAY_ON_THE_RUN`); the
 ## locations, the walk's or, for a walk that carries none (a rig's recipe walk), laid out
 ## here; the tiles a row may stand on (`SitedGround`) over `fronts`, the fronts a crew may paste
-## (empty for a walk with no city).
+## (empty for a walk with no city). `left_open` is day 1's walk on the day that leaves it open
+## (`DayStreets.tutorial_walk_left_open()`), else null: the rules keep one sidewalk of each of its
+## streets open, as the dawn's do (`DawnContext.use_the_walk_left_open()`).
 static func _assemble(day: int, map: CityMap, tree: RouteTree, walk: WalkEvents,
-		builder: PlanBuilder, ground: RowGround, fronts: Dictionary, base: int) -> WalkSiting:
+		builder: PlanBuilder, ground: RowGround, fronts: Dictionary, base: int,
+		left_open: TutorialRoute = null) -> WalkSiting:
 	var corridor := Corridor.of(tree)
 	var calm := walk.calm()
 	var leave_alone: Array[Rect2] = calm.unused_ground() if calm else ([] as Array[Rect2])
-	var rules := StreetInvalidation.new(map, corridor, leave_alone, walk.doors(), null)
+	var kept: Array[StreetNetwork.Segment] = left_open.lesson_streets() if left_open \
+			else ([] as Array[StreetNetwork.Segment])
+	var rules := StreetInvalidation.new(map, corridor, leave_alone, walk.doors(), null, null, kept)
 	var fit := LocationFit.new(day, map, builder, ground)
 	var standing: Array[EventPlan] = []
 	var judge := RuledLocationGround.new(day, base, map, standing, corridor, fit, rules, ground,

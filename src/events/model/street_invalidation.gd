@@ -7,7 +7,8 @@ extends RefCounted
 ## from a route's junction box onto the sidewalks she walks, her walked sidewalk, a beat's opening,
 ## and a route's ground off the streets kept free of bodies and of cost), the calm she has not used
 ## and the doors' clear ground; on a day's walk, one sidewalk of every street of her routes kept
-## open past the bodies drawn on it (`OneSidewalkOpenRule`); the escape's on top, one notice at a
+## open past the bodies drawn on it (`OneSidewalkOpenRule`), and of day 1's walk where the day leaves
+## it open; the escape's on top, one notice at a
 ## time (`DaySpec.notices_one_at_a_time()`) and its walk kept open (`DaySpec.keeps_her_walk_open()`), its
 ## own stricter rule in place of the one sidewalk.
 ##
@@ -26,8 +27,12 @@ var _refusals := {}
 ## has not used, `doors` where the region doors' bodies stand, `one_notice` the plan builder where
 ## the spec keeps one waiting guard's notice at a time (it says where each band stands), else null,
 ## and `walk` the walk's ground where the spec keeps the walk open, else null. The walk is asked last, since it is the expensive question.
+## `kept` is the streets off the routes that keep one sidewalk open as a route's do: the lesson
+## streets of day 1's walk on the day that leaves it open (`DayStreets.tutorial_walk_left_open()`),
+## else none.
 func _init(map: CityMap, corridor: Corridor, leave_alone: Array[Rect2],
-		doors: PackedVector2Array, one_notice: PlanBuilder, walk: WalkGround = null) -> void:
+		doors: PackedVector2Array, one_notice: PlanBuilder, walk: WalkGround = null,
+		kept: Array[StreetNetwork.Segment] = []) -> void:
 	_map = map
 	_corridor = corridor
 	_rules.append(UnusedCalmRule.new(leave_alone))
@@ -37,7 +42,7 @@ func _init(map: CityMap, corridor: Corridor, leave_alone: Array[Rect2],
 	_rules.append(PacingOpeningRule.new(map, corridor))
 	_rules.append(RouteGroundRule.new(map, corridor))
 	if corridor and not walk:
-		_rules.append(OneSidewalkOpenRule.new(map, corridor))
+		_rules.append(OneSidewalkOpenRule.new(map, corridor, kept))
 	if one_notice:
 		_rules.append(OneNoticeRule.new(one_notice))
 	if walk:

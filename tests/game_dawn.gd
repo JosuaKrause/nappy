@@ -5,9 +5,9 @@ extends RefCounted
 ## only what the test's day differs in, and planned with `plan()`. What is not said is what a
 ## plain day has: every calm area unused (`CalmAreas.of()`), the mast sites worked out on the map
 ## as it stands (`MastSites.compute()`), the route tree the city grows for the spec's day
-## (`RouteTree.for_day()`), nothing spent, no scars, no heat, no doors, nothing standing, no trace
-## and no roadblock row. **And the whole day**: the dawn draws no unit of the day's locations (each
-## draws as she comes near it), so `planned()` and `plan()` draw every unit into the plan, which is
+## (`RouteTree.for_day()`), nothing spent, no scars, no heat, no doors, nothing standing, no trace,
+## no roadblock row and no walk left open. **And the whole day**: the dawn draws no unit of the
+## day's locations (each draws as she comes near it), so `planned()` and `plan()` draw every unit into the plan, which is
 ## what any walk that comes near every unit draws (`undrawn()` leaves the dawn as the game leaves
 ## it). A helper, not a suite: the runner loads only `test_*.gd`.
 ##
@@ -29,6 +29,7 @@ var _doors := PackedVector2Array()
 var _standing: Array[EventPlan] = []
 var _trace: RunTrace = null
 var _roadblock: EventDef = null
+var _walk_left_open: TutorialRoute = null
 ## Whether `undrawn()` was said: the dawn left as the game leaves it, no unit drawn.
 var _undrawn := false
 var _rows: Array[EventDef] = []
@@ -124,6 +125,11 @@ func roadblock(row: EventDef) -> GameDawn:
 	_roadblock = row
 	return self
 
+## Day 1's walk, on the day that leaves it open (`DayStreets.tutorial_walk_left_open()`).
+func walk_left_open(route: TutorialRoute) -> GameDawn:
+	_walk_left_open = route
+	return self
+
 ## The dawn's context as the game's planner makes it, not yet planned: for a probe that runs
 ## one pass of the dawn.
 func context() -> DawnContext:
@@ -139,6 +145,7 @@ func context() -> DawnContext:
 	dawn.use_mast_sites(_masts if _masts_are_said else MastSites.compute(_map))
 	dawn.use_trace(_trace)
 	dawn.use_the_roadblock_row(_roadblock)
+	dawn.use_the_walk_left_open(_walk_left_open)
 	return dawn
 
 ## **The dawn left as the game leaves it**: no unit drawn (`DawnDraw` prepares the units' draw and
