@@ -201,6 +201,13 @@ func lesson_street(lesson: Lesson) -> StreetNetwork.Segment:
 	var index := _index_of(lesson)
 	return _streets[index] if index >= 0 else null
 
+## **Whether `tile` is on the street `lesson` stands on** (`lesson_street()`): what the director
+## asks before it sends lesson (3)'s dog walker. False for a crossing, or on a route too short for
+## the lesson.
+func is_on_lesson(lesson: Lesson, tile: Vector2i) -> bool:
+	var street := lesson_street(lesson)
+	return street != null and street.tile_rect().has_point(tile)
+
 ## **The sidewalk she walks along `segment`**, a lesson street: the band of its tile rect
 ## (`Corridor.sidewalk_bands()`) the line keeps to, which the day's tree walks
 ## (`line_ground()`). An empty rect for a street the route does not run down.

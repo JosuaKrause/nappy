@@ -228,6 +228,7 @@ func start_day(day: int, plans: Array[EventPlan],
 	_lesson = null
 	_tutorial_park_reached = false
 	_lessons_dog_walker_sent = false
+	_lessons_dog_walker_retry = 0.0
 	_rng = rng
 	_day = day
 	_met_today.clear()
@@ -323,6 +324,9 @@ var _tutorial: TutorialRoute = null
 var _tutorial_park_reached := false
 ## Whether lesson (3)'s dog walker has been sent today.
 var _lessons_dog_walker_sent := false
+## Seconds of walking before lesson (3)'s dog walker is asked again, after a try that found it no
+## room.
+var _lessons_dog_walker_retry := 0.0
 
 ## **Hands the director day 1's tutorial route** for the day it starts next (`start_day()`), null
 ## on a day that does not walk one (`DayStreets.tutorial_route()`). On the day it is handed, the
@@ -1076,24 +1080,23 @@ func due(delta: float, at: Vector2, velocity: Vector2, view: VisibleView = null)
 
 ## **Lesson (3)'s dog walker, the one handout on the tutorial route before the park**: the rig's
 ## first dog walker (`_rig_day_one()`), sent down her line toward her as any is
-## (`_sited()`) once she is on lesson (3)'s street, at once rather than on the clock's turn, and
-## asked again every `SENT_RETRY` while it has no room; answered as `due()` answers. Nothing else
+## (`_sited()`) the moment she is on lesson (3)'s street rather than on the clock's turn, and
+## asked again every `SENT_RETRY` of walking while it has no room; answered as `due()` answers. Nothing else
 ## is handed out on the route before she has stood in the park, and nothing is spent while held.
 func _send_the_lessons_dog_walker(delta: float, at: Vector2, heading: Vector2,
 		view: VisibleView) -> Array:
-	var street := _tutorial.lesson_street(TutorialRoute.Lesson.NOISE_WITH_LESS_ROOM)
-	if _lessons_dog_walker_sent or not street \
-			or not street.tile_rect().has_point(_map.world_to_tile(at)):
+	if _lessons_dog_walker_sent or not _tutorial.is_on_lesson(
+			TutorialRoute.Lesson.NOISE_WITH_LESS_ROOM, _map.world_to_tile(at)):
 		return []
-	_next_in = minf(_next_in, SENT_RETRY) - delta
-	if _next_in > 0.0 or _owed.is_empty() or _owed[0] != null:
+	_lessons_dog_walker_retry -= delta
+	if _lessons_dog_walker_retry > 0.0 or _owed.is_empty() or _owed[0] != null:
 		return []
 	var next := _next_on_the_route()
 	if not next or next.id() != DAY_ONE_DOG_WALKER:
 		return []
 	var sited := _sited(next, at, heading, view)
 	if (sited[0] as PackedVector2Array).is_empty():
-		_next_in = SENT_RETRY
+		_lessons_dog_walker_retry = SENT_RETRY
 		return []
 	_lessons_dog_walker_sent = true
 	return [_hand_out(next, true), sited[0], sited[1], sited[2]]
