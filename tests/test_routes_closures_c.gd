@@ -10,3 +10,4 @@ func run(t: TestRunner) -> void:
 	rig.case_closures_land_where_a_wall_belongs(t)
 	rig.case_a_closure_never_lands_on_a_calm_areas_own_access(t)
 	rig.case_a_wall_off_the_corridor_never_fails_the_invariant(t)
+	rig.case_the_walk_left_open_is_never_closed(t)

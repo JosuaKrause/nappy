@@ -58,7 +58,7 @@ static func for_route(map: CityMap, route: TutorialRoute) -> ParkSigns:
 	var other_end := doorstep.other_end(turn)
 	var toward_home := other_end - turn
 	var home_side := _home_side(map, doorstep)
-	var ahead := route.first_lesson_street().other_end(turn) - turn
+	var ahead := route.lesson_streets()[0].other_end(turn) - turn
 	var first := _sign_at(map, turn, ahead, _corners_for(ahead, toward_home, home_side))
 	if first == null:
 		return found

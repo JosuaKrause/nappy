@@ -16,7 +16,7 @@ door on day 1.
 is the target). Day 2 keeps the existing rule that spoils a calm area used the day before with events
 while it stays walkable (`docs/EVENTS.md`, "Going to the same park on day one and day two must not be
 possible"): asked whether the park must be blocked, the player, "spoiled actually teaches the
-lesson" (minty-dolphin #834); `day-two.md` carries the path past it.
+lesson" (minty-dolphin #834); day 2 leaves day 1's walk to it open (the record grassy-beaver-rosy-trout).
 
 *Proposed, not asked for:* the four-step order (introduce safely, develop, twist, conclude), from
 the research. A retry of day 1 replays the same order.

@@ -578,6 +578,33 @@ walks there without a route pointing the way.
   is, the one the spoilers pass over joins the ground nothing may reach
   (`DawnCalmKeptClean`). The player has to find out which.
 
+**On day 2, day 1's walk to the tutorial park stays open**, where she settled in that park on day 1
+(`DaySpec.leaves_the_tutorial_walk_open()`; `City` asks the run's calendar at dawn and hands the
+answer in the day's `DayStreets`, `tutorial_walk_left_open()`). The park is spoiled and off day 2's
+tree like any used area. The tutorial route's lesson streets carry no seal (`SealPlanner`) and no
+closure (`ClosurePlanner`), and the day's rows keep one sidewalk of each open past their bodies, as
+on a street of her routes ("A street of her routes keeps one sidewalk past its bodies"), so walking
+the same way again leads her to the park and shows it spoiled. *(minty-dolphin #834: "spoiled
+actually teaches the lesson. there should be a path that touches the first day's park so the player
+learns this lesson (since they are free to go to it again)".)* It is a path, not a route: the tree
+grows no branch along it, so it carries no kerb tint, the off-route placement may stand rows on it
+as on any street off the tree, wall rows included, short of shutting both of a street's sidewalks,
+and its side streets are sealed like every other. **Only the tutorial park's walk is left open**:
+the player tied the lesson to the close park day 1 is built around and to walking the same path
+again, which finds that park spoiled (curly-moose #819, its third point, answering the close park of
+its second; minty-dolphin #834, "the first day's park"). Where she settled anywhere else on day 1,
+nothing is left open, and that park may lie behind seals like any used area. Leaving a street
+unsealed and unclosed only adds ground she can reach, so no guarantee rests on it.
+
+**The dead end she meets early on day 2 is a side street at her doorstep's junctions with both
+sidewalks shut**, the player's own words for the entry grassy-beaver's lesson (c), turning around at
+a dead end: "a deadend / both sidewalks are blocked" (curly-moose #819). Every street off the tree
+is sealed, so such a side street that day 2's tree leaves off it is usually one. A thinned soft pair
+leaves one sidewalk open and a car accident's gaps can be walked, so neither is a dead end by those
+words. Nothing builds one on purpose, so a city can have none; the probe
+`tests/probes/grassy_beaver_day_two.gd` counts them, and the record grassy-beaver-rosy-trout holds
+what it found.
+
 ## Road closures
 
 Every morning a few streets are shut. This is the one thing in the game that changes **where the
@@ -1204,6 +1231,12 @@ street a closure, a seal or the region wall already closes keeps no sidewalk to 
 The streets beside the routes and off them keep their blocking events all over (PLAYTEST-17), and
 the escape keeps its own, stricter rule (`DaySpec.keeps_her_walk_open()`).
 
+**Day 1's walk keeps one too, on the day that leaves it open** (day 2, "Shutting a spent park"):
+its lesson streets are off the day's tree, yet the walk is the path she is meant to walk again, so
+each is a street that needs one sidewalk walkable, and the rule asks them as it asks a route's
+streets (`DawnContext.use_the_walk_left_open()`, and the same streets handed to the sitings made
+while she walks, `SitingMaker`).
+
 **The line rules do not already hold it on a route's street.** They ask only a row that counts
 against her line, and a pursuer (the alley robbery, the charging dog) does not, since it follows her
 rather than holding a tile, yet it stands as a body. A pursuer on one sidewalk and a roadblock or
@@ -1217,9 +1250,11 @@ band takes the sidewalk on its own side of the road and the road, standing on th
 them, and leaves the far sidewalk whole, so it is refused where a body already closes that far
 sidewalk ("one sidewalk must be open if they're en-route", inbox #747 in woolly-penguin; "okay
 let's use the one sidewalk has to be open and match the roadblocks size to one sidewalk + road",
-inbox #1465 in spry-plover). Every reading of a body here takes the band where it stands
-(`EventPlan.body_at()`). **The band is the disc every rule reads at every heat.** Its guard
-catches at a man's 28px, inside its band, so the ground its catch shuts
+inbox #1465 in spry-plover). Every reading of a body here takes it where it stands
+(`BodyStance.of_plan()`): a roadblock's band on its kerb, and a sidewalk body on the middle of its
+pavement band, half a tile across from the lane tile the draw chose, where the half tile decides
+whether the sidewalk beside it stays walkable. **The band is the disc every rule reads at every
+heat.** Its guard catches at a man's 28px, inside its band, so the ground its catch shuts
 (`EventDef.catch_shuts_within()`) never reaches past the band, and a hunting roadblock stands on a
 route's street wherever a cold one does; the escape reads the same hunting roadblock at its band
 (`WalkGround`). The robber and the dog have no body and are read at their catch, which takes one
@@ -1230,7 +1265,7 @@ the day placed none close by, is not judged by the day's rules, so neither loses
 **The closing roadblock is refused on her routes' streets by the same rule.** `closing_roadblock`
 stands on the middle of its street (`EventDef.stands_mid_street()`,
 `CityMap.street_middle_beside()`) with a band reaching 96px either way, all 192px of the street
-("close the street fully", PLAYTEST-135 7), so read at its middle (`EventPlan.body_at()`) it closes
+("close the street fully", PLAYTEST-135 7), so read at its middle (`BodyStance.of_plan()`) it closes
 both sidewalks and the rule refuses it on any street of her routes where a sidewalk could be kept;
 the route rules refuse it where it would cut a route. So the bags of her routes' streets hold no
 marble of it (`EventDef.stands_off_the_route()`, `UnitFills`), and what those streets place is
@@ -1659,6 +1694,10 @@ closes, and a second calm area stays reachable from the first block. `tests/test
 the guarantee on the full walkable tile graph, the main road's sidewalks, the alleys and the open
 ground included, over the city suites' seeds, and takes each mouth seal away in turn to show the
 flood would see it missing.
+
+**On day 2 day 1's walk is exempt**, where she settled in the tutorial park: the lesson streets
+carry no seal though day 2's tree leaves them off it, so the same walk leads her to the park she
+used, spoiled ("Shutting a spent park"). Their side streets are sealed like any other.
 
 **A final pass thins the seals.** A small `SealPlanner.SEAL_THINNING_FRACTION` of the day's soft pairs
 lose one body — never a hard seal, never an alley mouth — so a wrong turn stays open long enough to

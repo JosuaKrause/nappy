@@ -66,6 +66,15 @@ extends RefCounted
 ## route's kept ground already cuts off from the first block, so the second calm area
 ## `TutorialRoute.for_city()` checked before it accepted the route stays reachable.
 ##
+## **On the day after it, day 1's walk is left open** where she settled in the tutorial park
+## (`DaySpec.leaves_the_tutorial_walk_open()`, `DayStreets.tutorial_walk_left_open()`, handed in
+## by `DayPlanner`): the route's lesson streets carry no seal, though today's tree no longer grows a
+## branch to the park, so walking the same way again leads her to the park spoiled *(minty-dolphin
+## #834, the player: "spoiled actually teaches the lesson. there should be a path that touches the
+## first day's park")*. Its side streets are sealed like any other street off the tree. Leaving a
+## street unsealed only adds ground she can reach, so no guarantee here rests on the walk: it is the
+## **city** skill's one exception, a pass that only removes obstruction.
+##
 ## **The main road is exempt too, and that is a decision rather than an oversight.** *(2026-09-03,
 ## playtest 22: "a path should never go alongside the main road — main road by itself can be
 ## considered a blocker — paths can only cross the main road".)* `RouteTree` now refuses to route
@@ -276,9 +285,15 @@ static func _candidate(id: String, strength: int, def_ids: Array[String],
 ## block is sealed **at its mouth** on the route rather than mid-street, and every through-alley
 ## mouth on a lesson street is walled, so no way leaves the route past its first block. See
 ## `_seal_a_mouth()` and `_seal_alley_mouths()`.
+##
+## `left_open` is day 1's tutorial route on a day that leaves its walk open
+## (`DayStreets.tutorial_walk_left_open()`, handed on by `DayPlanner`), null on every other day:
+## its lesson streets carry no seal, so the same walk leads her to the park she used, spoiled. See
+## the class doc.
 static func plan_day(map: CityMap, spec: DaySpec, route: RouteSource,
 		rng: RandomNumberGenerator, skip: Dictionary = {},
-		held: HeldStreets = null, tutorial: TutorialRoute = null) -> Array[EventPlan]:
+		held: HeldStreets = null, tutorial: TutorialRoute = null,
+		left_open: TutorialRoute = null) -> Array[EventPlan]:
 	# The walker-facing half of a soft seal — see `CityMap.soft_sealed_tiles()` — is this function's
 	# own output and nobody else's, so it is cleared and rebuilt here exactly the way `planned`
 	# itself is, rather than trusting a caller to clear it first.
@@ -308,9 +323,14 @@ static func plan_day(map: CityMap, spec: DaySpec, route: RouteSource,
 	# The side streets off the tutorial route past its first block, each with the end (or both)
 	# that opens onto the route; empty on a day that does not walk it.
 	var mouths := _mouths_of(tutorial)
+	# Day 1's walk to the park she used, on the day that leaves it open; empty on every other day.
+	var walk_left_open := {}
+	if left_open != null:
+		for segment in left_open.lesson_streets():
+			walk_left_open[segment.key()] = true
 	for segment in map.street_network().segments():
 		var key := segment.key()
-		if skip.has(key):
+		if skip.has(key) or walk_left_open.has(key):
 			continue
 		# A side street's mouth is sealed even where a branch runs along the street's far half (a
 		# calm area that opens onto it): the mouth half is the route's kept ground, which no branch

@@ -312,6 +312,9 @@ var _region_wall_stands := false
 ## Whether the day walks day 1's tutorial route, set by `for_day()` and read through
 ## `walks_the_tutorial()`.
 var _walks_the_tutorial := false
+## Whether the day leaves day 1's walk to the tutorial park open, set by `for_day()` and read
+## through `leaves_the_tutorial_walk_open()`.
+var _leaves_the_tutorial_walk_open := false
 
 ## One of the fourteen days, `day_length` seconds long.
 static func for_day(day: int, day_length := Tuning.DAY_LENGTH_SECONDS) -> DaySpec:
@@ -319,6 +322,7 @@ static func for_day(day: int, day_length := Tuning.DAY_LENGTH_SECONDS) -> DaySpe
 	spec._number = day
 	spec._length = day_length
 	spec._walks_the_tutorial = day == 1
+	spec._leaves_the_tutorial_walk_open = day == 2
 	spec._region_wall_stands = day >= Tuning.REGION_WALL_FIRST_DAY
 	if spec.region_wall_stands():
 		spec.wall_row_share = GATEHOUSE_DAY_WALL_ROW_SHARE
@@ -570,6 +574,15 @@ func seals_off_the_main_road() -> bool:
 ## reader asks the spec; false for the escape's sections and an authored scene.
 func walks_the_tutorial() -> bool:
 	return _walks_the_tutorial
+
+## **Whether the day leaves day 1's walk to the tutorial park open** (`TutorialRoute`): day 2, so
+## that a player who walks the same way again finds the park she settled in spoiled at its end
+## *(minty-dolphin #834, the player: "there should be a path that touches the first day's park so
+## the player learns this lesson (since they are free to go to it again)")*. Only where she settled
+## in that park on day 1 (`City` asks, `DayStreets.tutorial_walk_left_open()` answers); false for
+## every other day, the escape's sections and an authored scene.
+func leaves_the_tutorial_walk_open() -> bool:
+	return _leaves_the_tutorial_walk_open
 
 ## Whether every street and through-alley off the walk is sealed, rather than a share of them
 ## (`_seals_every_street_off_the_walk`).

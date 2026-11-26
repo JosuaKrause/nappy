@@ -9,14 +9,18 @@ extends RefCounted
 ##   nothing across stands.
 ## - **A roadblock is asked too**: its band takes the sidewalk on its side of the road and the road,
 ##   read on its kerb, so it is refused across from a stall on the far one and stands alone, and a
-##   stall drawn after it is refused across from it; beside a pole on the far sidewalk's outer row
-##   it stands, where read at its lane it would close the inner row too. Its guard's catch lies
-##   inside its band, so the disc it is read at is its band at every heat: where its guard hunts
-##   (heat 4 and 5) it still stands alone.
+##   stall drawn after it is refused across from it; beside a poster crew on the far sidewalk's
+##   outer row (pinned against the frontage) it stands, where read at its lane it would close the
+##   inner row too. Its guard's catch lies inside its band, so the disc it is read at is its band at
+##   every heat: where its guard hunts (heat 4 and 5) it still stands alone.
 ## - **A street a seal already closes** refuses nothing.
 ## - **A body in the box at the street's end** reaching its last open sidewalk is refused.
 ## - **Only her routes' streets**: a street beside the routes and one off them keep their two
 ##   walls.
+## - **And the streets kept beside them** (day 1's walk left open on day 2): a street off the
+##   routes handed in as kept refuses a second body across from the first.
+## - **A body is read where it stands**: a leaf blower drawn on the south sidewalk's outer row
+##   stands on the middle of its band, takes both rows, and is refused across from a stall.
 
 const NONE: Array[EventPlan] = []
 const EAST := Vector3i(3, 3, 0)
@@ -40,6 +44,8 @@ func run(t: TestRunner) -> void:
 	_test_a_street_a_seal_closes_refuses_nothing(t)
 	_test_a_body_in_the_end_box_is_refused(t)
 	_test_only_her_routes_streets_are_asked(t)
+	_test_a_kept_street_keeps_a_sidewalk(t)
+	_test_a_body_is_read_where_it_stands(t)
 
 ## `id` standing at the middle of `tile`.
 func _standing(id: String, tile: Vector2i) -> EventPlan:
@@ -86,23 +92,25 @@ func _test_a_roadblock_keeps_the_far_sidewalk(t: TestRunner) -> void:
 		var hot_standing: Array[EventPlan] = [hot]
 		t.check(not rule.allows(stall, NORTH_SIDE, hot_standing, hot_standing),
 				"at heat %d a stall across from it is still refused" % level)
-	# **Read where its body stands, on the kerb.** A mast's pole on the far sidewalk's outer row,
-	# level with the roadblock, closes that row beside it and not the inner row. The band read on
-	# its kerb leaves the inner row's tiles clear past it, so the far sidewalk stays walkable and
-	# the roadblock stands; read 16px across at its lane, the same band takes the inner row's
-	# tile beside the pole and closes both sidewalks.
-	var pole := EventPlan.new(EventCatalogue.by_id("loudspeaker"),
+	# **Read where its body stands, on the kerb.** A poster crew on the far sidewalk's outer row
+	# (pinned against the frontage, `EventDef.Pavement.AGAINST_THE_BUILDING`, so it stands where it
+	# is drawn), level with the roadblock, closes that row beside it and not the inner row. The band
+	# read on its kerb leaves the inner row's tiles clear past it, so the far sidewalk stays
+	# walkable and the roadblock stands; read 16px across at its lane, the same band takes the inner
+	# row's tile beside the crew and closes both sidewalks. An unpinned body there, such as a mast's
+	# pole, stands on its band's middle and takes the inner row itself.
+	var pole := EventPlan.new(EventCatalogue.by_id("poster_crew"),
 			_map.tile_to_world(Vector2i(at.x, NORTH_SIDE.y)))
 	var with_the_pole: Array[EventPlan] = [pole]
 	t.check(pole.obstructs() and rule.allows(roadblock, at, with_the_pole, with_the_pole),
-			"a roadblock level with a pole on the far sidewalk's outer row stands: read on its "
-			+ "kerb, its band leaves the inner row open past the pole")
+			"a roadblock level with a poster crew on the far sidewalk's outer row stands: read on "
+			+ "its kerb, its band leaves the inner row open past the crew")
 	for level: int in [EventDef.HEAT_HUNTS_LEVEL, Tuning.RESISTANCE_GOAL]:
 		var hot := EventPlan.new(
 				EventCatalogue.heated(EventCatalogue.by_id("roadblock"), level),
 				_map.tile_to_world(at))
 		t.check(rule.allows(hot, at, with_the_pole, with_the_pole),
-				"at heat %d the hunting roadblock beside the pole stands too: its guard's catch lies "
+				"at heat %d the hunting roadblock beside the crew stands too: its guard's catch lies "
 				% level + "inside its band, so its band is the disc read")
 
 ## Every row that stands mid street, the closing roadblock among them, takes both sidewalks from the
@@ -165,3 +173,46 @@ func _test_only_her_routes_streets_are_asked(t: TestRunner) -> void:
 				and _rule().allows(_standing("market_stall", second_tile), second_tile, first, first),
 				"a street %s keeps its two walls" % ("beside the routes"
 				if view == PlacementView.View.ROUTE_ADJACENT else "off the routes"))
+
+## The two ends of a street off the routes, one on each sidewalk, three tiles in from its west or
+## north end.
+func _across(segment: StreetNetwork.Segment) -> Array[Vector2i]:
+	var rect := segment.tile_rect()
+	var first_tile := rect.position + (Vector2i(3, 0) if segment.horizontal else Vector2i(0, 3))
+	var second_tile := first_tile + (Vector2i(0, rect.size.y - 1) if segment.horizontal
+			else Vector2i(rect.size.x - 1, 0))
+	return [first_tile, second_tile]
+
+## A street off the routes keeps its two walls (`_test_only_her_routes_streets_are_asked`), unless
+## it is handed in as kept: day 1's walk on the day that leaves it open.
+func _test_a_kept_street_keeps_a_sidewalk(t: TestRunner) -> void:
+	var segment := _map.street_network().by_key(Vector3i(7, 7, 0))
+	var tiles := _across(segment)
+	var first: Array[EventPlan] = [_standing("market_stall", tiles[0])]
+	var second := _standing("market_stall", tiles[1])
+	t.check(_corridor.view_of(segment) == PlacementView.View.OFF_THE_ROUTE
+			and _rule().allows(second, tiles[1], first, first),
+			"the street is off the routes, and with nothing kept a second stall across stands")
+	var kept: Array[StreetNetwork.Segment] = [segment]
+	var keeping := OneSidewalkOpenRule.new(_map, _corridor, kept)
+	t.check(not keeping.allows(second, tiles[1], first, first),
+			"handed in as kept, the street refuses a second stall across from the first")
+	var alone := tiles[1]
+	t.check(keeping.allows(second, alone, NONE, NONE),
+			"and a stall with nothing across stands there")
+
+## **Read where it stands.** The leaf blower is drawn on the lane tile of the south sidewalk's outer
+## row, and stands on the middle of the band (`BodyStance.of_plan()`), half a tile in, where its
+## body and hers beside it take both of the band's rows. Read at the lane tile, the inner row
+## would stay walkable past it.
+func _test_a_body_is_read_where_it_stands(t: TestRunner) -> void:
+	var rule := _rule()
+	var at := Vector2i(NORTH_SIDE.x, SOUTH_ROW)
+	var blower := _standing("leaf_blower", at)
+	t.check(blower.obstructs() and BodyStance.of_plan(_map, blower).center() != blower.body_at(),
+			"the leaf blower is a body that stands off the lane tile it was drawn on")
+	var first: Array[EventPlan] = [_standing("market_stall", NORTH_SIDE)]
+	t.check(not rule.allows(blower, at, first, first),
+			"a leaf blower on the outer row across from a stall is refused: where it stands, it "
+			+ "takes the whole south sidewalk")
+	t.check(rule.allows(blower, at, NONE, NONE), "a leaf blower with nothing across stands")

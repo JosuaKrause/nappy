@@ -7,6 +7,12 @@ extends StreetRule
 ## asked of both of the street's bands against the bodies standing round it), and one could
 ## without it.
 ##
+## **Each body is read where it stands** (`BodyStance.of_plan()`'s centre), not where it was
+## placed: a sidewalk body stands on the middle of its pavement band, half a tile across from the
+## lane tile the draw chose, and the half tile decides whether the sidewalk beside a second body
+## stays walkable. Read at the lane tile, a café's tables on one sidewalk and a leaf blower on the
+## other passed the rule and shut the street where the game stood them.
+##
 ## **Only her routes' own streets** (`Corridor.view_of()` on the route). *(Inbox #1465 in
 ## spry-plover, the player's answer on the board: "what I said was *if* a street needs to have one
 ## sidewalk walkable *then* the placement of the drawn events needs to make sure of that".)* No
@@ -14,6 +20,15 @@ extends StreetRule
 ## sure of it. The streets beside the routes and off them keep their blocking events all over (PLAYTEST-17:
 ## "areas that outside the paths should have blocking events all over"), and the escape's walk
 ## keeps its own rule.
+##
+## **And day 1's walk left open on day 2** (`kept`, the tutorial route's lesson streets,
+## `DayStreets.tutorial_walk_left_open()`): those streets are off the day's tree, yet the walk is
+## the path she is meant to walk again to the park she used *(minty-dolphin #834, the player:
+## "there should be a path that touches the first day's park so the player learns this lesson
+## (since they are free to go to it again)")*, so each is a street that needs one sidewalk
+## walkable, and the draw keeps one there as on a route's street. Without it, rows that take a
+## whole sidewalk each (a café's tables, a van) stand on both sides of a lesson street now and then
+## and shut the walk.
 ##
 ## **Why the line rules do not already hold it there**: they ask only a row that counts against
 ## the line (`EventPlan.counts_against_the_line()`), and a pursuer (the alley robbery, the charging
@@ -44,12 +59,18 @@ extends StreetRule
 
 var _map: CityMap
 var _corridor: Corridor
+## The keys of the streets kept beside her routes' own (`kept`), as a set.
+var _kept := {}
 
 ## The rule on `map` for the routes `corridor` runs (null for a walk with no route tree: no street
-## is on a route then).
-func _init(map: CityMap, corridor: Corridor) -> void:
+## is on a route then), and for `kept`, the streets off them that keep a sidewalk too: day 1's walk
+## left open, or none.
+func _init(map: CityMap, corridor: Corridor,
+		kept: Array[StreetNetwork.Segment] = []) -> void:
 	_map = map
 	_corridor = corridor
+	for street in kept:
+		_kept[street.key()] = true
 
 ## Overrides StreetRule.allows.
 func allows(candidate: EventPlan, _tile: Vector2i,
@@ -57,7 +78,7 @@ func allows(candidate: EventPlan, _tile: Vector2i,
 	if not candidate.obstructs():
 		return true
 	for street in _streets_reached_by(candidate):
-		if _is_on_her_routes(street) and _closes_its_last_sidewalk(street, candidate, around):
+		if _keeps_a_sidewalk(street) and _closes_its_last_sidewalk(street, candidate, around):
 			return false
 	return true
 
@@ -79,8 +100,11 @@ func _streets_reached_by(plan: EventPlan) -> Array[StreetNetwork.Segment]:
 			found.append(street)
 	return found
 
-## Whether a route of the day runs along `street`.
-func _is_on_her_routes(street: StreetNetwork.Segment) -> bool:
+## Whether `street` keeps a sidewalk: a route of the day runs along it, or it is one of the
+## streets kept beside them.
+func _keeps_a_sidewalk(street: StreetNetwork.Segment) -> bool:
+	if _kept.has(street.key()):
+		return true
 	return _corridor != null \
 			and _corridor.view_of(street) == PlacementView.View.ON_THE_ROUTE
 
@@ -95,13 +119,13 @@ func _closes_its_last_sidewalk(street: StreetNetwork.Segment, candidate: EventPl
 		if plan == candidate or not plan.obstructs():
 			continue
 		var radius := plan.blocking_radius()
-		var at := plan.body_at()
+		var at := BodyStance.of_plan(_map, plan).center()
 		if world.grow(radius + Tuning.PLAYER_BODY_RADIUS).has_point(at):
 			bodies.append(Vector3(at.x, at.y, radius))
 	var bands := Corridor.sidewalk_bands(rect, street.horizontal)
 	if not _one_is_open(bands, street.horizontal, bodies):
 		return false
-	var stands := candidate.body_at()
+	var stands := BodyStance.of_plan(_map, candidate).center()
 	bodies.append(Vector3(stands.x, stands.y, candidate.blocking_radius()))
 	return not _one_is_open(bands, street.horizontal, bodies)
 

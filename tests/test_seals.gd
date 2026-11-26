@@ -69,6 +69,7 @@ func run(t: TestRunner) -> void:
 	_test_day_one_walls_every_alley_mouth_on_a_lesson_street(t)
 	_test_nothing_leaves_the_tutorial_route_past_its_first_block(t)
 	_test_the_car_accident_seals_from_day_two(t)
+	_test_day_two_leaves_day_ones_walk_open(t)
 
 # ------------------------------------------------------------------------ setup ---
 
@@ -1346,3 +1347,42 @@ func _test_the_car_accident_seals_from_day_two(t: TestRunner) -> void:
 			for plan in _seals_for(map, day):
 				later += 1 if plan.row_id() == "car_accident" else 0
 	t.check(later > 0, "a car accident seals a street on day 2 or 3 somewhere (%d bodies)" % later)
+
+## **Day 1's walk is left open on day 2** (`SealPlanner.plan_day()`'s `left_open`; minty-dolphin
+## #834): once she has settled in the tutorial park, day 2's tree no longer grows a branch to it
+## (`CityMap.set_spent_calm()`, then the repaint), and the route's lesson streets off that tree
+## carry no seal, so the same walk still leads to the park, while every other street off the tree
+## still carries one. Asked last, since it repaints the maps with the park spent.
+func _test_day_two_leaves_day_ones_walk_open(t: TestRunner) -> void:
+	var day := 2
+	var opened := 0
+	for map in _maps:
+		var route := _tutorial_for(map, 1)
+		if route == null:
+			continue
+		var spent: Array[Vector2i] = [route.park_block()]
+		map.set_spent_calm(spent)
+		_repaint_for(map, day)
+		var tree := RouteTree.for_day(map, day, null)
+		var walk := {}
+		for segment in route.lesson_streets():
+			walk[segment.key()] = true
+			if not tree.is_on_the_tree(segment.key()):
+				opened += 1
+		var sealed := _sealed_segments(map, SealPlanner.plan_day(map, DaySpec.for_day(day), tree,
+				_seal_rng(map, day), {}, null, null, route))
+		var on_the_walk := 0
+		for key: Vector3i in walk:
+			if sealed.has(key):
+				on_the_walk += 1
+		var missing := 0
+		for key: Vector3i in _candidate_segments(map, tree, ClosurePlanner.home_street(map)):
+			if not walk.has(key) and not sealed.has(key):
+				missing += 1
+		t.check(on_the_walk == 0,
+				"seed %d day %d: no seal stands on day 1's walk (%d do)"
+				% [map.city_seed(), day, on_the_walk])
+		t.check(missing == 0,
+				"seed %d day %d: every other street off the tree is sealed (%d are not)"
+				% [map.city_seed(), day, missing])
+	t.check(opened > 0, "there were lesson streets off day 2's tree to leave open (%d)" % opened)
