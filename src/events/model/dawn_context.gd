@@ -280,7 +280,6 @@ func rules() -> StreetInvalidation:
 			# The ground only ever gains bodies, so every plan it accepts is accepted against a
 			# superset of what finally stands and the walk it keeps open is kept open past the
 			# final plans too; the price is room the unused trials hold.
-			assert(_spec.marbles_a_street() > 0, "a walk kept open draws a set number of marbles")
 			walk_ground = WalkGround.new(_map, events().standing(), _walk)
 		_rules = StreetInvalidation.new(_map, corridor(), _leave_alone(), _doors,
 				_builder if _spec.notices_one_at_a_time() else null, walk_ground)

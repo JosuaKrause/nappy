@@ -320,7 +320,8 @@ func _test_blackout_from_query(t: TestRunner) -> void:
 ## `--escape-bag`/`?escapebag=`: the command line, the page under the bundle's gate (a release page
 ## nobody asked `?debug=1` of answers the default), and the default when neither names a bag.
 func _test_escape_bag_reads_the_command_line_and_the_open_page(t: TestRunner) -> void:
-	t.check(_debug_build(["--escape-bag", "B"]).escape_bag() == "B", "the command line names the bag")
+	t.check(_debug_build(["--escape-bag", "B"]).escape_bag() == "B",
+			"the command line names the bag")
 	t.check(_debug_build(["--escape-bag", "c"]).escape_bag() == "C", "in either case")
 	t.check(_debug_build(["--seed", "4", "--escape-bag", "A"], "?debug=1&escapebag=B")
 			.escape_bag() == "A", "the command line wins over the page")

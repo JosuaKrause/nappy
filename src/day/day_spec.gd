@@ -37,13 +37,13 @@ extends RefCounted
 ## nothing), `B` the player's order with the freed marbles spread over the other rows in
 ## proportion, `C` the bag of `A` drawn twice a street (`ESCAPE_MARBLES_A_STREET`).
 ## One fill is the sum of the five, and a plan has about 31 open streets.
+const _BAG_A := {"military_convoy": 10, "finale_explosion": 8, "abduction": 3, "roadblock": 2,
+		EMPTY_MARBLE: 9}
 const ESCAPE_BAGS := {
-	"A": {"military_convoy": 10, "finale_explosion": 8, "abduction": 3, "roadblock": 2,
-			EMPTY_MARBLE: 9},
+	"A": _BAG_A,
 	"B": {"military_convoy": 13, "finale_explosion": 11, "abduction": 4, "roadblock": 3,
 			EMPTY_MARBLE: 1},
-	"C": {"military_convoy": 10, "finale_explosion": 8, "abduction": 3, "roadblock": 2,
-			EMPTY_MARBLE: 9},
+	"C": _BAG_A,
 	"D": {"military_convoy": 14, "finale_explosion": 12, "abduction": 3, "roadblock": 2,
 			EMPTY_MARBLE: 1},
 }

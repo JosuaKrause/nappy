@@ -186,7 +186,8 @@ static func _readout_from_query(query: String) -> bool:
 ## The gate for the release-safe bundle: the flags that choose where a run starts or how it is drawn
 ## (`day_override()`, `invincible()`, `layers_override()`, `controls_word()`, `start_escape()`,
 ## `meters_override()`, `charger_timing_override()`, `day_length_override()`, `ending_override()`,
-## `blackout_requested()`, `escape_bag()`, `ground_mode()`, `frame_record_requested()`, and `WebDisplay`'s `?dpr=`)
+## `blackout_requested()`, `escape_bag()`, `ground_mode()`, `frame_record_requested()`, and
+## `WebDisplay`'s `?dpr=`)
 ## — never the input-driving or picture-taking half, and no file but the frame record's, which
 ## leaves only through the browser's download when the player taps its page button. Open on a debug
 ## build whatever the page says, and on a release page once `readout_requested()` holds, so a

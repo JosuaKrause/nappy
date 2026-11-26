@@ -23,11 +23,16 @@ two marbles shows it trial layouts (a row laid again when a larger row is drawn 
 plans stay standing as phantoms, and the ground only gains bodies, so every plan it accepts is
 accepted against a superset of what finally stands: the walk stays open past the final plans too, at
 the cost of the room the unused trials hold. `tests/finale_rig.gd`'s street-of-vans case plays C
-with a van and a roadblock on every street over three seeds and reaches both exits.
+over three seeds (1, 8, 39) and reaches both exits past every body and reach. C stands a van on about
+every street and a roadblock on about two thirds as many (69 roadblocks beside 98 vans over the three
+seeds), so about a third of the streets stand a van alone and the rest a van and a roadblock. The case guards that the roadblocks were placed
+(more than a third as many as the vans), so it fails if C's roadblock marbles were refused.
 
 **What was measured** (`tests/probes/escape_winnable.gd`, twelve seeds 4242, 1, 77, 9001, 23, 5,
 31337, 2024, 7, 808, 4216201080, 11, both exits, the game's own walker, on main after snowy-goose
-#1761 and misty-plover #1750; trucks are counted from the run log as she meets them, not from the
+#1761 and misty-plover #1750, **before lilac-marten-lilac-squirrel #1762's charger timing** (every
+charger warns for 1.75 s and notices her from a quarter farther, the escape's roadblock guards from
+225px instead of 180px), which moves the "Out" rows and the excitement figures; trucks are counted from the run log as she meets them, not from the
 plan table, which reads a truck's street as empty; a second pass reproduced every figure). Tunnel,
 twelve walks each:
 
@@ -63,6 +68,9 @@ walker loses about 60% of walks even on A and plays no lure, so wins at twelve w
 are cut short by early losses; sleep barely moves, so what a walk costs shows as excitement, not as
 crying. D fills about as many streets as B at A's share of vans and roadblocks and about A's wins; B
 fills them with more of what takes her; C is the fullest city and the hardest, and its win rate
-(1 and 2 of 12) is the least trustworthy figure. **Open to the player:** whether empty may be one
+(1 and 2 of 12) is the least trustworthy figure. Rerun on the merged head (after #1762) for D alone: on these twelve
+seeds the tunnel gives 3 out (the table: 4) and the bridge 5 out (6); over 24 seeds, streets held
+something 66% (tunnel) and 57% (bridge) of the time, a van or a roadblock 16% and 16%, so the tables
+stand as the comparison between bags and D's own rows are a walk or two off. **Open to the player:** whether empty may be one
 marble, and which bag. The probe's `ESCAPE_WINNABLE_BAG` plans and walks a named bag.
 

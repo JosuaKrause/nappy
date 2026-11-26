@@ -402,20 +402,26 @@ const VAN_STREET_SEEDS := [1, 8, 39]
 
 func _test_a_street_of_vans_leaves_a_walk_past_every_reach(t: TestRunner) -> void:
 	_vans_leave_a_walk_past_every_reach(t, "D", {"abduction": 1}, "a van a street")
-	# The bag drawn twice a street (`C`) stands a van and a roadblock on a street: the two marbles
-	# of a unit leave trial layouts standing in the walk's ground, which only ever gains bodies.
+	# The bag drawn twice a street (`C`) stands a van, a roadblock or both on a street: the two
+	# marbles of a unit leave trial layouts standing in the walk's ground, which only ever gains
+	# bodies.
 	_vans_leave_a_walk_past_every_reach(t, "C", {"abduction": 1, "roadblock": 1},
 			"a van and a roadblock a street")
 
 func _vans_leave_a_walk_past_every_reach(t: TestRunner, bag_name: String, counts: Dictionary,
 		label: String) -> void:
 	var vans := 0
+	var roadblocks := 0
 	for seed_value: int in VAN_STREET_SEEDS:
 		var map := MapCache.of(seed_value)
 		_paint_day_one(map)
 		var bare := _bare_plan(map, seed_value)
 		var placed := _escape_rows_from(map, bare, counts, bag_name)
-		vans += placed.size()
+		for row: EventPlan in placed:
+			if row.row_id() == "roadblock":
+				roadblocks += 1
+			else:
+				vans += 1
 		var whole: Array[EventPlan] = []
 		whole.assign((bare["seals"] as Array[EventPlan]).duplicate())
 		whole.append_array(placed)
@@ -435,6 +441,13 @@ func _vans_leave_a_walk_past_every_reach(t: TestRunner, bag_name: String, counts
 			t.check(found, "seed %d, %s: the %s is reached past every van's reach"
 					% [seed_value, label, "tunnel" if kind == CityExit.Kind.TUNNEL else "bridge"])
 	t.check(vans > 80, "there were streets full of vans to walk past (%d)" % vans)
+	if counts.has("roadblock"):
+		# A van stands on about every street, so a roadblock on more than a third as many says the
+		# roadblock marbles were placed beside the vans, not refused (the case would otherwise be
+		# the vans' alone).
+		t.check(roadblocks * 3 > vans,
+				"and roadblocks stood on more than a third of those streets (%d beside %d vans)"
+				% [roadblocks, vans])
 
 ## Marks every grid point within the catch of a row the plan stands that is not mobile and ends the
 ## day, a pursuer waiting at its post included, measured from where its `EventInstance` stands, and

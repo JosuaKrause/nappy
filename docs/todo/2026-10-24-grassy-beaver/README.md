@@ -64,3 +64,16 @@ escape's fixes, lilac-marten (its fuller escape, with that entry's other two ite
 *Proposed, not asked for:* the band `now`, since the player tied cross-posting to day one being
 fixed (curly-moose #824); waiting for lilac-marten's charger timing and total time as well as its
 fuller escape, since they are one entry. Open to the player's correction.
+
+**A minor release follows, and this is the last fix it waits on.** The player: "After the refactor and
+the fixes from the last playtest let's cut a minor release" (curly-moose #803). Asked which fixes the
+release waits for, the player: "the refactor, the escape fix, the day one fixes" (minty-dolphin #834);
+read back as the release waiting for minty-quail (the refactor), the escape fix and grassy-beaver (a
+day one that teaches), "Yes that is the correct interpretation"; of whether "the escape fix" is
+snowy-goose's explosions and lilac-marten's fuller escape or only one, "Both escape fixes are the
+fixes"; and of whether the release also waits for lilac-marten's charger timing and total time, "yes,
+of course" (gentle-owl #1231). **Read as:** v0.30.0 waits for minty-quail (the refactor),
+snowy-goose (explosions in the escape city), every lilac-marten item (the fuller escape, the shorter
+charger warnings with a larger radius, the total time) and this entry, which is the last of them.
+Once those are merged the release is the next open work, cut only on the player's go-ahead in the
+session that cuts it (**committing**).

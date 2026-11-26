@@ -35,10 +35,10 @@ extends RefCounted
 ##
 ## - **Where the walk draws a set number of marbles a unit** (`marbles_a_unit`,
 ##   `DaySpec.marbles_a_street()`), the unit draws that many and stops: with one, a row's stands
-##   alone in it and an empty one leaves it with nothing; with two, a row and another, or two empty
-##   ones. A row the bag's `accepts` refuses stays in the bag and
-##   the bag offers the next marble inside the same draw, so a unit whose first row is refused
-##   draws again among the marbles left.
+##   alone in it and an empty one leaves it with nothing; with two, a row and another, a row and an
+##   empty one, or two empty ones. A row the bag's `accepts` refuses stays in the bag and the bag
+##   offers the next marble inside the same draw, so a unit whose first row is refused draws again
+##   among the marbles left.
 ##
 ## A row handed to her walk (`EventDef.is_handed_to_her_walk()`, the poster crew) or to the director
 ## (`hands_to_the_director`, the escape's trucks) is drawn and laid as any other and kept with no
@@ -91,8 +91,8 @@ class _Placing extends RefCounted:
 
 ## `locations` records each draw (`DayLocations.record()`); `rows` the rows the bag's marbles
 ## name (`id -> EventDef`); `ground` the judge; `marbles_a_unit`, how many marbles the unit
-## draws before it stops, zero for as many as its room holds (the class comment); `hands_to_the_director`, `(row: EventDef) -> bool`, says which
-## drawn rows the director sends (`DaySpec.hands_the_director()`), none by default.
+## draws before it stops, zero for as many as its room holds (the class comment);
+## `hands_to_the_director`, `(row: EventDef) -> bool`, says which drawn rows the director sends (`DaySpec.hands_the_director()`), none by default.
 func _init(locations: DayLocations, rows: Dictionary, ground: LocationGround,
 		marbles_a_unit := 0, hands_to_the_director := Callable()) -> void:
 	_locations = locations

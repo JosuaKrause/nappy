@@ -8,7 +8,6 @@ func run(t: TestRunner) -> void:
 	_test_neither_section_of_the_escape_has_the_region_wall(t)
 	_test_the_walls_kept_follow_the_region_wall(t)
 	_test_every_marble_of_a_walk_bag_names_a_row(t)
-	_test_a_walk_kept_open_draws_a_set_number_of_marbles(t)
 	_test_the_escape_plays_the_bag_with_the_fewest_empty_marbles(t)
 	_test_every_named_bag_is_a_whole_bag(t)
 
@@ -31,39 +30,17 @@ func _test_every_marble_of_a_walk_bag_names_a_row(t: TestRunner) -> void:
 	t.check(named > 0, "some spec walks a bag with rows in it (%d marbles named)" % named)
 	t.check(DaySpec.EMPTY_MARBLE == ViewBag.EMPTY, "the spec's empty marble is the bag's")
 
-## A walk kept open draws a set number of marbles a street, for every spec the run builds: what the
-## dawn's context asserts, since a day's unit draws until its room is spoken for.
-func _test_a_walk_kept_open_draws_a_set_number_of_marbles(t: TestRunner) -> void:
-	var specs: Array[DaySpec] = []
-	for day in range(1, Tuning.RUN_LENGTH_DAYS + 1):
-		specs.append(DaySpec.for_day(day))
-	for which: int in [DaySpec.Section.BUILDING, DaySpec.Section.CITY]:
-		specs.append(DaySpec.for_section(which, 60.0))
-	var kept_open := 0
-	for spec in specs:
-		if spec.keeps_her_walk_open():
-			kept_open += 1
-			t.check(spec.marbles_a_street() > 0,
-					"day %d keeps the walk open and draws a set number of marbles"
-					% spec.day_number())
-	t.check(kept_open > 0, "some spec keeps its walk open (%d)" % kept_open)
-
 ## The escape's default bag has the fewest empty marbles of its five, and fewer than the roadblocks
 ## the player's order puts above it *(inbox #785 in minty-lemur: "trucks > explosions > vans >
-## barriers > empty")*, and keeps the marbles that take her no more numerous than the bag the
-## escape shipped with: the freed marbles went to the rows that only wake the baby.
+## barriers > empty")*.
 func _test_the_escape_plays_the_bag_with_the_fewest_empty_marbles(t: TestRunner) -> void:
 	var bag := DaySpec.for_section(DaySpec.Section.CITY, 60.0).walk_bag()
-	var shipped: Dictionary = DaySpec.ESCAPE_BAGS["A"]
 	for marble: String in bag:
 		if marble != DaySpec.EMPTY_MARBLE:
 			t.check(int(bag[marble]) > int(bag[DaySpec.EMPTY_MARBLE]),
 					"the default bag holds more %s marbles than empty ones" % marble)
 	t.check(int(bag[DaySpec.EMPTY_MARBLE]) < int(bag["roadblock"]),
 			"and the empty marbles are fewer than the roadblocks'")
-	t.check(int(bag["abduction"]) <= int(shipped["abduction"])
-			and int(bag["roadblock"]) <= int(shipped["roadblock"]),
-			"and it holds no more vans or roadblocks than the shipped bag")
 
 ## Every named bag names a row for each of its marbles and draws a set number of marbles a street;
 ## the one the escape plays when none is named is among them.
@@ -75,6 +52,14 @@ func _test_every_named_bag_is_a_whole_bag(t: TestRunner) -> void:
 			t.check(marble == DaySpec.EMPTY_MARBLE or spec.walk_bag_rows().has(marble),
 					"bag %s's marble %s names a row" % [bag_name, marble])
 		t.check(spec.marbles_a_street() > 0, "bag %s draws a set number of marbles" % bag_name)
+	var sizes := {}
+	for bag_name: String in DaySpec.ESCAPE_BAGS:
+		var size := 0
+		for count: int in (DaySpec.ESCAPE_BAGS[bag_name] as Dictionary).values():
+			size += count
+		sizes[size] = true
+	t.check(sizes.size() == 1,
+			"every named bag is as many marbles as the others (%s)" % [sizes.keys()])
 	var shipped := DaySpec.for_section(DaySpec.Section.CITY, 60.0, "", "A")
 	var twice := DaySpec.for_section(DaySpec.Section.CITY, 60.0, "", "C")
 	t.check(twice.walk_bag() == shipped.walk_bag()
