@@ -1,0 +1,19 @@
+<!-- Walk through the hut, just the hut: the checkpoint's guard hut as hut_south.svg draws
+     it, door to the front, in its own colours. No arrow through it.
+     A thought-bubble icon: 24x20, centre anchor (12,10), drawn into the bubble's icon box
+     (thought_bubble.svg). The simple set beside the first one, kept for comparison. -->
+<svg xmlns="http://www.w3.org/2000/svg" width="24" height="20" viewBox="0 0 24 20" shape-rendering="geometricPrecision" stroke="#221f28" stroke-width="0.9" stroke-linejoin="round" stroke-linecap="round">
+  <g transform="translate(12 10) scale(0.42) translate(-28 -30)" stroke-width="2.1">
+    <rect x="8" y="15" width="40" height="36" fill="#a9987d"/>
+    <path d="M5 16 L12 7 L44 7 L51 16 Z" fill="#777b63"/>
+    <path d="M5 16 L51 16 L47 22 L9 22 Z" fill="#626650"/>
+    <path d="M12 7 L44 7 L48 12 L8 12 Z" fill="#8b9073" stroke="none"/>
+    <path d="M5 16 L12 7 L44 7 L51 16 Z" fill="none"/>
+    <rect x="12" y="27" width="15" height="12" fill="#343640"/>
+    <path d="M19.5 27 L19.5 39 M12 33 L27 33" fill="none" stroke="#77868c" stroke-width="1.6"/>
+    <rect x="32" y="25" width="11" height="26" fill="#5c3a30"/>
+    <rect x="34" y="28" width="7" height="9" fill="#3b3a46"/>
+    <circle cx="40" cy="43" r="1.4" fill="#c9a86a" stroke="none"/>
+    <path d="M8 47 L48 47 L48 51 L8 51 Z" fill="#7c6d5b"/>
+  </g>
+</svg>

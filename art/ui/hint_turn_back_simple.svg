@@ -1,0 +1,21 @@
+<!-- Turn back, just the barrier: two panels of the road closure barrier as
+     barrier_across.svg draws them, white rails with amber stripes, each panel on one post at its
+     middle. No U-turn arrow.
+     A thought-bubble icon: 24x20, centre anchor (12,10), drawn into the bubble's icon box
+     (thought_bubble.svg). The simple set beside the first one, kept for comparison. -->
+<svg xmlns="http://www.w3.org/2000/svg" width="24" height="20" viewBox="0 0 24 20" shape-rendering="geometricPrecision" stroke="#221f28" stroke-width="0.9" stroke-linejoin="round" stroke-linecap="round">
+  <defs>
+    <clipPath id="hint-turn-back-simple-rails">
+      <path d="M1 3.4 L23 3.4 L23 8.2 L1 8.2 Z M1 10.4 L23 10.4 L23 15.2 L1 15.2 Z"/>
+    </clipPath>
+  </defs>
+  <path d="M6.5 1.8 V18.6 M17.5 1.8 V18.6" fill="none" stroke-width="2.6"/>
+  <path d="M6.5 2.3 V18.3 M17.5 2.3 V18.3" fill="none" stroke="#8a8378" stroke-width="1.2"/>
+  <path d="M3.8 19 H9.2 M14.8 19 H20.2" fill="none" stroke-width="1.6"/>
+  <path d="M1 3.4 L23 3.4 L23 8.2 L1 8.2 Z M1 10.4 L23 10.4 L23 15.2 L1 15.2 Z" fill="#ece6d6" stroke="none"/>
+  <g clip-path="url(#hint-turn-back-simple-rails)" stroke="none">
+    <path d="M-8 3 L-3.6 3 L2 16 L-2.4 16 Z M0.8 3 L5.2 3 L10.8 16 L6.4 16 Z M9.6 3 L14 3 L19.6 16 L15.2 16 Z M18.4 3 L22.8 3 L28.4 16 L24 16 Z" fill="#e0862a"/>
+    <path d="M1 6.9 L23 6.9 L23 8.2 L1 8.2 Z M1 13.9 L23 13.9 L23 15.2 L1 15.2 Z" fill="#3b2410" fill-opacity="0.26"/>
+  </g>
+  <path d="M1 3.4 H23 V8.2 H1 Z M1 10.4 H23 V15.2 H1 Z" fill="none"/>
+</svg>
